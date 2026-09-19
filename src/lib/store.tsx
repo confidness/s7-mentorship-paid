@@ -110,9 +110,18 @@ interface Ctx {
   joinTeam: (teamId: string) => void
   setTaskStatus: (taskId: string, status: AppState['competitionTasks'][number]['status'], teamId?: string) => void
   readNotifications: (id?: string) => void
-  saveCustomLesson: (lesson: CustomLesson) => void
-  deleteCustomLesson: (lessonId: string) => void
-  setLessonPublished: (lessonId: string, published: boolean) => void
+  /**
+   * Mentor-authored lessons live in Postgres, not in this browser.
+   *
+   * They used to be written locally while `api/lesson-content.ts` and the paywall read the
+   * database — so a mentor's lesson existed on their laptop and nowhere a student could buy
+   * it. These three now write through and return a promise, because a server can refuse:
+   * publishing a priced lesson needs an approved application and a payout account, and the
+   * caller has to be able to show that refusal instead of a success toast.
+   */
+  saveCustomLesson: (lesson: CustomLesson) => Promise<void>
+  deleteCustomLesson: (lessonId: string) => Promise<void>
+  setLessonPublished: (lessonId: string, published: boolean) => Promise<void>
   submitLessonAnswers: (lessonId: string, answers: TaskAnswer[]) => void
   reviewLessonSubmission: (submissionId: string, feedback: string, awardedXp: number) => void
   saveCompetition: (competition: Competition) => void
@@ -156,7 +165,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshStanding = useCallback(async () => {
     if (!backendConfigured) return setStanding(EMPTY_STANDING)
     try {
-      const [mentor, catalogue] = await Promise.all([api.getMentorStanding(), api.listCatalogue().catch(() => ({ entitlements: [] as string[] }))])
+      const [mentor, catalogue] = await Promise.all([api.getMentorStanding(), api.listCatalogue().catch(() => ({ lessons: [] as api.LessonTeaser[], entitlements: [] as string[] }))])
+
+      /**
+       * Bring the catalogue into state, so a lesson written on one device is visible on the
+       * next. These are teasers — title, price, whether you own it — and carry no tasks and
+       * no material link; those come from `api/lesson-content.ts`, which checks entitlement
+       * per request. Merging rather than replacing keeps anything written while offline.
+       */
+      const teasers = [...(catalogue.lessons ?? []), ...(mentor.status === 'approved' ? await api.listMyLessons().then((r) => r.lessons).catch(() => []) : [])]
+      if (teasers.length) {
+        setState((prev) => {
+          const byId = new Map(prev.customLessons.map((l) => [l.id, l]))
+          for (const teaser of teasers) {
+            const local = byId.get(teaser.id)
+            byId.set(teaser.id, {
+              id: teaser.id,
+              authorId: teaser.authorId ?? local?.authorId ?? '',
+              authorName: teaser.authorName ?? local?.authorName,
+              title: teaser.title,
+              summary: teaser.summary,
+              material: teaser.materialName ? { name: teaser.materialName, mime: local?.material?.mime ?? '', size: local?.material?.size ?? 0 } : local?.material,
+              tasks: local?.tasks ?? [],
+              published: teaser.published,
+              priceCents: teaser.priceCents,
+              currency: teaser.currency,
+              owned: teaser.owned,
+              createdAt: teaser.createdAt,
+              updatedAt: teaser.updatedAt,
+            })
+          }
+          return { ...prev, customLessons: [...byId.values()] }
+        })
+      }
       setStanding({
         mentorStatus: mentor.status,
         chargesEnabled: mentor.chargesEnabled,
@@ -341,9 +382,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       joinTeam: (teamId) => user && setState((s) => logic.joinTeam(s, user.id, teamId)),
       setTaskStatus: (taskId, status, teamId) => setState((s) => logic.setTaskStatus(s, taskId, status, teamId)),
       readNotifications: (id) => user && setState((s) => logic.readNotifications(s, user.id, id)),
-      saveCustomLesson: (lesson) => setState((s) => logic.saveCustomLesson(s, lesson)),
-      deleteCustomLesson: (lessonId) => setState((s) => logic.deleteCustomLesson(s, lessonId)),
-      setLessonPublished: (lessonId, published) => setState((s) => logic.setLessonPublished(s, lessonId, published)),
+      // Server first, then state. The other order would leave the interface claiming a lesson
+      // was published after the server refused, which is the failure a mentor would act on.
+      saveCustomLesson: async (lesson) => {
+        if (!backendConfigured) return void setState((s) => logic.saveCustomLesson(s, lesson))
+        const { id } = await api.saveLesson({
+          // A local id is not a uuid, so an unsaved lesson asks the server to mint one.
+          id: lesson.id.startsWith('cl-') ? undefined : lesson.id,
+          title: lesson.title,
+          summary: lesson.summary,
+          priceCents: lesson.priceCents,
+          currency: lesson.currency,
+          materialPath: lesson.material?.path ?? null,
+          materialName: lesson.material?.name ?? null,
+          materialMime: lesson.material?.mime ?? null,
+          materialSize: lesson.material?.size ?? null,
+          tasks: lesson.tasks,
+        })
+        setState((s) => logic.saveCustomLesson(s, { ...lesson, id }))
+      },
+      deleteCustomLesson: async (lessonId) => {
+        if (backendConfigured) await api.deleteLesson(lessonId)
+        setState((s) => logic.deleteCustomLesson(s, lessonId))
+      },
+      setLessonPublished: async (lessonId, published) => {
+        if (backendConfigured) await api.publishLesson(lessonId, published)
+        setState((s) => logic.setLessonPublished(s, lessonId, published))
+      },
       submitLessonAnswers: (lessonId, answers) => user && setState((s) => logic.submitLessonAnswers(s, user.id, lessonId, answers)),
       reviewLessonSubmission: (submissionId, feedback, awardedXp) =>
         user && setState((s) => logic.reviewLessonSubmission(s, submissionId, user.id, feedback, awardedXp)),

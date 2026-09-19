@@ -90,7 +90,14 @@ export function AssignedLesson() {
   const [locked, setLocked] = useState<{ title: string; summary: string; priceCents: number; currency: string } | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const needsServer = backendConfigured && (local?.priceCents ?? 0) > 0
+  /**
+   * Every lesson comes from the server now, not only the paid ones.
+   *
+   * The catalogue arrives as teasers with no tasks and no material link, because those are
+   * what entitlement guards. The old condition fetched content only when a price was set, so
+   * a FREE lesson written on another device rendered as a title with nothing under it.
+   */
+  const needsServer = backendConfigured
 
   useEffect(() => {
     if (!needsServer || !lessonId) return

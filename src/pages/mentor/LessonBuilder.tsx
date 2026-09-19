@@ -8,6 +8,7 @@ import { Button, Card, Field, SectionHeading, btn, controlClass, inputClass } fr
 import { formatMoney, mentorShare, parsePrice } from '../../lib/money'
 import { Link } from 'react-router-dom'
 import { t, useLocale } from '../../i18n'
+import { backendConfigured, uploadPrivate } from '../../lib/supabase'
 
 /** Teaching material is held as a data URL, the same way project attachments are. */
 const MAX_MATERIAL_BYTES = 4 * 1024 * 1024
@@ -33,6 +34,8 @@ export default function LessonBuilder() {
   const { lessonId } = useParams()
   const navigate = useNavigate()
   const { state, user, standing, saveCustomLesson, setLessonPublished } = useApp()
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const { locale } = useLocale()
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -65,19 +68,39 @@ export default function LessonBuilder() {
     setTasks((all) => all.map((task) => (task.id === id ? { ...task, ...patch } : task)))
   }
 
-  function readMaterial(file: File | undefined) {
+  /**
+   * Uploads the material to a private bucket and keeps only its path.
+   *
+   * It used to be read into a data URL and carried in the lesson itself, which put a four
+   * megabyte file into localStorage and put the teaching material in reach of anyone who had
+   * not paid for it. `uploadPrivate` writes under the mentor's own user id, which is the
+   * prefix the storage policy checks, and `api/lesson-content.ts` mints a signed link per
+   * request for people who are entitled to one.
+   */
+  async function readMaterial(file: File | undefined) {
     if (!file) return
     if (file.size > MAX_MATERIAL_BYTES) {
       setErrors((e) => ({ ...e, material: t('file_too_large', { name: file.name, mb: 4 }) }))
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
-      setMaterial({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, url: String(reader.result) })
-      setErrors((e) => ({ ...e, material: '' }))
+    setErrors((e) => ({ ...e, material: '' }))
+    if (!backendConfigured) {
+      // No server to hold it: keep the old local behaviour so a checkout without Supabase works.
+      const reader = new FileReader()
+      reader.onload = () => setMaterial({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, url: String(reader.result) })
+      reader.onerror = () => setErrors((e) => ({ ...e, material: t('file_could_not_be_read', { name: file.name }) }))
+      reader.readAsDataURL(file)
+      return
     }
-    reader.onerror = () => setErrors((e) => ({ ...e, material: t('file_could_not_be_read', { name: file.name }) }))
-    reader.readAsDataURL(file)
+    try {
+      setUploading(true)
+      const path = await uploadPrivate('lesson-materials', file)
+      setMaterial({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, path })
+    } catch (error) {
+      setErrors((e) => ({ ...e, material: error instanceof Error ? error.message : t('file_could_not_be_read', { name: file.name }) }))
+    } finally {
+      setUploading(false)
+    }
   }
 
   /** Everything a lesson needs before a student can be asked to do it. */
@@ -102,7 +125,7 @@ export default function LessonBuilder() {
     return Object.keys(next).length === 0
   }
 
-  function persist(publish: boolean) {
+  async function persist(publish: boolean) {
     if (!validate()) {
       toast({ title: t('check_the_highlighted_fields'), tone: 'error' })
       return
@@ -121,8 +144,18 @@ export default function LessonBuilder() {
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    saveCustomLesson(lesson)
-    if (publish) setLessonPublished(lesson.id, true)
+    try {
+      setSaving(true)
+      await saveCustomLesson(lesson)
+      if (publish) await setLessonPublished(lesson.id, true)
+    } catch (error) {
+      // A refusal here is usually the server saying this mentor may not sell yet, and it is
+      // the one thing they need to read. Navigating away with a success toast hid it.
+      toast({ title: t('could_not_save_the_lesson'), body: error instanceof Error ? error.message : '', tone: 'error' })
+      return
+    } finally {
+      setSaving(false)
+    }
     toast({
       title: publish ? t('lesson_published') : t('lesson_saved'),
       body: publish ? t('students_can_see_it_now') : t('it_stays_a_draft_until_you_publish'),
@@ -175,7 +208,7 @@ export default function LessonBuilder() {
                 type="file"
                 accept={MATERIAL_ACCEPT}
                 className="sr-only"
-                onChange={(e) => readMaterial(e.target.files?.[0] ?? undefined)}
+                onChange={(e) => void readMaterial(e.target.files?.[0] ?? undefined)}
                 aria-label={t('teaching_material')}
               />
               <button
@@ -399,10 +432,10 @@ export default function LessonBuilder() {
       </Card>
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => persist(false)} variant="secondary" icon={Save}>
+        <Button onClick={() => void persist(false)} variant="secondary" icon={Save} loading={saving} disabled={saving || uploading}>
           {t('save_draft')}
         </Button>
-        <Button onClick={() => persist(true)} icon={CheckCircle2} disabled={blockedPaidPublish}>
+        <Button onClick={() => void persist(true)} icon={CheckCircle2} loading={saving} disabled={blockedPaidPublish || saving || uploading}>
           {t('publish_to_students')}
         </Button>
         {blockedPaidPublish && <p className="w-full text-sm text-ink-500">{t('save_it_as_a_draft_until_payouts_are_ready')}</p>}

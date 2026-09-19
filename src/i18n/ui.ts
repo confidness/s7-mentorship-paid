@@ -1373,6 +1373,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   check_the_highlighted_fields: { en: 'Check the highlighted fields', ru: 'Проверь отмеченные поля', kk: 'Белгіленген өрістерді тексер' },
   publish_to_students: { en: 'Publish to students', ru: 'Опубликовать для учеников', kk: 'Оқушыларға жариялау' },
   lesson_saved: { en: 'Lesson saved', ru: 'Урок сохранён', kk: 'Сабақ сақталды' },
+  could_not_save_the_lesson: { en: 'Could not save the lesson', ru: 'Не удалось сохранить урок', kk: 'Сабақты сақтау мүмкін болмады' },
   lesson_published: { en: 'Lesson published', ru: 'Урок опубликован', kk: 'Сабақ жарияланды' },
   lesson_hidden: { en: 'Lesson hidden', ru: 'Урок скрыт', kk: 'Сабақ жасырылды' },
   lesson_deleted: { en: 'Lesson deleted', ru: 'Урок удалён', kk: 'Сабақ жойылды' },

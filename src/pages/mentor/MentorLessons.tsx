@@ -69,8 +69,15 @@ export default function MentorLessons() {
                       variant="ghost"
                       size="sm"
                       icon={lesson.published ? EyeOff : Send}
-                      onClick={() => {
-                        setLessonPublished(lesson.id, !lesson.published)
+                      onClick={async () => {
+                        // Publishing a priced lesson is the server's decision, not this
+                        // button's: it needs an approved application and a payout account.
+                        try {
+                          await setLessonPublished(lesson.id, !lesson.published)
+                        } catch (error) {
+                          toast({ title: t('could_not_save_the_lesson'), body: error instanceof Error ? error.message : '', tone: 'error' })
+                          return
+                        }
                         toast({ title: lesson.published ? t('lesson_hidden') : t('lesson_published'), tone: 'success' })
                       }}
                     >
@@ -96,9 +103,15 @@ export default function MentorLessons() {
           <Button
             variant="danger"
             icon={Trash2}
-            onClick={() => {
-              deleteCustomLesson(confirmDelete!)
+            onClick={async () => {
+              const id = confirmDelete!
               setConfirmDelete(null)
+              try {
+                await deleteCustomLesson(id)
+              } catch (error) {
+                toast({ title: t('could_not_save_the_lesson'), body: error instanceof Error ? error.message : '', tone: 'error' })
+                return
+              }
               toast({ title: t('lesson_deleted'), tone: 'success' })
             }}
           >
