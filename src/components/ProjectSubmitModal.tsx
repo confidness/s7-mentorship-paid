@@ -108,7 +108,7 @@ export default function ProjectSubmitModal({
         </div>
 
         <Field label={t('project_name')} required error={errors.title}>
-          <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('ultrasonic_distance_meter')} />
+          <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('worked_example')} />
         </Field>
 
         <Field label={t('description')} required error={errors.description} hint={t('what_does_it_do_how_did_you_build_it_and_what_su')}>

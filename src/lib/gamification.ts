@@ -8,11 +8,11 @@ export interface Level {
 }
 
 export const LEVELS: Level[] = [
-  { index: 1, name: 'Beginner', minXp: 0, blurb: 'Learning the building blocks' },
-  { index: 2, name: 'Builder', minXp: 400, blurb: 'Assembling working circuits' },
-  { index: 3, name: 'Engineer', minXp: 1000, blurb: 'Designing systems with sensors' },
-  { index: 4, name: 'Robotics Specialist', minXp: 2000, blurb: 'Autonomous behaviour & control' },
-  { index: 5, name: 'Competition Engineer', minXp: 3500, blurb: 'Competing at national level' },
+  { index: 1, name: 'Beginner', minXp: 0, blurb: 'Finding your way around' },
+  { index: 2, name: 'Apprentice', minXp: 400, blurb: 'Handing work in regularly' },
+  { index: 3, name: 'Practitioner', minXp: 1000, blurb: 'Working without being nudged' },
+  { index: 4, name: 'Specialist', minXp: 2000, blurb: 'Depth in something specific' },
+  { index: 5, name: 'Master', minXp: 3500, blurb: 'Good enough to teach it' },
 ]
 
 export function levelFor(xp: number) {

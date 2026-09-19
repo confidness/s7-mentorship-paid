@@ -65,7 +65,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
           <Bot size={18} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-ink-900">{t('ai_robotics_mentor')}</p>
+          <p className="text-sm font-bold text-ink-900">{t('ai_mentor_title')}</p>
           <p className="truncate text-xs text-ink-500">{context.lessonTitle ? t('context_lesson', { title: context.lessonTitle }) : t('hints_explanations_and_debugging_never_the_finis')}</p>
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
               <Sparkles size={22} aria-hidden="true" />
             </span>
             <p className="text-sm font-semibold text-ink-900">{t('ask_anything_about_your_build')}</p>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-ink-500">{t('wiring_code_an_error_you_do_not_recognise_or_a_r')}</p>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-ink-500">{t('hints_and_questions_never_the_answer')}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {STARTER_PROMPTS.map((p) => (
                 <button key={p} onClick={() => ask(t(p))} className="border edge fill-strong px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:border-brand-300 hover:bg-brand-50">
@@ -168,7 +168,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
             }
           }}
           rows={1}
-          placeholder={t('ask_about_wiring_code_or_an_error')}
+          placeholder={t('ask_about_anything_stuck')}
           aria-label={t('message_the_ai_mentor')}
           className={`${inputClass} max-h-32 min-h-11 flex-1 resize-none py-3`}
         />

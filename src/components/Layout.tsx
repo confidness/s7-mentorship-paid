@@ -67,7 +67,7 @@ export function Logo({ compact }: { compact?: boolean }) {
       <Mark size={40} className="shrink-0 rounded-full shadow-[0_8px_18px_-8px_rgb(21_96_236/0.7)]" />
       {!compact && (
         <span className="leading-tight">
-          <span className="block text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('s7_robotics')}</span>
+          <span className="block text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
           <span className="block text-xs text-ink-500">{t('learning_platform')}</span>
         </span>
       )}

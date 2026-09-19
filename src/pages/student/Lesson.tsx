@@ -541,7 +541,7 @@ function LessonPage() {
       {/* mounted on demand so the form always opens with the current editor contents */}
       {submitOpen && <ProjectSubmitModal open onClose={() => setSubmitOpen(false)} lesson={lesson} existing={project} initialCode={code} onSubmitted={() => setSection('task')} />}
 
-      <Modal open={aiOpen} onClose={() => setAiOpen(false)} wide title={t('ai_robotics_mentor')} subtitle={t('context_lesson', { title: lesson.title })}>
+      <Modal open={aiOpen} onClose={() => setAiOpen(false)} wide title={t('ai_mentor_title')} subtitle={t('context_lesson', { title: lesson.title })}>
         <AiMentorPanel context={{ lessonTitle: lesson.title, courseTitle: course.title, studentName: user.name, code }} height="h-[24rem]" />
       </Modal>
     </div>

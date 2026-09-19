@@ -133,7 +133,7 @@ export default function ServerStatus() {
       <ul className="mt-4 space-y-3">
         {/* Either key works and either is a valid answer, so the prompt names both rather than
             steering someone to open an account they do not need. */}
-        <Row label={t('ai_robotics_mentor')} state={mentor} keyName="OPENROUTER_API_KEY / ANTHROPIC_API_KEY" note={who} />
+        <Row label={t('ai_mentor_title')} state={mentor} keyName="OPENROUTER_API_KEY / ANTHROPIC_API_KEY" note={who} />
         <Row label={t('payments')} state={payments} keyName="STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET" />
       </ul>
       <p className="mt-3 text-xs text-ink-500">{t('both_fall_back_safely_the_app_works_without_them')}</p>

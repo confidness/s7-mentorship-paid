@@ -326,7 +326,7 @@ export default function Dashboard() {
                 <Bot size={20} className="text-accent-600" aria-hidden="true" />
               </span>
               <h3 className="mt-3.5 text-base font-bold tracking-[-0.02em] text-ink-900">{t('stuck_on_something')}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-600">{t('ask_the_ai_robotics_mentor_about_wiring_an_error')}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-600">{t('ask_the_ai_mentor_about')}</p>
               <Link to="/ai" className={btn('primary', 'sm', 'mt-4')}>{t('open_ai_mentor')}<ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>

@@ -49,7 +49,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
     const user = result.user
     toast({
       title: t(mode === 'login' ? 'welcome_back_name' : 'account_created_name', { name: user.name.split(' ')[0] }),
-      body: user.role === 'mentor' ? t('your_mentor_workspace_is_ready') : t('start_with_lesson_one_of_arduino_electronics_cod'),
+      body: user.role === 'mentor' ? t('your_mentor_workspace_is_ready') : t('nothing_waiting_for_you_yet'),
       tone: 'success',
     })
     navigate(user.role === 'mentor' ? '/m' : '/', { replace: true })
@@ -126,7 +126,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
           <div className="relative mb-7 lg:hidden">
             <span className="inline-flex items-center gap-2.5">
               <Mark size={40} className="rounded-full" />
-              <span className="text-lg font-bold tracking-[-0.02em] text-ink-900">{t('s7_robotics')}</span>
+              <span className="text-lg font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
             </span>
           </div>
 
@@ -138,7 +138,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
               ? t('use_the_email_and_password_you_registered_with')
               : firstRun
                 ? t('nobody_has_signed_up_yet_whoever_registers_first')
-                : t('students_begin_with_arduino_electronics_code')}
+                : t('students_start_with_what_their_mentor_sets')}
           </p>
 
           <div className="chrome relative mt-6 mb-6 inline-flex w-full p-1" role="tablist">

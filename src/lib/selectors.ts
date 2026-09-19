@@ -73,7 +73,8 @@ export const groupsOf = (s: AppState, mentorId: string) => s.groups.filter((g) =
 /** Everything the mentor dashboard needs about one student, in one pass. */
 export function studentSummary(s: AppState, user: User) {
   const profile = profileOf(s, user.id)
-  const courseId = profile?.currentCourseId ?? 'arduino'
+  // No fallback course: a student has one only once a mentor's material puts them in it.
+  const courseId = profile?.currentCourseId ?? ''
   const progress = courseProgress(s, user.id, courseId)
   const projects = projectsOf(s, user.id)
   return {

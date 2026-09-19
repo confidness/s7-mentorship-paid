@@ -8,7 +8,7 @@ import { KK } from './content.kk'
  *
  * English lives in `lib/curriculum.ts` and stays the source of truth: ids, order, code samples
  * and check rules never move. A pack only replaces the words a learner reads.
- * Code listings themselves are deliberately not translated — Arduino is written in English.
+ * Code listings themselves are deliberately not translated — they are read as written.
  */
 
 export interface LessonPack {

@@ -98,7 +98,7 @@ export default function EventBuilder() {
         <SectionHeading title={t('the_event')} subtitle={t('what_students_see_at_the_top_of_the_page')} icon={Trophy} />
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label={t('event_name')} required error={errors.name}>
-            <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('eg_spring_robotics_cup')} />
+            <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('eg_spring_challenge')} />
           </Field>
           <Field label={t('season')} hint={t('optional_eg_spring_2026')}>
             <input className={inputClass} value={season} onChange={(e) => setSeason(e.target.value)} />

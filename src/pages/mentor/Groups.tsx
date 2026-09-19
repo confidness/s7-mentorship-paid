@@ -200,7 +200,7 @@ function GroupEditor({
             className={inputClass}
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            placeholder={t('eg_arduino_tuesday_group')}
+            placeholder={t('eg_tuesday_evening_group')}
           />
         </Field>
 

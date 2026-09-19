@@ -4,7 +4,7 @@ import { AI_KK } from './ai.kk'
 
 /**
  * Translatable half of an AI mentor answer. Code listings stay in the entry itself —
- * Arduino and Python are written in English everywhere, so only the caption is translated.
+ * Code listings stay in whatever language they were written in, so only the caption is translated.
  */
 export interface AiEntryText {
   text: string

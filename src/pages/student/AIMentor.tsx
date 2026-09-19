@@ -27,7 +27,7 @@ export default function AIMentor() {
             <span className="grid h-10 w-10 place-items-center bg-gradient-to-br from-accent-500 to-brand-600 text-white">
               <Bot size={20} aria-hidden="true" />
             </span>
-            {t('ai_robotics_mentor')}
+            {t('ai_mentor_title')}
           </h1>
           <p className="mt-1.5 text-sm text-ink-500">{t('available_whenever_your_mentor_is_not_it_explain')}</p>
         </div>

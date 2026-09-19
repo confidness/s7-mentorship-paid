@@ -45,7 +45,7 @@ export default function MyLearning() {
         <EmptyState
           icon={GraduationCap}
           title={t('you_are_not_enrolled_in_anything_yet')}
-          body={t('pick_a_track_from_the_catalog_wedo_for_a_gentle_')}
+          body={t('nothing_published_yet')}
           action={
             <Link to="/courses" className={btn('primary')}>
               {t('browse_courses')}

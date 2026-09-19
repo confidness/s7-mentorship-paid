@@ -157,9 +157,9 @@ assert.ok(!profileOf(returned, STUDENT)!.completedLessonIds.includes('d-l2'), 'a
 
 // --- levels ---------------------------------------------------------------------------------------------
 assert.equal(levelFor(0).level.name, 'Beginner')
-assert.equal(levelFor(760).level.name, 'Builder')
-assert.equal(levelFor(1200).level.name, 'Engineer')
-assert.equal(levelFor(99_999).level.name, 'Competition Engineer')
+assert.equal(levelFor(760).level.name, 'Apprentice')
+assert.equal(levelFor(1200).level.name, 'Practitioner')
+assert.equal(levelFor(99_999).level.name, 'Master')
 assert.equal(levelFor(400).xpToNext, 600)
 
 // --- mentor-authored lessons ----------------------------------------------------------------------------
