@@ -129,7 +129,7 @@ export default function EventBuilder() {
 
         <ul className="mt-5 space-y-3">
           {schedule.map((slot, i) => (
-            <li key={slot.id} className="rounded-[18px] border edge fill-soft p-4">
+            <li key={slot.id} className="border edge fill-soft p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-bold text-ink-900">{t('slot_n', { n: i + 1 })}</span>
                 <select
@@ -185,7 +185,7 @@ export default function EventBuilder() {
           ))}
         </ul>
 
-        {schedule.length === 0 && <p className="mt-4 rounded-[16px] border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_slots_yet_add_the_first_one')}</p>}
+        {schedule.length === 0 && <p className="mt-4 border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_slots_yet_add_the_first_one')}</p>}
 
         <button
           type="button"
@@ -245,7 +245,7 @@ function TeamsCard({
 
       <ul className="mt-5 space-y-3">
         {teams.map((team) => (
-          <li key={team.id} className="rounded-[18px] border edge fill-soft p-4">
+          <li key={team.id} className="border edge fill-soft p-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-bold text-ink-900">{team.name}</span>
               <Badge tone="accent">{t('n_points', { n: team.points })}</Badge>
@@ -290,7 +290,7 @@ function TeamsCard({
         ))}
       </ul>
 
-      {teams.length === 0 && <p className="mt-4 rounded-[16px] border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_teams_yet_create_the_first_one')}</p>}
+      {teams.length === 0 && <p className="mt-4 border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_teams_yet_create_the_first_one')}</p>}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
         <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('team_name')} aria-label={t('team_name')} />
@@ -335,7 +335,7 @@ function TasksCard({
 
       <ul className="mt-5 space-y-3">
         {tasks.map((task) => (
-          <li key={task.id} className="flex flex-wrap items-center gap-3 rounded-[18px] border edge fill-soft p-4">
+          <li key={task.id} className="flex flex-wrap items-center gap-3 border edge fill-soft p-4">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-ink-900">{task.title}</p>
               {task.description && <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">{task.description}</p>}
@@ -354,7 +354,7 @@ function TasksCard({
         ))}
       </ul>
 
-      {tasks.length === 0 && <p className="mt-4 rounded-[16px] border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_tasks_yet_add_the_first_one')}</p>}
+      {tasks.length === 0 && <p className="mt-4 border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_tasks_yet_add_the_first_one')}</p>}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('task_title')} aria-label={t('task_title')} />

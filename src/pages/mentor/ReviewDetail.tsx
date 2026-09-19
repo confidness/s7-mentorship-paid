@@ -89,7 +89,7 @@ export default function ReviewDetail() {
           </div>
 
           {author && profile && (
-            <Link to={`/m/students/${author.id}`} className="flex min-w-[15rem] items-center gap-3 rounded-[16px] border edge fill-soft p-3 transition hover:border-brand-300 hover:bg-brand-50/40">
+            <Link to={`/m/students/${author.id}`} className="flex min-w-[15rem] items-center gap-3 border edge fill-soft p-3 transition hover:border-brand-300 hover:bg-brand-50/40">
               <Avatar name={author.name} initials={author.avatar} size={44} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-ink-900">{author.name}</p>
@@ -163,8 +163,8 @@ export default function ReviewDetail() {
                       <figcaption className="fill px-3 py-2 text-xs text-ink-600">{a.name}</figcaption>
                     </figure>
                   ) : (
-                    <div key={a.id} className="flex items-center gap-3 rounded-[16px] border edge fill-soft p-3">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-brand-400 to-accent-500 text-white">
+                    <div key={a.id} className="flex items-center gap-3 border edge fill-soft p-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center bg-gradient-to-b from-brand-400 to-accent-500 text-white">
                         <Film size={17} aria-hidden="true" />
                       </span>
                       <span className="min-w-0">

@@ -183,7 +183,7 @@ export function LessonSubmissions() {
           <div className="space-y-5">
             <ol className="space-y-3">
               {lesson.tasks.map((task, i) => (
-                <li key={task.id} className="rounded-[16px] border edge fill-soft p-4">
+                <li key={task.id} className="border edge fill-soft p-4">
                   <AnswerRow task={task} index={i} value={open.answers.find((a) => a.taskId === task.id)?.value ?? ''} />
                 </li>
               ))}
@@ -249,9 +249,9 @@ function AnswerRow({ task, index, value }: { task: CustomTask; index: number; va
           {!correct && <span className="block text-emerald-700">{t('correct_answer_was', { answer: (task.options ?? [])[task.answerIndex ?? 0] ?? '—' })}</span>}
         </p>
       ) : task.kind === 'code' ? (
-        <pre className="code-surface mt-2 overflow-x-auto rounded-[12px] p-3 font-mono text-xs whitespace-pre-wrap text-[#e2e8f0]">{value || t('left_blank')}</pre>
+        <pre className="code-surface mt-2 overflow-x-auto p-3 font-mono text-xs whitespace-pre-wrap text-[#e2e8f0]">{value || t('left_blank')}</pre>
       ) : (
-        <p className="mt-2 rounded-[12px] fill px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-ink-700">{value || t('left_blank')}</p>
+        <p className="mt-2 fill px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-ink-700">{value || t('left_blank')}</p>
       )}
     </>
   )

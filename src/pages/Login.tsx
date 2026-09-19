@@ -157,13 +157,13 @@ export default function Login({ register: startOnRegister }: { register?: boolea
             </Field>
 
             {mode === 'register' && (
-              <p className="rounded-[14px] border border-brand-300/50 bg-brand-100/40 px-3.5 py-3 text-sm leading-relaxed text-ink-700">
+              <p className="border border-brand-300/50 bg-brand-100/40 px-3.5 py-3 text-sm leading-relaxed text-ink-700">
                 {t('everyone_starts_as_a_student_teaching_is_applied_for')}
               </p>
             )}
 
             {errors.form && (
-              <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+              <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
                 {errors.form}
               </p>
             )}

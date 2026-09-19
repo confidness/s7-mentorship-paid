@@ -46,11 +46,11 @@ export default function Settings() {
         <SectionHeading title={t('teach_on_s7')} subtitle={t('mentors_are_verified_before_they_can_publish')} icon={GraduationCap} />
         <div className="mt-4">
           {standing.mentorStatus === 'pending' ? (
-            <p className="rounded-[14px] border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
+            <p className="border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
               {t('your_application_is_being_reviewed')}
             </p>
           ) : standing.mentorStatus === 'approved' ? (
-            <p className="rounded-[14px] border border-emerald-300/60 bg-emerald-100/50 px-3.5 py-3 text-sm font-medium text-emerald-800">
+            <p className="border border-emerald-300/60 bg-emerald-100/50 px-3.5 py-3 text-sm font-medium text-emerald-800">
               {t('you_are_approved_to_teach')}
             </p>
           ) : (

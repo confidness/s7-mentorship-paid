@@ -32,7 +32,7 @@ function Documents({ application }: { application: PendingApplication }) {
           href={link.url as string}
           target="_blank"
           rel="noreferrer noopener"
-          className="inline-flex items-center gap-2 rounded-[14px] fill-soft px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:text-brand-700"
+          className="inline-flex items-center gap-2 fill-soft px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:text-brand-700"
         >
           <FileText size={15} aria-hidden="true" />
           {link.label}
@@ -95,7 +95,7 @@ function Row({ application, onDecided }: { application: PendingApplication; onDe
       )}
 
       {error && (
-        <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+        <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
           {error}
         </p>
       )}
@@ -160,7 +160,7 @@ export default function MentorApplications() {
       </header>
 
       {error && (
-        <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+        <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
           {error}
         </p>
       )}

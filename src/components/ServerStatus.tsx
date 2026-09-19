@@ -47,7 +47,7 @@ function Row({ label, state, keyName, note }: { label: string; state: Health; ke
             : t('checking')
 
   return (
-    <li className="rounded-[16px] border edge fill-soft p-4">
+    <li className="border edge fill-soft p-4">
       <p className={`flex items-center gap-2 text-sm font-bold ${TONE[state]}`}>
         <Icon size={15} className={state === 'checking' ? 'animate-spin' : ''} aria-hidden="true" />
         {label}
@@ -157,7 +157,7 @@ export default function ServerStatus() {
           {testing ? t('checking') : t('send_a_test_question')}
         </Button>
       </div>
-      {live && <p className="mt-3 rounded-[14px] border edge fill-soft p-3 text-sm text-ink-700">{live}</p>}
+      {live && <p className="mt-3 border edge fill-soft p-3 text-sm text-ink-700">{live}</p>}
     </>
   )
 }

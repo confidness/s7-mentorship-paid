@@ -56,7 +56,7 @@ export default function Paywall({ title, summary, priceCents, currency, lessonId
       </ul>
 
       {error && (
-        <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+        <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
           {error}
         </p>
       )}

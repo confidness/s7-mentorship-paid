@@ -148,7 +148,7 @@ export function ActivityChart({ data, height = 120 }: { data: { label: string; v
         {data.map((d) => (
           <div key={d.date} className="group/bar relative flex flex-1 flex-col justify-end" title={t('xp_amount', { n: d.value })}>
             <div
-              className={`w-full rounded-t-md transition-all duration-500 ${d.value > 0 ? 'bg-gradient-to-t from-brand-600 to-accent-500' : 'bg-ink-200'}`}
+              className={`w-full transition-all duration-500 ${d.value > 0 ? 'bg-gradient-to-t from-brand-600 to-accent-500' : 'bg-ink-200'}`}
               style={{ height: `${Math.max(4, (d.value / max) * 100)}%` }}
             />
           </div>

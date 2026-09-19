@@ -82,7 +82,7 @@ export default function MentorDashboard() {
                   const lesson = state.lessons.find((l) => l.id === p.lessonId)
                   return (
                     <li key={p.id}>
-                      <Link to={`/m/reviews/${p.id}`} className="flex flex-wrap items-center gap-3 rounded-[16px] border edge fill-soft p-3.5 transition hover:border-brand-300 hover:bg-brand-50/40">
+                      <Link to={`/m/reviews/${p.id}`} className="flex flex-wrap items-center gap-3 border edge fill-soft p-3.5 transition hover:border-brand-300 hover:bg-brand-50/40">
                         {author && <Avatar name={author.name} initials={author.avatar} size={38} />}
                         <span className="min-w-[10rem] flex-1">
                           <span className="block text-sm font-bold text-ink-900">{p.title}</span>
@@ -112,7 +112,7 @@ export default function MentorDashboard() {
               }
             />
             {roster.length === 0 && (
-              <p className="rounded-[18px] border border-dashed edge px-4 py-10 text-center text-sm text-ink-500">
+              <p className="border border-dashed edge px-4 py-10 text-center text-sm text-ink-500">
                 {t('nobody_has_registered_yet_share_the_platform_lin')}
               </p>
             )}
@@ -177,7 +177,7 @@ export default function MentorDashboard() {
           <Card className="p-5 sm:p-6">
             <SectionHeading title={t('my_groups')} icon={Users} action={<Link to="/m/groups" className="text-sm font-semibold text-brand-600 hover:text-brand-700">{t('manage')}</Link>} />
             {stats.groups.length === 0 && (
-              <p className="rounded-[18px] border border-dashed edge px-4 py-6 text-center text-sm text-ink-500">
+              <p className="border border-dashed edge px-4 py-6 text-center text-sm text-ink-500">
                 {t('no_groups_yet_students_who_register_are_listed_u')}
               </p>
             )}
@@ -185,7 +185,7 @@ export default function MentorDashboard() {
               {stats.groups.map((g) => {
                 const course = state.courses.find((c) => c.id === g.courseId)
                 return (
-                  <li key={g.id} className="rounded-[16px] border edge fill-soft p-3.5">
+                  <li key={g.id} className="border edge fill-soft p-3.5">
                     <p className="text-sm font-bold text-ink-900">{g.name}</p>
                     <p className="mt-0.5 text-xs text-ink-500">
                       {course?.title} · {g.room}
@@ -206,7 +206,7 @@ export default function MentorDashboard() {
           <Card className="p-5 sm:p-6">
             <SectionHeading title={t('needs_attention')} subtitle={t('no_activity_for_a_week_or_more')} />
             {needsAttention.length === 0 ? (
-              <p className="rounded-[18px] border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">
+              <p className="border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">
                 {roster.length === 0 ? t('no_students_have_registered_yet') : t('everyone_has_been_active_in_the_last_week')}
               </p>
             ) : (

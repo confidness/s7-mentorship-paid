@@ -1,4 +1,4 @@
-import { BadgeCheck, Bot, Code2, Flame, Layers, Lock, MessageSquareHeart, Radar, Rocket, Target, Trophy, Zap } from 'lucide-react'
+import { BadgeCheck, BookOpen, Users, Flame, Layers, Lock, MessageSquareHeart, CircleCheck, Rocket, Target, Trophy, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Achievement } from '../../lib/types'
 import { useApp } from '../../lib/store'
@@ -9,7 +9,7 @@ import { relativeTime } from '../../lib/hooks'
 import { t, formatNumber } from '../../i18n'
 import { localizeLevelBlurb, localizeLevelName } from '../../i18n/content'
 
-const ICONS: Record<string, LucideIcon> = { Bot, Rocket, Radar, Code2, Flame, BadgeCheck, Target, Layers, Trophy, MessageSquareHeart }
+const ICONS: Record<string, LucideIcon> = { BookOpen, Rocket, CircleCheck, Users, Flame, BadgeCheck, Target, Layers, Trophy, MessageSquareHeart }
 
 const TIER_RING: Record<Achievement['tier'], string> = {
   bronze: 'from-amber-500 to-orange-600',
@@ -20,8 +20,8 @@ const TIER_RING: Record<Achievement['tier'], string> = {
 export function AchievementBadge({ achievement, unlocked, compact }: { achievement: Achievement; unlocked: boolean; compact?: boolean }) {
   const Icon = ICONS[achievement.icon] ?? Trophy
   const body = (
-    <div className={`flex flex-col items-center rounded-[18px] p-3 text-center transition ${unlocked ? 'fill ring-1 rim' : 'grayscale'}`}>
-      <span className={`grid place-items-center rounded-[16px] bg-gradient-to-b text-white shadow-[0_8px_18px_-10px_rgb(11_18_32/0.8)] ${TIER_RING[achievement.tier]} ${compact ? 'h-11 w-11' : 'h-14 w-14'}`}>
+    <div className={`flex flex-col items-center p-3 text-center transition ${unlocked ? 'fill ring-1 rim' : 'grayscale'}`}>
+      <span className={`grid place-items-center bg-gradient-to-b text-white shadow-[0_8px_18px_-10px_rgb(11_18_32/0.8)] ${TIER_RING[achievement.tier]} ${compact ? 'h-11 w-11' : 'h-14 w-14'}`}>
         {unlocked ? <Icon size={compact ? 18 : 24} aria-hidden="true" /> : <Lock size={compact ? 16 : 20} aria-hidden="true" />}
       </span>
       <span className={`mt-2 font-bold text-ink-900 ${compact ? 'text-[11px] leading-tight' : 'text-sm'}`}>{achievement.name}</span>

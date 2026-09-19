@@ -196,7 +196,7 @@ export function StatTile({ label, value, sub, icon: Icon, tone = 'brand' }: { la
           {sub && <p className="mt-2 truncate text-xs text-ink-500">{sub}</p>}
         </div>
         {Icon && (
-          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[14px] ring-1 ring-inset ${TONES[tone]}`}>
+          <span className={`grid h-10 w-10 shrink-0 place-items-center ring-1 ring-inset ${TONES[tone]}`}>
             <Icon size={18} aria-hidden="true" />
           </span>
         )}
@@ -229,7 +229,7 @@ export function Avatar({ name, initials, size = 40, tone }: { name: string; init
 export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIcon; title: string; body: string; action?: ReactNode }) {
   return (
     <div className="card flex flex-col items-center justify-center px-6 py-14 text-center">
-      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] fill-strong text-brand-500 shadow-[var(--shadow-soft)]">
+      <span className="mb-4 grid h-14 w-14 place-items-center fill-strong text-brand-500 shadow-[var(--shadow-soft)]">
         <Icon size={24} aria-hidden="true" />
       </span>
       <h3 className="text-base font-bold tracking-[-0.02em] text-ink-900">{title}</h3>
@@ -274,7 +274,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, wide }
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
-      className={`chrome specular m-auto w-[calc(100vw-1.5rem)] rounded-[28px] p-0 backdrop:bg-ink-950/30 backdrop:backdrop-blur-md ${wide ? 'max-w-3xl' : 'max-w-lg'}`}
+      className={`chrome specular m-auto w-[calc(100vw-1.5rem)] p-0 backdrop:bg-ink-950/30 backdrop:backdrop-blur-md ${wide ? 'max-w-3xl' : 'max-w-lg'}`}
       aria-label={title}
     >
       {open && (
@@ -350,7 +350,7 @@ export function Field({ label, hint, error, children, required }: { label: strin
 
 /** Same visual control without a width, for selects that should size to their content. */
 export const controlClass =
-  'rounded-[14px] border edge fill px-4 py-2.5 text-sm text-ink-900 backdrop-blur-sm placeholder:text-ink-500 transition focus:border-brand-400 focus:fill-raised focus:ring-4 focus:ring-brand-500/15 focus:outline-none'
+  'border edge fill px-4 py-2.5 text-sm text-ink-900 backdrop-blur-sm placeholder:text-ink-500 transition focus:border-brand-400 focus:fill-raised focus:ring-4 focus:ring-brand-500/15 focus:outline-none'
 
 export const inputClass = `w-full ${controlClass}`
 

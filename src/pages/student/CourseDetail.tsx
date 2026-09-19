@@ -70,7 +70,7 @@ export default function CourseDetail() {
             </dl>
           </div>
 
-          <div className="space-y-4 rounded-[20px] border edge fill-soft p-4">
+          <div className="space-y-4 border edge fill-soft p-4">
             {enrolled ? (
               <>
                 <div>

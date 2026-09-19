@@ -182,7 +182,7 @@ function LessonPage() {
                 { label: t('lesson_xp'), value: lesson.xp },
                 { label: t('project_xp'), value: lesson.task.xp },
               ].map((s) => (
-                <div key={s.label} className="rounded-[14px] fill px-3.5 py-2.5 ring-1 rim">
+                <div key={s.label} className="fill px-3.5 py-2.5 ring-1 rim">
                   <dt className="text-[11px] text-ink-500">{s.label}</dt>
                   <dd className="text-base font-bold text-ink-900 tabular-nums">{s.value}</dd>
                 </div>
@@ -230,13 +230,13 @@ function LessonPage() {
             return (
               <Card key={block.id} className="p-5 sm:p-6">
                 <div className="flex items-start gap-4">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-brand-400 to-accent-500 text-white text-sm font-bold">{i + 1}</span>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center bg-gradient-to-b from-brand-400 to-accent-500 text-white text-sm font-bold">{i + 1}</span>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base font-bold text-ink-900">{block.title}</h3>
                     <p className="mt-2 text-[15px] leading-relaxed text-ink-700">{block.body}</p>
 
                     {block.formula && (
-                      <p className="mt-4 code-surface rounded-[16px] px-4 py-3.5 text-center font-mono text-sm text-cyan-200">{block.formula}</p>
+                      <p className="mt-4 code-surface px-4 py-3.5 text-center font-mono text-sm text-cyan-200">{block.formula}</p>
                     )}
 
                     {block.callout && callout && (
@@ -585,7 +585,7 @@ function LessonPage() {
       </TransitionPanel>
 
       {/* ------------------------------------------------------------ footer nav */}
-      <div className="chrome specular sticky bottom-24 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[22px] p-3 lg:bottom-4">
+      <div className="chrome specular sticky bottom-24 z-20 flex flex-wrap items-center justify-between gap-3 p-3 lg:bottom-4">
         <div className="relative flex items-center gap-2">
           <Button variant="ghost" size="sm" icon={ArrowLeft} disabled={sectionIndex === 0} onClick={() => setSection(ORDER[sectionIndex - 1])}>
             <span className="hidden sm:inline">{t('back')}</span>

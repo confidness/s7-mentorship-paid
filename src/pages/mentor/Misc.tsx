@@ -53,7 +53,7 @@ export function MentorCourses() {
                     {modules.map((m, i) => {
                       const ml = lessons.filter((l) => l.moduleId === m.id)
                       return (
-                        <li key={m.id} className="flex items-start gap-3 rounded-[16px] border edge fill-soft p-3">
+                        <li key={m.id} className="flex items-start gap-3 border edge fill-soft p-3">
                           <span className="grid h-7 w-7 shrink-0 place-items-center bg-gradient-to-b from-brand-400 to-accent-500 text-white text-xs font-bold">{i + 1}</span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-semibold text-ink-900">{m.title}</span>
@@ -76,7 +76,7 @@ export function MentorCourses() {
                         const p = courseProgress(state, u.id, course.id)
                         return (
                           <li key={u.id}>
-                            <Link to={`/m/students/${u.id}`} className="flex items-center gap-3 rounded-[16px] border edge fill-soft p-2.5 transition hover:border-brand-300 hover:bg-brand-50/40">
+                            <Link to={`/m/students/${u.id}`} className="flex items-center gap-3 border edge fill-soft p-2.5 transition hover:border-brand-300 hover:bg-brand-50/40">
                               <Avatar name={u.name} initials={u.avatar} size={30} />
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm font-semibold text-ink-900">{u.name}</span>
@@ -219,7 +219,7 @@ export function MentorCompetition() {
               {teams.map((team, i) => {
                 const coach = state.users.find((u) => u.id === team.coachId)
                 return (
-                  <li key={team.id} className="rounded-[16px] border edge fill-soft p-4">
+                  <li key={team.id} className="border edge fill-soft p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="flex items-center gap-2 text-sm font-bold text-ink-900">
                         <span className={`grid h-6 w-6 place-items-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
@@ -257,7 +257,7 @@ export function MentorCompetition() {
                 {tasks.map((task) => {
                   const team = state.teams.find((t) => t.id === task.teamId)
                   return (
-                    <li key={task.id} className="flex flex-wrap items-start gap-3 rounded-[16px] border edge fill-soft p-4">
+                    <li key={task.id} className="flex flex-wrap items-start gap-3 border edge fill-soft p-4">
                       <div className="min-w-[13rem] flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-bold text-ink-900">{task.title}</p>

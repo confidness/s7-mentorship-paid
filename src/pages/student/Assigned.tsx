@@ -170,7 +170,7 @@ export function AssignedLesson() {
           <a
             href={lesson.material.url}
             download={lesson.material.name}
-            className="mt-4 flex items-center gap-3 rounded-[14px] border edge fill px-4 py-3 transition hover:border-brand-300"
+            className="mt-4 flex items-center gap-3 border edge fill px-4 py-3 transition hover:border-brand-300"
           >
             <FileText size={20} className="shrink-0 text-brand-600" aria-hidden="true" />
             <span className="min-w-0 flex-1">
@@ -194,12 +194,12 @@ export function AssignedLesson() {
             {done.status === 'reviewed' && <Badge tone="brand">{t('plus_xp', { n: done.awardedXp ?? 0 })}</Badge>}
           </div>
           {done.feedback && (
-            <p className="mt-4 rounded-[14px] border border-brand-200/70 bg-brand-100/50 px-4 py-3 text-sm leading-relaxed text-brand-800">{done.feedback}</p>
+            <p className="mt-4 border border-brand-200/70 bg-brand-100/50 px-4 py-3 text-sm leading-relaxed text-brand-800">{done.feedback}</p>
           )}
 
           <ol className="mt-5 space-y-3">
             {lesson.tasks.map((task, i) => (
-              <li key={task.id} className="rounded-[16px] border edge fill-soft p-4">
+              <li key={task.id} className="border edge fill-soft p-4">
                 <Review task={task} index={i} value={done.answers.find((a) => a.taskId === task.id)?.value ?? ''} />
               </li>
             ))}
@@ -235,7 +235,7 @@ export function AssignedLesson() {
                                   role="radio"
                                   aria-checked={picked}
                                   onClick={() => setAnswers((a) => ({ ...a, [task.id]: String(oi) }))}
-                                  className={`flex w-full items-center gap-3 rounded-[14px] border px-4 py-3 text-left text-sm transition ${
+                                  className={`flex w-full items-center gap-3 border px-4 py-3 text-left text-sm transition ${
                                     picked ? 'border-brand-400 bg-brand-100/60 font-semibold text-brand-800' : 'edge fill text-ink-700 hover:border-brand-300'
                                   }`}
                                 >
@@ -279,7 +279,7 @@ export function AssignedLesson() {
             </Button>
           </Card>
           {error && (
-            <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+            <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
               {error}
             </p>
           )}
@@ -305,9 +305,9 @@ function Review({ task, index, value }: { task: CustomTask; index: number; value
           {!correct && <span className="block text-emerald-700">{t('correct_answer_was', { answer: (task.options ?? [])[task.answerIndex ?? 0] ?? '—' })}</span>}
         </p>
       ) : task.kind === 'code' ? (
-        <pre className="code-surface mt-2 overflow-x-auto rounded-[12px] p-3 font-mono text-xs whitespace-pre-wrap text-[#e2e8f0]">{value || t('left_blank')}</pre>
+        <pre className="code-surface mt-2 overflow-x-auto p-3 font-mono text-xs whitespace-pre-wrap text-[#e2e8f0]">{value || t('left_blank')}</pre>
       ) : (
-        <p className="mt-2 rounded-[12px] fill px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-ink-700">{value || t('left_blank')}</p>
+        <p className="mt-2 fill px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-ink-700">{value || t('left_blank')}</p>
       )}
     </>
   )

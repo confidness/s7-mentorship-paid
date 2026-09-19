@@ -85,7 +85,7 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => v
           end={item.end}
           onClick={onNavigate}
           className={({ isActive }) =>
-            `group flex items-center gap-3 rounded-[14px] px-3 py-2.5 text-sm font-semibold transition ${
+            `group flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition ${
               isActive ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.1),0_8px_18px_-10px_rgb(11_18_32/0.4)]' : 'text-ink-600 hover:fill-soft hover:text-ink-900'
             }`
           }
@@ -126,7 +126,7 @@ function NotificationBell() {
       {open && (
         <>
           <button className="fixed inset-0 z-40 cursor-default" aria-label={t('close_notifications')} onClick={() => setOpen(false)} />
-          <div className="animate-rise chrome specular absolute right-0 z-50 mt-2.5 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[24px]">
+          <div className="animate-rise chrome specular absolute right-0 z-50 mt-2.5 w-[min(22rem,calc(100vw-2rem))] overflow-hidden">
             <div className="relative flex items-center justify-between border-b edge px-4 py-3">
               <p className="text-sm font-bold text-ink-900">{t('notifications')}</p>
               {unread > 0 && (
@@ -183,24 +183,24 @@ function UserMenu() {
       {open && (
         <>
           <button className="fixed inset-0 z-40 cursor-default" aria-label={t('close_menu')} onClick={() => setOpen(false)} />
-          <div className="animate-rise chrome specular absolute right-0 z-50 mt-2.5 w-64 overflow-hidden rounded-[24px]">
+          <div className="animate-rise chrome specular absolute right-0 z-50 mt-2.5 w-64 overflow-hidden">
             <div className="relative border-b edge px-4 py-3">
               <p className="text-sm font-bold text-ink-900">{user.name}</p>
               <p className="truncate text-xs text-ink-500">{user.email}</p>
             </div>
             <div className="relative p-2">
-              <Link to={user.role === 'mentor' ? '/m/settings' : '/profile'} onClick={() => setOpen(false)} className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
+              <Link to={user.role === 'mentor' ? '/m/settings' : '/profile'} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
                 <UserIcon size={16} aria-hidden="true" />{t('profile')}</Link>
-              <div className="flex items-center justify-between gap-2 rounded-[12px] px-3 py-2 md:hidden">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 md:hidden">
                 <span className="text-sm font-medium text-ink-700">{t('language')}</span>
                 <LocaleToggle compact />
               </div>
-              <div className="flex items-center justify-between gap-2 rounded-[12px] px-3 py-2 sm:hidden">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 sm:hidden">
                 <span className="text-sm font-medium text-ink-700">{t('theme')}</span>
                 <ThemeToggle compact />
               </div>
               <button
-                className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50/80"
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50/80"
                 onClick={() => {
                   logout()
                   navigate('/login')
@@ -244,7 +244,7 @@ function SidebarFooter() {
     const group = state.groups.find((g) => g.mentorId === user.id)
     if (!group) return null
     return (
-      <div className="rounded-[18px] fill p-4 ring-1 rim">
+      <div className="fill p-4 ring-1 rim">
         <p className="flex items-center gap-2 text-xs font-bold text-ink-900">
           <CalendarClock size={14} className="text-brand-500" aria-hidden="true" />{t('next_session')}</p>
         <p className="mt-1.5 text-xs leading-relaxed text-ink-600">
@@ -256,7 +256,7 @@ function SidebarFooter() {
   if (!profile) return null
   const lv = levelFor(profile.xp)
   return (
-    <div className="rounded-[18px] fill p-4 ring-1 rim">
+    <div className="fill p-4 ring-1 rim">
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold text-ink-900">{localizeLevelName(lv.level.name)}</p>
         <p className="text-xs font-semibold text-brand-600 tabular-nums"><AnimatedNumber value={profile.xp} /> XP</p>
@@ -289,7 +289,7 @@ export default function Layout() {
       <LiquidMetalBackground depth="app" />
 
       {/* floating rail */}
-      <aside className="chrome specular fixed top-4 bottom-4 left-4 z-40 hidden w-60 flex-col justify-between rounded-[26px] px-3.5 py-5 lg:flex">
+      <aside className="chrome specular fixed top-4 bottom-4 left-4 z-40 hidden w-60 flex-col justify-between px-3.5 py-5 lg:flex">
         <div className="relative">
           <Link to={user?.role === 'mentor' ? '/m' : '/'} className="mb-7 block px-1">
             <Logo />
@@ -341,7 +341,7 @@ export default function Layout() {
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button className="absolute inset-0 bg-ink-950/25 backdrop-blur-md" onClick={() => setDrawer(false)} aria-label={t('close_navigation')} />
-          <div className="animate-rise chrome specular absolute top-3 bottom-3 left-3 flex w-[16.5rem] flex-col justify-between rounded-[26px] px-3.5 py-5">
+          <div className="animate-rise chrome specular absolute top-3 bottom-3 left-3 flex w-[16.5rem] flex-col justify-between px-3.5 py-5">
             <div className="relative">
               <div className="mb-7 flex items-center justify-between px-1">
                 <Logo />
@@ -360,14 +360,14 @@ export default function Layout() {
 
       {/* mobile bottom bar */}
       <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 lg:hidden" aria-label={t('primary')}>
-        <div className="chrome specular grid grid-cols-5 rounded-[24px] px-1 py-1">
+        <div className="chrome specular grid grid-cols-5 px-1 py-1">
           {mobilePrimary.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `relative flex flex-col items-center gap-1 rounded-[18px] py-2 text-[11px] font-semibold transition ${
+                `relative flex flex-col items-center gap-1 py-2 text-[11px] font-semibold transition ${
                   isActive ? 'fill-strong text-brand-600 shadow-[0_1px_2px_rgb(11_18_32/0.1)]' : 'text-ink-500'
                 }`
               }
@@ -376,7 +376,7 @@ export default function Layout() {
               {t(item.short ?? item.label)}
             </NavLink>
           ))}
-          <button className="relative flex flex-col items-center gap-1 rounded-[18px] py-2 text-[11px] font-semibold text-ink-500" onClick={() => setDrawer(true)}>
+          <button className="relative flex flex-col items-center gap-1 py-2 text-[11px] font-semibold text-ink-500" onClick={() => setDrawer(true)}>
             <ChevronRight size={19} aria-hidden="true" />
             {t('more')}
           </button>

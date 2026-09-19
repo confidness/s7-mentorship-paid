@@ -73,7 +73,7 @@ export default function SerialTerminal({ code, canRun = false }: { code?: string
 
   if (!supported) {
     return (
-      <div className="rounded-[18px] border border-amber-200 bg-amber-50/60 p-4">
+      <div className="border border-amber-200 bg-amber-50/60 p-4">
         <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
           <AlertTriangle size={15} aria-hidden="true" />
           {t('this_browser_cannot_talk_to_a_board')}
@@ -84,7 +84,7 @@ export default function SerialTerminal({ code, canRun = false }: { code?: string
   }
 
   return (
-    <div className="overflow-hidden rounded-[18px] border edge">
+    <div className="overflow-hidden border edge">
       <div className="flex flex-wrap items-center gap-2 border-b edge fill-soft px-4 py-3">
         <span className="flex items-center gap-2 text-sm font-bold text-ink-900">
           <Usb size={15} className={open ? 'text-emerald-600' : 'text-ink-500'} aria-hidden="true" />

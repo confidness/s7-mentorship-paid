@@ -133,7 +133,7 @@ export default function MyLearning() {
           <ul className="grid gap-2 sm:grid-cols-2">
             {completed.map((l) => (
               <li key={l.id}>
-                <Link to={`/learn/${l.courseId}/${l.id}`} className="flex items-center gap-3 rounded-[16px] border edge fill-soft p-3 transition hover:border-brand-300 hover:bg-brand-50/40">
+                <Link to={`/learn/${l.courseId}/${l.id}`} className="flex items-center gap-3 border edge fill-soft p-3 transition hover:border-brand-300 hover:bg-brand-50/40">
                   <CheckCircle2 size={17} className="shrink-0 text-emerald-500" aria-hidden="true" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-ink-900">{l.title}</span>

@@ -31,15 +31,15 @@ export function levelFor(xp: number) {
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first-robot', name: 'First Robot', description: 'Completed your very first lesson', icon: 'Bot', xp: 50, tier: 'bronze', hint: 'Finish any lesson' },
+  { id: 'first-robot', name: 'First Lesson', description: 'Finished your very first lesson', icon: 'BookOpen', xp: 50, tier: 'bronze', hint: 'Finish any lesson' },
   { id: 'first-project', name: 'First Project', description: 'Submitted your first project for review', icon: 'Rocket', xp: 75, tier: 'bronze', hint: 'Submit a project' },
-  { id: 'sensor-master', name: 'Sensor Master', description: 'Completed three lessons that use sensors', icon: 'Radar', xp: 150, tier: 'silver', hint: 'Complete 3 sensor lessons' },
-  { id: 'code-explorer', name: 'Code Explorer', description: 'Passed the automatic code check', icon: 'Code2', xp: 100, tier: 'bronze', hint: 'Pass Auto Code Check in the editor' },
-  { id: 'streak-7', name: '7 Day Streak', description: 'Practised robotics 7 days in a row', icon: 'Flame', xp: 120, tier: 'silver', hint: 'Keep a 7 day streak' },
-  { id: 'approved-builder', name: 'Approved Builder', description: 'A mentor approved one of your projects', icon: 'BadgeCheck', xp: 150, tier: 'silver', hint: 'Get a project approved' },
+  { id: 'sensor-master', name: 'Getting Somewhere', description: 'Finished three lessons', icon: 'Layers', xp: 150, tier: 'silver', hint: 'Complete 3 sensor lessons' },
+  { id: 'code-explorer', name: 'Self-Checked', description: 'Passed an automatic check before handing in', icon: 'CircleCheck', xp: 100, tier: 'bronze', hint: 'Pass Auto Code Check in the editor' },
+  { id: 'streak-7', name: '7 Day Streak', description: 'Showed up seven days in a row', icon: 'Flame', xp: 120, tier: 'silver', hint: 'Keep a 7 day streak' },
+  { id: 'approved-builder', name: 'Signed Off', description: 'A mentor approved one of your projects', icon: 'BadgeCheck', xp: 150, tier: 'silver', hint: 'Get a project approved' },
   { id: 'challenge-hunter', name: 'Challenge Hunter', description: 'Completed three lesson challenges', icon: 'Target', xp: 130, tier: 'silver', hint: 'Complete 3 challenges' },
-  { id: 'module-master', name: 'Module Master', description: 'Finished every lesson in a module', icon: 'Layers', xp: 200, tier: 'gold', hint: 'Complete a full module' },
-  { id: 'competition-ready', name: 'Competition Ready', description: 'Joined a team and reached Engineer level', icon: 'Trophy', xp: 250, tier: 'gold', hint: 'Join a team and reach Engineer' },
+  { id: 'module-master', name: 'Course Finisher', description: 'Finished every lesson a mentor set', icon: 'Trophy', xp: 200, tier: 'gold', hint: 'Complete a full module' },
+  { id: 'competition-ready', name: 'Team Player', description: 'Joined a team and reached the third level', icon: 'Users', xp: 250, tier: 'gold', hint: 'Join a team and reach Engineer' },
   { id: 'mentor-favourite', name: 'Mentor Favourite', description: 'Collected three mentor reviews', icon: 'MessageSquareHeart', xp: 120, tier: 'silver', hint: 'Receive 3 mentor reviews' },
 ]
 

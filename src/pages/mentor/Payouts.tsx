@@ -93,11 +93,11 @@ export default function Payouts() {
         />
 
         {ready ? (
-          <p className="rounded-[14px] border border-emerald-300/60 bg-emerald-100/50 px-3.5 py-3 text-sm font-medium text-emerald-800">
+          <p className="border border-emerald-300/60 bg-emerald-100/50 px-3.5 py-3 text-sm font-medium text-emerald-800">
             {t('stripe_is_accepting_charges_for_your_account')}
           </p>
         ) : (
-          <p className="rounded-[14px] border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
+          <p className="border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
             {status?.connected ? t('stripe_still_needs_something_from_you') : t('you_have_not_connected_an_account_yet')}
           </p>
         )}
@@ -113,7 +113,7 @@ export default function Payouts() {
         ) : null}
 
         {error && (
-          <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+          <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
             {error}
           </p>
         )}

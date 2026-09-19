@@ -48,7 +48,7 @@ function DocField({
   return (
     <Field label={label} hint={hint} error={error}>
       {value ? (
-        <div className="flex items-center gap-3 rounded-[14px] fill-soft px-3.5 py-3">
+        <div className="flex items-center gap-3 fill-soft px-3.5 py-3">
           <FileText size={16} className="shrink-0 text-ink-500" aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800">{value.name}</span>
           <button type="button" onClick={onClear} className="p-1 text-ink-500 transition hover:text-ink-900" aria-label={t('remove')}>
@@ -73,7 +73,7 @@ function DocField({
             type="button"
             disabled={busy}
             onClick={() => ref.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-dashed edge fill-soft px-4 py-6 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 border border-dashed edge fill-soft px-4 py-6 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700 disabled:opacity-60"
           >
             <Upload size={16} aria-hidden="true" />
             {busy ? t('uploading') : t('upload_a_document')}
@@ -240,10 +240,10 @@ export default function MentorApply() {
 
           {/* Said plainly, because the request is unusual and the answer should not be buried
               in a policy page nobody opens. */}
-          <p className="rounded-[14px] fill-soft px-3.5 py-3 text-xs leading-relaxed text-ink-600">{t('documents_are_stored_privately_and_shown_only_to_reviewers')}</p>
+          <p className="fill-soft px-3.5 py-3 text-xs leading-relaxed text-ink-600">{t('documents_are_stored_privately_and_shown_only_to_reviewers')}</p>
 
           {errors.form && (
-            <p role="alert" className="rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+            <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
               {errors.form}
             </p>
           )}

@@ -168,8 +168,8 @@ export default function ProjectDetail() {
                   </figure>
                 ))}
                 {videos.map((a) => (
-                  <div key={a.id} className="flex items-center gap-3 rounded-[16px] border edge fill-soft p-3">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-brand-400 to-accent-500 text-white">
+                  <div key={a.id} className="flex items-center gap-3 border edge fill-soft p-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center bg-gradient-to-b from-brand-400 to-accent-500 text-white">
                       <Film size={17} aria-hidden="true" />
                     </span>
                     <span className="min-w-0">

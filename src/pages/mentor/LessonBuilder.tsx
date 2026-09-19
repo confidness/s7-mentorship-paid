@@ -153,7 +153,7 @@ export default function LessonBuilder() {
 
         <Field label={t('teaching_material')} error={errors.material} hint={t('pdf_or_word_up_to_n_mb', { n: 4 })}>
           {material ? (
-            <div className="flex items-center gap-3 rounded-[14px] border edge fill px-4 py-3">
+            <div className="flex items-center gap-3 border edge fill px-4 py-3">
               <FileText size={18} className="shrink-0 text-brand-600" aria-hidden="true" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-ink-900">{material.name}</span>
@@ -181,7 +181,7 @@ export default function LessonBuilder() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-dashed edge fill-soft px-4 py-6 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700"
+                className="flex w-full items-center justify-center gap-2 border border-dashed edge fill-soft px-4 py-6 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700"
               >
                 <Upload size={16} aria-hidden="true" />
                 {t('upload_pdf_or_word')}
@@ -203,7 +203,7 @@ export default function LessonBuilder() {
                 key={String(isPaid)}
                 onClick={() => setPaid(isPaid)}
                 aria-pressed={paid === isPaid}
-                className={`rounded-[16px] px-4 py-3 text-sm font-semibold transition ${
+                className={`px-4 py-3 text-sm font-semibold transition ${
                   paid === isPaid ? 'bg-brand-100/80 text-brand-700 ring-2 ring-brand-400' : 'fill text-ink-600 ring-1 rim hover:fill-strong'
                 }`}
               >
@@ -228,7 +228,7 @@ export default function LessonBuilder() {
 
             {/* What they actually take home, shown before they publish rather than discovered
                 on the first payout. */}
-            <p id="price-split" className="rounded-[14px] fill-soft px-3.5 py-3 text-sm text-ink-600">
+            <p id="price-split" className="fill-soft px-3.5 py-3 text-sm text-ink-600">
               {priceCents > 0
                 ? t('you_receive_x_of_y_after_the_platform_fee', {
                     you: formatMoney(mentorShare(priceCents), currency, locale),
@@ -238,7 +238,7 @@ export default function LessonBuilder() {
             </p>
 
             {!canSellPaid && (
-              <p role="status" className="rounded-[14px] border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
+              <p role="status" className="border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
                 {standing.mentorStatus !== 'approved' ? t('paid_lessons_need_an_approved_mentor_account') : t('connect_a_payout_account_before_selling')}{' '}
                 <Link to="/m/payouts" className="underline underline-offset-2">
                   {t('set_up_payouts')}
@@ -257,7 +257,7 @@ export default function LessonBuilder() {
         />
 
         {errors.tasks && (
-          <p role="alert" className="mt-3 rounded-[14px] border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+          <p role="alert" className="mt-3 border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
             {errors.tasks}
           </p>
         )}
@@ -266,7 +266,7 @@ export default function LessonBuilder() {
           {tasks.map((task, i) => {
             const meta = KINDS.find((k) => k.kind === task.kind)!
             return (
-              <li key={task.id} className="rounded-[18px] border edge fill-soft p-4">
+              <li key={task.id} className="border edge fill-soft p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-bold text-ink-900">{t('question_n', { n: i + 1 })}</span>
                   <span className="inline-flex items-center gap-1.5 bg-brand-100/80 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 rim ring-inset">
@@ -378,7 +378,7 @@ export default function LessonBuilder() {
         </ul>
 
         {tasks.length === 0 && (
-          <p className="mt-4 rounded-[16px] border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_questions_yet_pick_a_type_below')}</p>
+          <p className="mt-4 border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_questions_yet_pick_a_type_below')}</p>
         )}
 
         <div className="mt-5 flex flex-wrap gap-2">

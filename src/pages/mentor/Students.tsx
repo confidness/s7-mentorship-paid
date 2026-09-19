@@ -140,7 +140,7 @@ function StudentDetail({ id }: { id: string }) {
             </p>
           </div>
           {profile && (
-            <div className="rounded-[18px] fill-strong px-5 py-3 text-center ring-1 rim">
+            <div className="fill-strong px-5 py-3 text-center ring-1 rim">
               <p className="text-[26px] leading-none font-bold text-ink-900 tabular-nums">{formatNumber(profile.xp)}</p>
               <p className="mt-1 text-xs text-ink-500">{t('total_xp')}</p>
             </div>

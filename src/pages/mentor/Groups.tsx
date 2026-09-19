@@ -103,7 +103,7 @@ export default function MentorGroups() {
                 <div className="p-5">
                   <SectionHeading title={t('roster')} subtitle={t('tap_a_student_for_the_full_profile')} />
                   {members.length === 0 && (
-                    <p className="rounded-[16px] border border-dashed edge px-4 py-6 text-center text-sm text-ink-500">{t('nobody_in_this_group_yet')}</p>
+                    <p className="border border-dashed edge px-4 py-6 text-center text-sm text-ink-500">{t('nobody_in_this_group_yet')}</p>
                   )}
                   <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {members.map((m) => {
@@ -111,7 +111,7 @@ export default function MentorGroups() {
                       const p = courseProgress(state, m.id, group.courseId)
                       return (
                         <li key={m.id}>
-                          <Link to={`/m/students/${m.id}`} className="flex items-center gap-3 rounded-[16px] border edge fill-soft p-3 transition hover:border-brand-300 hover:bg-brand-50/40">
+                          <Link to={`/m/students/${m.id}`} className="flex items-center gap-3 border edge fill-soft p-3 transition hover:border-brand-300 hover:bg-brand-50/40">
                             <Avatar name={m.name} initials={m.avatar} size={36} />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-semibold text-ink-900">{m.name}</span>

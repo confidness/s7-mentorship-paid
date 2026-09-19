@@ -306,7 +306,7 @@ export default function Dashboard() {
           {/* ai mentor */}
           <Card className="overflow-hidden">
             <div className="tint-accent relative p-5">
-              <span className="grid h-11 w-11 place-items-center rounded-[14px] fill-strong shadow-[var(--shadow-soft)]">
+              <span className="grid h-11 w-11 place-items-center fill-strong shadow-[var(--shadow-soft)]">
                 <Bot size={20} className="text-accent-600" aria-hidden="true" />
               </span>
               <h3 className="mt-3.5 text-base font-bold tracking-[-0.02em] text-ink-900">{t('stuck_on_something')}</h3>

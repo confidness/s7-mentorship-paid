@@ -238,7 +238,7 @@ export function VirtualLab() {
 
       <div className="grid gap-5 p-5 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <svg viewBox="0 0 480 220" className="code-surface w-full rounded-[16px]" role="img" aria-label={t('simulation_label', { distance, state: ledOn ? t('on_state') : t('off_state') })}>
+          <svg viewBox="0 0 480 220" className="code-surface w-full" role="img" aria-label={t('simulation_label', { distance, state: ledOn ? t('on_state') : t('off_state') })}>
             <g opacity="0.35">
               {Array.from({ length: 16 }, (_, i) => (
                 <line key={i} x1={i * 30} y1="0" x2={i * 30} y2="220" stroke="#1e293b" />
@@ -290,7 +290,7 @@ export function VirtualLab() {
         </div>
 
         <div className="space-y-3">
-          <div className="code-surface rounded-[16px] p-3.5 font-mono text-xs leading-relaxed text-emerald-300">
+          <div className="code-surface p-3.5 font-mono text-xs leading-relaxed text-emerald-300">
             <p className="mb-2 flex items-center gap-1.5 text-[#94a3b8]">
               <Radio size={12} aria-hidden="true" /> {t('serial_monitor_baud')}
             </p>

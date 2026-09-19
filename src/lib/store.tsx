@@ -384,7 +384,7 @@ function ToastViewport({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id:
   return (
     <div className="pointer-events-none fixed inset-x-3 top-3 z-[60] flex flex-col items-center gap-2 sm:inset-x-auto sm:top-24 sm:right-6 sm:items-end" role="status" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={`animate-toast chrome specular pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[20px] p-4 ring-1 ${tone[t.tone]}`}>
+        <div key={t.id} className={`animate-toast chrome specular pointer-events-auto flex w-full max-w-sm items-start gap-3 p-4 ring-1 ${tone[t.tone]}`}>
           <span className={`mt-1.5 h-2 w-2 shrink-0 ${dot[t.tone]}`} />
           <div className="relative min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink-900">{t.title}</p>

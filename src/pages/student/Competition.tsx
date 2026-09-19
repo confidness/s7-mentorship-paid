@@ -88,7 +88,7 @@ export default function Competition() {
                 </span>
               </p>
             </div>
-            <div className="rounded-[18px] fill-strong px-5 py-3 text-center ring-1 rim">
+            <div className="fill-strong px-5 py-3 text-center ring-1 rim">
               <p className="text-[30px] leading-none font-bold text-ink-900 tabular-nums">{daysToGo}</p>
               <p className="mt-1 text-xs text-ink-500">{t('days_to_go')}</p>
             </div>

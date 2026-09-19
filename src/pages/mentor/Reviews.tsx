@@ -60,7 +60,7 @@ export default function MentorReviews() {
               <AnimatedItem as="li" key={p.id}>
                 <Card className="card-hover overflow-hidden">
                   <Link to={`/m/reviews/${p.id}`} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-                    <div className="h-24 w-full shrink-0 overflow-hidden rounded-[16px] sm:h-20 sm:w-28">
+                    <div className="h-24 w-full shrink-0 overflow-hidden sm:h-20 sm:w-28">
                       {cover ? (
                         <img src={cover.url} alt="" className="h-full w-full object-cover" loading="lazy" />
                       ) : (
