@@ -34,7 +34,7 @@ export default function MentorDashboard() {
   }
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <section className="card specular tint-blue relative overflow-hidden p-6 sm:p-8">
         <div className="relative flex flex-wrap items-end justify-between gap-5">
           <div>

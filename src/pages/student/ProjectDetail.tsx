@@ -27,7 +27,7 @@ export default function ProjectDetail() {
   const videos = project.attachments.filter((a) => a.kind === 'video')
 
   return (
-    <div className="animate-rise space-y-5">
+    <div className="space-y-5">
       <Link to={isMine ? '/projects' : '/gallery'} className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition hover:text-ink-900">
         <ArrowLeft size={15} aria-hidden="true" /> {isMine ? t('my_projects') : t('gallery')}
       </Link>

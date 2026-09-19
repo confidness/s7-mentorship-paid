@@ -7,6 +7,7 @@ import { Avatar, Badge, Card, EmptyState, SkeletonCard, Tabs, STATUS_LABEL, STAT
 import { relativeTime } from '../../lib/hooks'
 import { useLoaded } from '../../lib/hooks'
 import { t } from '../../i18n'
+import { AnimatedGroup, AnimatedItem } from '../../components/motion'
 
 export default function MentorReviews() {
   const { state } = useApp()
@@ -18,7 +19,7 @@ export default function MentorReviews() {
   const list = tab === 'queue' ? queue : done
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('project_reviews')}</h1>
@@ -49,14 +50,14 @@ export default function MentorReviews() {
           body={tab === 'queue' ? t('every_submission_has_been_handled_new_ones_land_') : t('once_you_approve_or_return_a_project_it_will_be_')}
         />
       ) : (
-        <ul className="space-y-3">
+        <AnimatedGroup as="ul" className="space-y-3">
           {list.map((p) => {
             const author = state.users.find((u) => u.id === p.authorId)
             const lesson = state.lessons.find((l) => l.id === p.lessonId)
             const course = state.courses.find((c) => c.id === p.courseId)
             const cover = p.attachments.find((a) => a.kind === 'image')
             return (
-              <li key={p.id}>
+              <AnimatedItem as="li" key={p.id}>
                 <Card className="card-hover overflow-hidden">
                   <Link to={`/m/reviews/${p.id}`} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                     <div className="h-24 w-full shrink-0 overflow-hidden rounded-[16px] sm:h-20 sm:w-28">
@@ -97,10 +98,10 @@ export default function MentorReviews() {
                     </span>
                   </Link>
                 </Card>
-              </li>
+              </AnimatedItem>
             )
           })}
-        </ul>
+        </AnimatedGroup>
       )}
     </div>
   )

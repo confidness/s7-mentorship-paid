@@ -45,7 +45,7 @@ export default function Achievements() {
   const history = state.xp.filter((t) => t.userId === user.id).slice(0, 12)
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header>
         <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('achievements_progress')}</h1>
         <p className="mt-1 text-sm text-ink-500">{t('experience_is_awarded_for_finished_lessons_compl')}</p>

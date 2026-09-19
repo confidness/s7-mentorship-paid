@@ -31,7 +31,7 @@ export default function MentorGroups() {
   })
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('groups')}</h1>

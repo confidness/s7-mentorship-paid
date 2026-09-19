@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AlertTriangle, ArrowLeft, ArrowRight, Bot, Check, CheckCircle2, ChevronRight, CircuitBoard, Code2, Cpu, FlaskConical, Info, Lightbulb, ListChecks, Lock, PlayCircle,
@@ -18,6 +18,7 @@ import AiMentorPanel from '../../components/AiMentorPanel'
 import NotFound from '../NotFound'
 import { t } from '../../i18n'
 import { localizeDifficulty } from '../../i18n/content'
+import { TransitionPanel } from '../../components/motion'
 
 type Section = 'theory' | 'components' | 'wiring' | 'code' | 'task' | 'challenge'
 const ORDER: Section[] = ['theory', 'components', 'wiring', 'code', 'task', 'challenge']
@@ -44,6 +45,8 @@ function LessonPage() {
   const navigate = useNavigate()
 
   const [section, setSection] = useState<Section>('theory')
+  // Which way the student is moving, so a panel enters from the side it came from.
+  const seenIndex = useRef(0)
   const [checked, setChecked] = useState<string[]>([])
   const [report, setReport] = useState<CheckReport | null>(null)
   const [running, setRunning] = useState(false)
@@ -62,7 +65,7 @@ function LessonPage() {
 
   if (!isLessonUnlocked(state, user.id, lesson.id)) {
     return (
-      <div className="animate-rise mx-auto max-w-lg py-10">
+      <div className="mx-auto max-w-lg py-10">
         <EmptyState
           icon={Lock}
           title={t('this_lesson_is_still_locked')}
@@ -87,6 +90,10 @@ function LessonPage() {
   const checkPassed = lesson.checks.length === 0 || profile.passedCheckLessonIds.includes(lesson.id)
   const next = nextLessonAfter(state, lesson.id)
   const sectionIndex = ORDER.indexOf(section)
+  const direction = sectionIndex >= seenIndex.current ? 1 : -1
+  useEffect(() => {
+    seenIndex.current = sectionIndex
+  }, [sectionIndex])
   const allRequirementsChecked = checked.length === lesson.task.requirements.length
 
   function runCodeCheck() {
@@ -125,7 +132,7 @@ function LessonPage() {
   })()
 
   return (
-    <div className="animate-rise space-y-5 pb-20 lg:pb-0">
+    <div className="space-y-5 pb-20 lg:pb-0">
       {/* breadcrumb */}
       <nav aria-label={t('breadcrumb')} className="flex flex-wrap items-center gap-1.5 text-sm text-ink-500">
         <Link to="/courses" className="transition hover:text-ink-900">
@@ -214,6 +221,7 @@ function LessonPage() {
         </Button>
       </div>
 
+      <TransitionPanel index={sectionIndex} direction={direction}>
       {/* ------------------------------------------------------------ theory */}
       {section === 'theory' && (
         <div className="space-y-4">
@@ -539,7 +547,7 @@ function LessonPage() {
               {lesson.challenge.hints.map((hint, i) => (
                 <li key={hint}>
                   {i < hintsOpen ? (
-                    <p className="animate-rise rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{hint}</p>
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{hint}</p>
                   ) : i === hintsOpen ? (
                     <button onClick={() => setHintsOpen(i + 1)} className="w-full rounded-xl border border-dashed edge px-4 py-3 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700">
                       {t('reveal_hint_n', { n: i + 1, total: lesson.challenge.hints.length })}
@@ -573,6 +581,8 @@ function LessonPage() {
           </div>
         </Card>
       )}
+
+      </TransitionPanel>
 
       {/* ------------------------------------------------------------ footer nav */}
       <div className="chrome specular sticky bottom-24 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[22px] p-3 lg:bottom-4">

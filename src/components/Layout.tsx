@@ -11,9 +11,10 @@ import { Avatar, Badge, ProgressBar } from './ui'
 import ThemeToggle from './ThemeToggle'
 import LocaleToggle from './LocaleToggle'
 import type { LucideIcon } from 'lucide-react'
-import { t, formatNumber, formatDate } from '../i18n'
+import { t, formatDate } from '../i18n'
 import { Mark } from './Mark'
 import LiquidMetalBackground from './LiquidMetalBackground'
+import { AnimatedNumber, PageTransition } from './motion'
 import { localizeLevelName } from '../i18n/content'
 
 interface NavItem {
@@ -225,7 +226,7 @@ function XpPill() {
         <Zap size={15} aria-hidden="true" />
       </span>
       <span className="leading-tight">
-        <span className="block text-xs font-bold text-ink-900 tabular-nums">{formatNumber(profile.xp)} XP</span>
+        <span className="block text-xs font-bold text-ink-900 tabular-nums"><AnimatedNumber value={profile.xp} /> XP</span>
         <span className="block text-[11px] text-ink-500">{localizeLevelName(lv.level.name)}</span>
       </span>
       <span className="w-16">
@@ -258,7 +259,7 @@ function SidebarFooter() {
     <div className="rounded-[18px] fill p-4 ring-1 rim">
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold text-ink-900">{localizeLevelName(lv.level.name)}</p>
-        <p className="text-xs font-semibold text-brand-600 tabular-nums">{formatNumber(profile.xp)} XP</p>
+        <p className="text-xs font-semibold text-brand-600 tabular-nums"><AnimatedNumber value={profile.xp} /> XP</p>
       </div>
       <div className="mt-2.5">
         <ProgressBar value={lv.percent} size="sm" tone="amber" label={t('level_progress')} />
@@ -328,7 +329,11 @@ export default function Layout() {
         </header>
 
         <main className="mx-auto max-w-7xl px-4 pt-6 pb-32 sm:px-6 lg:pb-12">
-          <Outlet />
+          {/* Replaces `.animate-rise` on every page root: the same movement in one place, and
+              the outgoing screen can leave rather than vanish. */}
+          <PageTransition routeKey={location.pathname}>
+            <Outlet />
+          </PageTransition>
         </main>
       </div>
 

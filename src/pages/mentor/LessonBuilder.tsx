@@ -214,7 +214,7 @@ export default function LessonBuilder() {
         </fieldset>
 
         {paid && (
-          <div className="animate-rise space-y-4">
+          <div className="space-y-4">
             <Field label={t('price')} required error={errors.price} hint={t('students_pay_once_and_keep_access')}>
               <input
                 className={inputClass}

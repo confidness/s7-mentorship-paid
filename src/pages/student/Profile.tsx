@@ -24,7 +24,7 @@ export default function Profile() {
   const unlocked = state.achievements.filter((a) => profile.unlockedAchievementIds.includes(a.id))
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <Card className="overflow-hidden">
         <div className="surface-grid h-28 bg-gradient-to-br from-brand-600 to-accent-600" aria-hidden="true" />
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">

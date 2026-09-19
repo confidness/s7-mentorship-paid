@@ -49,7 +49,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       {/* hero */}
       <section className="card specular tint-blue relative overflow-hidden p-6 sm:p-8">
         <div className="relative flex flex-wrap items-start justify-between gap-6">

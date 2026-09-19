@@ -31,7 +31,7 @@ export default function CourseDetail() {
   const courseProjects = state.projects.filter((p) => p.courseId === course.id && p.status === 'approved')
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <Link to="/courses" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition hover:text-ink-900">
         <ArrowLeft size={15} aria-hidden="true" />{t('all_courses')}</Link>
 

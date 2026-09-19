@@ -17,7 +17,7 @@ export function MentorCourses() {
   const roster = students(state)
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header>
         <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('courses')}</h1>
         <p className="mt-1 text-sm text-ink-500">{t('the_curriculum_you_teach_from_with_live_enrolmen')}</p>
@@ -115,7 +115,7 @@ export function MentorCompetition() {
   const competition = state.competitions.find((c) => c.id === picked) ?? state.competitions[0]
   if (!competition) {
     return (
-      <div className="animate-rise space-y-6">
+      <div className="space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('events')}</h1>
@@ -135,7 +135,7 @@ export function MentorCompetition() {
   const board = leaderboard(state).slice(0, 6)
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {state.competitions.map((c) => (
@@ -343,7 +343,7 @@ export function MentorSettings() {
   const groups = state.groups.filter((g) => g.mentorId === user.id)
 
   return (
-    <div className="animate-rise max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <header>
         <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('settings')}</h1>
         <p className="mt-1 text-sm text-ink-500">{t('your_mentor_account_and_the_data_stored_in_this_')}</p>

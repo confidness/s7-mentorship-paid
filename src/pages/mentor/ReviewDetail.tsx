@@ -72,7 +72,7 @@ export default function ReviewDetail() {
   }
 
   return (
-    <div className="animate-rise space-y-5">
+    <div className="space-y-5">
       <Link to="/m/reviews" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition hover:text-ink-900">
         <ArrowLeft size={15} aria-hidden="true" />{t('review_queue')}</Link>
 

@@ -17,7 +17,7 @@ export default function MyLearning() {
   const totalMinutes = completed.reduce((a, l) => a + l.minutes, 0)
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header>
         <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('my_learning')}</h1>
         <p className="mt-1 text-sm text-ink-500">{t('your_enrolled_tracks_where_you_stopped_and_what_')}</p>

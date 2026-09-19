@@ -32,7 +32,7 @@ export default function Competition() {
   const competition = state.competitions.find((c) => c.id === picked) ?? state.competitions[0]
   if (!competition) {
     return (
-      <div className="animate-rise space-y-6">
+      <div className="space-y-6">
         <header>
           <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('competition')}</h1>
           <p className="mt-1 text-sm text-ink-500">{t('events_your_academy_is_running')}</p>
@@ -49,7 +49,7 @@ export default function Competition() {
   const daysToGo = Math.max(0, Math.ceil((new Date(competition.startsAt).getTime() - Date.now()) / 86_400_000))
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       {state.competitions.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {state.competitions.map((c) => (

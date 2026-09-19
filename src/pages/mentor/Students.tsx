@@ -29,7 +29,7 @@ function StudentList() {
     })
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('students')}</h1>
@@ -114,7 +114,7 @@ function StudentDetail({ id }: { id: string }) {
   const lessons = state.lessons.filter((l) => profile?.completedLessonIds.includes(l.id))
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <Link to="/m/students" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition hover:text-ink-900">
         <ArrowLeft size={15} aria-hidden="true" />{t('all_students')}</Link>
 

@@ -16,7 +16,7 @@ export default function Settings() {
   const profile = profileOf(state, user.id)!
 
   return (
-    <div className="animate-rise max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <header>
         <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('settings')}</h1>
         <p className="mt-1 text-sm text-ink-500">{t('your_account_the_track_you_are_following_and_you')}</p>

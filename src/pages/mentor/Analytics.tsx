@@ -95,7 +95,7 @@ export default function MentorAnalytics() {
   const maxCompleted = Math.max(1, ...byCourse.map((b) => b.completed))
 
   return (
-    <div className="animate-rise space-y-6">
+    <div className="space-y-6">
       <header>
         <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('analytics')}</h1>
         <p className="mt-1 text-sm text-ink-500">{t('how_the_academy_is_moving_engagement_completion_')}</p>
