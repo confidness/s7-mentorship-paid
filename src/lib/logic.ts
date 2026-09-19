@@ -426,7 +426,7 @@ export function submitLessonAnswers(s: AppState, studentId: string, lessonId: st
 
   if (selfMarking) {
     const earned = submission.awardedXp ?? 0
-    if (earned > 0) next = awardXp(next, studentId, earned, 'xp_assignment_completed', 'lesson', lessonId, { title: lesson.title })
+    if (earned > 0) next = awardXp(next, studentId, earned, 'xp_assignment_completed', 'assignment', lessonId, { title: lesson.title })
     next = notify(next, {
       userId: studentId,
       title: 'notif_assignment_marked',
@@ -464,7 +464,7 @@ export function reviewLessonSubmission(s: AppState, submissionId: string, mentor
       sub.id === submissionId ? { ...sub, status: 'reviewed', reviewedAt: now(), reviewerId: mentorId, feedback, awardedXp: xp } : sub,
     ),
   }
-  if (xp > 0) next = awardXp(next, submission.studentId, xp, 'xp_assignment_completed', 'lesson', submission.lessonId, { title: lesson?.title ?? '' })
+  if (xp > 0) next = awardXp(next, submission.studentId, xp, 'xp_assignment_completed', 'assignment', submission.lessonId, { title: lesson?.title ?? '' })
   next = notify(next, {
     userId: submission.studentId,
     title: 'notif_assignment_reviewed',

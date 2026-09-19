@@ -221,3 +221,47 @@ assert.equal(parseReply('{"question":"no text"}'), null, 'an answer with no text
 assert.equal(parseReply('{"text":"x","code":{"source":"   "}}')?.code, undefined, 'a blank snippet is dropped')
 
 console.log('✓ empty install, registration, progress chain, code check, levels, mentor lessons and the model parser all behave')
+
+// ---------------------------------------------------------------------------------------
+// A mentor-written assignment pays on its own account, not out of the curriculum's namespace.
+// ---------------------------------------------------------------------------------------
+{
+  let s2 = createInitialState()
+  const m = logic.registerUser(s2, { name: 'Mentor Two', email: 'm2@s7.kz', password: 'secret123', role: 'mentor' })
+  s2 = m.state
+  const st = logic.registerUser(s2, { name: 'Student Two', email: 's2@s7.kz', password: 'secret123', role: 'student' })
+  s2 = st.state
+  const mentorId = m.user!.id
+  const studentId = st.user!.id
+
+  // The id deliberately collides with a curriculum lesson. Before assignments had a kind of
+  // their own, both payments were recorded as ('lesson', ar-l1) and the second was refused —
+  // silently, because refusing a duplicate award is the guard working as designed.
+  const clash = 'ar-l1'
+  s2 = logic.saveCustomLesson(s2, {
+    id: clash,
+    authorId: mentorId,
+    title: 'Colliding id',
+    summary: 'Same ref as a curriculum lesson',
+    tasks: [{ id: 't1', kind: 'quiz', prompt: '2+2?', points: 40, options: ['3', '4'], answerIndex: 1 }],
+    published: true,
+    priceCents: 0,
+    currency: 'usd',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })
+
+  s2 = logic.completeLesson(s2, studentId, 'ar-l1')
+  const afterLesson = s2.profiles.find((p) => p.userId === studentId)!.xp
+  assert.ok(afterLesson > 0, 'completing a curriculum lesson pays')
+
+  s2 = logic.submitLessonAnswers(s2, studentId, clash, [{ taskId: 't1', value: '1' }])
+  const afterAssignment = s2.profiles.find((p) => p.userId === studentId)!.xp
+  assert.ok(afterAssignment > afterLesson, 'an assignment sharing that ref still pays on its own')
+
+  const kinds = s2.xp.filter((t) => t.refId === clash).map((t) => t.kind).sort().join(',')
+  assert.equal(kinds, 'assignment,lesson', 'the two payments sit under different kinds')
+
+  const again = logic.submitLessonAnswers(s2, studentId, clash, [{ taskId: 't1', value: '1' }])
+  assert.equal(again.profiles.find((p) => p.userId === studentId)!.xp, afterAssignment, 'resubmitting the assignment pays nothing')
+}

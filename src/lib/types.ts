@@ -180,7 +180,13 @@ export interface XPTransaction {
   /** Dictionary key; see TextVars. */
   reason: string
   vars?: TextVars
-  kind: 'lesson' | 'challenge' | 'submission' | 'approval' | 'achievement' | 'competition'
+  /**
+   * `lesson` is a curriculum lesson, `assignment` a mentor-written one. They are separate
+   * because awardXp pays once per (kind, refId) and both used to say `lesson`: the ids differ
+   * today, so nothing has gone wrong yet, but a collision would show up as an award silently
+   * refused rather than as an error.
+   */
+  kind: 'lesson' | 'assignment' | 'challenge' | 'submission' | 'approval' | 'achievement' | 'competition'
   createdAt: string
   refId?: string
 }

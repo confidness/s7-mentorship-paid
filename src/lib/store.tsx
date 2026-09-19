@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AppState, Feedback, Project, User } from './types'
+import type { AppState, Feedback, Project, User, XPTransaction } from './types'
 import { createInitialState } from './seed'
 import { COURSES, LESSONS, MODULES } from './curriculum'
 import { ACHIEVEMENTS } from './gamification'
@@ -27,6 +27,25 @@ function dropLegacyCredentials(saved: Partial<AppState>): boolean {
   return Array.isArray(users) && users.some((u) => typeof u?.password === 'string')
 }
 
+/**
+ * Rewrites XP rows banked before assignments had a kind of their own.
+ *
+ * awardXp refuses a second payment for the same (kind, refId). Renaming the kind without
+ * touching history would make every already-paid assignment look unpaid and pay it again on
+ * the next submission — the exact double-award the guard exists to prevent. A row is an
+ * assignment if its ref is not one of the curriculum lesson ids, which are fixed in code.
+ */
+function retagAssignments(rows: XPTransaction[], fresh: AppState): XPTransaction[] {
+  const curriculum = new Set(fresh.lessons.map((l) => l.id))
+  let touched = false
+  const out = rows.map((row) => {
+    if (row.kind !== 'lesson' || !row.refId || curriculum.has(row.refId)) return row
+    touched = true
+    return { ...row, kind: 'assignment' as const }
+  })
+  return touched ? out : rows
+}
+
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -44,7 +63,7 @@ function loadState(): AppState {
       users: saved.users ?? fresh.users,
       profiles: saved.profiles ?? fresh.profiles,
       projects: saved.projects ?? fresh.projects,
-      xp: saved.xp ?? fresh.xp,
+      xp: retagAssignments(saved.xp ?? fresh.xp, fresh),
       groups: saved.groups ?? fresh.groups,
       teams: saved.teams ?? fresh.teams,
       // Events are announced from inside the app, so they are user data like everything above.

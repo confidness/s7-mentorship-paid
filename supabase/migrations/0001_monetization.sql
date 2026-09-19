@@ -309,8 +309,17 @@ create policy entitlements_read_own on entitlements for select to authenticated
 -- submissions: a student writes their own; the lesson's author reads and grades.
 create policy submissions_read on lesson_submissions for select to authenticated
   using (student_id = auth.uid() or owns_lesson(lesson_id) or is_admin());
+-- Entitlements are only ever written for a lesson somebody paid for, so requiring one here
+-- made a FREE mentor lesson impossible to submit: there is no row and there never will be.
+-- A lesson priced at zero is open to anyone who can see it, which is what published means.
 create policy submissions_insert_own on lesson_submissions for insert to authenticated
-  with check (student_id = auth.uid() and has_entitlement(lesson_id));
+  with check (
+    student_id = auth.uid()
+    and (
+      has_entitlement(lesson_id)
+      or exists (select 1 from custom_lessons l where l.id = lesson_id and l.published and l.price_cents <= 0)
+    )
+  );
 create policy submissions_grade on lesson_submissions for update to authenticated
   using (owns_lesson(lesson_id)) with check (owns_lesson(lesson_id));
 
