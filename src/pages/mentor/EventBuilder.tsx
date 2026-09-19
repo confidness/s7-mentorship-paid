@@ -154,7 +154,7 @@ export default function EventBuilder() {
                 <button
                   type="button"
                   onClick={() => setSchedule((all) => all.filter((x) => x.id !== slot.id))}
-                  className="ml-auto grid h-8 w-8 place-items-center rounded-full fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
+                  className="ml-auto grid h-8 w-8 place-items-center fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
                   aria-label={t('remove_slot_n', { n: i + 1 })}
                 >
                   <Trash2 size={15} aria-hidden="true" />
@@ -252,7 +252,7 @@ function TeamsCard({
               <button
                 type="button"
                 onClick={() => onDelete(team.id)}
-                className="ml-auto grid h-8 w-8 place-items-center rounded-full fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
+                className="ml-auto grid h-8 w-8 place-items-center fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
                 aria-label={t('remove_team', { name: team.name })}
               >
                 <Trash2 size={15} aria-hidden="true" />
@@ -274,7 +274,7 @@ function TeamsCard({
                         memberIds: inTeam ? team.memberIds.filter((id) => id !== student.id) : [...team.memberIds, student.id],
                       })
                     }
-                    className={`flex items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 text-xs font-medium transition ${
+                    className={`flex items-center gap-1.5 py-1 pr-2.5 pl-1 text-xs font-medium transition ${
                       inTeam ? 'bg-accent-100/80 text-accent-800 ring-1 rim ring-inset' : 'fill text-ink-600 ring-1 rim hover:text-ink-900'
                     }`}
                   >
@@ -345,7 +345,7 @@ function TasksCard({
             <button
               type="button"
               onClick={() => onDelete(task.id)}
-              className="grid h-8 w-8 place-items-center rounded-full fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
+              className="grid h-8 w-8 place-items-center fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
               aria-label={t('remove_task', { name: task.title })}
             >
               <Trash2 size={15} aria-hidden="true" />

@@ -239,8 +239,8 @@ export function AssignedLesson() {
                                     picked ? 'border-brand-400 bg-brand-100/60 font-semibold text-brand-800' : 'edge fill text-ink-700 hover:border-brand-300'
                                   }`}
                                 >
-                                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${picked ? 'border-brand-600' : 'border-ink-300'}`}>
-                                    {picked && <span className="h-2.5 w-2.5 rounded-full bg-brand-600" />}
+                                  <span className={`grid h-5 w-5 shrink-0 place-items-center border-2 ${picked ? 'border-brand-600' : 'border-ink-300'}`}>
+                                    {picked && <span className="h-2.5 w-2.5 bg-brand-600" />}
                                   </span>
                                   {option}
                                 </button>

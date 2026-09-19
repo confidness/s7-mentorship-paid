@@ -54,7 +54,7 @@ export default function ProjectDetail() {
                 <Eye size={14} aria-hidden="true" />
                 {project.views} views
               </span>
-              <button onClick={() => toggleLike(project.id)} className={`flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 transition hover:text-rose-600 ${project.likedByMe ? 'text-rose-600' : ''}`} aria-label={project.likedByMe ? t('remove_like') : t('like_this_project')}>
+              <button onClick={() => toggleLike(project.id)} className={`flex items-center gap-1.5 px-1.5 py-0.5 transition hover:text-rose-600 ${project.likedByMe ? 'text-rose-600' : ''}`} aria-label={project.likedByMe ? t('remove_like') : t('like_this_project')}>
                 <Heart size={14} fill={project.likedByMe ? 'currentColor' : 'none'} aria-hidden="true" />
                 {project.likes} likes
               </button>
@@ -98,11 +98,11 @@ export default function ProjectDetail() {
                   {f.rubric && (
                     <dl className="mt-4 grid gap-3 sm:grid-cols-3">
                       {Object.entries(f.rubric).map(([k, v]) => (
-                        <div key={k} className="rounded-xl fill p-3">
+                        <div key={k} className="fill p-3">
                           <dt className="text-xs font-semibold text-ink-500">{t(RUBRIC_LABELS[k] ?? k)}</dt>
                           <dd className="mt-1 flex items-center gap-1" aria-label={`${v} out of 5`}>
                             {Array.from({ length: 5 }, (_, i) => (
-                              <span key={i} className={`h-2 w-full rounded-full ${i < v ? 'bg-brand-600' : 'bg-ink-200'}`} aria-hidden="true" />
+                              <span key={i} className={`h-2 w-full ${i < v ? 'bg-brand-600' : 'bg-ink-200'}`} aria-hidden="true" />
                             ))}
                           </dd>
                         </div>
@@ -118,7 +118,7 @@ export default function ProjectDetail() {
 
       {project.status === 'approved' && lesson && (
         <Card className="flex flex-wrap items-center gap-4 border-emerald-200 bg-emerald-50/60 p-5">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-success-solid text-white">
+          <span className="grid h-11 w-11 shrink-0 place-items-center bg-success-solid text-white">
             <Zap size={19} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
@@ -139,7 +139,7 @@ export default function ProjectDetail() {
             <SectionHeading title={t('description')} icon={Sparkles} />
             <p className="text-[15px] leading-relaxed whitespace-pre-line text-ink-700">{project.description}</p>
             {project.notes && (
-              <div className="mt-5 rounded-xl border edge fill p-4">
+              <div className="mt-5 border edge fill p-4">
                 <p className="text-xs font-semibold text-ink-500">{t('notes_for_the_mentor')}</p>
                 <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-line text-ink-700">{project.notes}</p>
               </div>
@@ -158,11 +158,11 @@ export default function ProjectDetail() {
           <Card className="p-5 sm:p-6">
             <SectionHeading title={t('attachments')} subtitle={t('files_n', { n: project.attachments.length })} />
             {project.attachments.length === 0 ? (
-              <p className="rounded-xl border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_photos_or_video_were_attached')}</p>
+              <p className="border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_photos_or_video_were_attached')}</p>
             ) : (
               <div className="space-y-3">
                 {images.map((a) => (
-                  <figure key={a.id} className="overflow-hidden rounded-xl border edge">
+                  <figure key={a.id} className="overflow-hidden border edge">
                     <img src={a.url} alt={a.name} className="w-full object-cover" loading="lazy" />
                     <figcaption className="fill px-3 py-2 text-xs text-ink-600">{a.name}</figcaption>
                   </figure>

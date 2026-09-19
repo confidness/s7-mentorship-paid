@@ -51,7 +51,7 @@ function DocField({
         <div className="flex items-center gap-3 rounded-[14px] fill-soft px-3.5 py-3">
           <FileText size={16} className="shrink-0 text-ink-500" aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800">{value.name}</span>
-          <button type="button" onClick={onClear} className="rounded-full p-1 text-ink-500 transition hover:text-ink-900" aria-label={t('remove')}>
+          <button type="button" onClick={onClear} className="p-1 text-ink-500 transition hover:text-ink-900" aria-label={t('remove')}>
             <X size={15} aria-hidden="true" />
           </button>
         </div>

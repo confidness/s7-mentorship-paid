@@ -30,7 +30,7 @@ export default function MyLearning() {
           { label: t('time_on_task'), value: t('time_hours_minutes', { h: Math.round(totalMinutes / 60), m: totalMinutes % 60 }), icon: Clock },
         ].map((s) => (
           <Card key={s.label} className="flex items-center gap-3.5 p-4">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-200 ring-inset">
+            <span className="grid h-11 w-11 place-items-center bg-brand-50 text-brand-600 ring-1 ring-brand-200 ring-inset">
               <s.icon size={18} aria-hidden="true" />
             </span>
             <div>
@@ -63,7 +63,7 @@ export default function MyLearning() {
             return (
               <Card key={course.id} className="overflow-hidden">
                 <div className="flex flex-wrap items-center gap-4 border-b edge p-5">
-                  <span className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${course.gradient}`} aria-hidden="true" />
+                  <span className={`h-12 w-12 shrink-0 bg-gradient-to-br ${course.gradient}`} aria-hidden="true" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link to={`/courses/${course.id}`} className="text-base font-bold text-ink-900 hover:text-brand-700">

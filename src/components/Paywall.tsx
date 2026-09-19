@@ -33,7 +33,7 @@ export default function Paywall({ title, summary, priceCents, currency, lessonId
 
   return (
     <Card className="mx-auto max-w-xl space-y-5 p-8 text-center">
-      <span className="mx-auto inline-flex size-12 items-center justify-center rounded-full bg-brand-100/80 text-brand-700">
+      <span className="mx-auto inline-flex size-12 items-center justify-center bg-brand-100/80 text-brand-700">
         <Lock size={20} aria-hidden="true" />
       </span>
 

@@ -33,7 +33,7 @@ export default function Dashboard() {
   if (!ready) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-44 w-full rounded-2xl" />
+        <Skeleton className="h-44 w-full" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
             <SkeletonCard key={i} />
@@ -184,7 +184,7 @@ export default function Dashboard() {
                   <li key={c.id}>
                     <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
                       <Link to={`/courses/${c.id}`} className="flex items-center gap-2 text-sm font-semibold text-ink-800 hover:text-brand-700">
-                        <span className={`h-2.5 w-2.5 rounded-full bg-gradient-to-br ${c.gradient}`} aria-hidden="true" />
+                        <span className={`h-2.5 w-2.5 bg-gradient-to-br ${c.gradient}`} aria-hidden="true" />
                         {c.title}
                         {!enrolled && (
                           <Badge tone="neutral" className="ml-1">
@@ -235,7 +235,7 @@ export default function Dashboard() {
                   return (
                     <li key={p.id}>
                       <Link to={`/projects/${p.id}`} className="flex items-center gap-3 py-3 transition hover:fill">
-                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl fill text-ink-500">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center fill text-ink-500">
                           <FolderKanban size={17} aria-hidden="true" />
                         </span>
                         <span className="min-w-0 flex-1">

@@ -61,7 +61,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
   return (
     <div className="flex flex-col overflow-hidden rounded-[20px] border edge fill-strong">
       <div className="flex items-center gap-3 border-b edge fill-soft px-4 py-3">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-brand-600 text-white">
+        <span className="grid h-9 w-9 place-items-center bg-gradient-to-br from-accent-500 to-brand-600 text-white">
           <Bot size={18} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
@@ -73,14 +73,14 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
       <div ref={scroller} className={`flex-1 space-y-4 overflow-y-auto p-4 ${height}`}>
         {messages.length === 0 && (
           <div className="py-6 text-center">
-            <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl fill text-ink-400">
+            <span className="mx-auto mb-3 grid h-12 w-12 place-items-center fill text-ink-400">
               <Sparkles size={22} aria-hidden="true" />
             </span>
             <p className="text-sm font-semibold text-ink-900">{t('ask_anything_about_your_build')}</p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-ink-500">{t('wiring_code_an_error_you_do_not_recognise_or_a_r')}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {STARTER_PROMPTS.map((p) => (
-                <button key={p} onClick={() => ask(t(p))} className="rounded-full border edge fill-strong px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:border-brand-300 hover:bg-brand-50">
+                <button key={p} onClick={() => ask(t(p))} className="border edge fill-strong px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:border-brand-300 hover:bg-brand-50">
                   {t(p)}
                 </button>
               ))}
@@ -91,18 +91,18 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
         {messages.map((m) =>
           m.role === 'user' ? (
             <div key={m.id} className="flex justify-end gap-2.5">
-              <p className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white">{m.text}</p>
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-ink-200 text-ink-600">
+              <p className="max-w-[80%] rounded-br-sm bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white">{m.text}</p>
+              <span className="grid h-8 w-8 shrink-0 place-items-center bg-ink-200 text-ink-600">
                 <UserIcon size={15} aria-hidden="true" />
               </span>
             </div>
           ) : (
             <div key={m.id} className="flex gap-2.5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-brand-600 text-white">
+              <span className="grid h-8 w-8 shrink-0 place-items-center bg-gradient-to-br from-accent-500 to-brand-600 text-white">
                 <Bot size={15} aria-hidden="true" />
               </span>
               <div className="min-w-0 max-w-[85%] space-y-3">
-                <div className="rounded-2xl rounded-tl-sm fill px-3.5 py-3">
+                <div className="rounded-tl-sm fill px-3.5 py-3">
                   <RichText text={m.text} />
                   {/* Which brain answered. Useful when the key is missing and the offline base steps in. */}
                   <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-ink-500">
@@ -117,7 +117,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
                   </div>
                 )}
                 {m.reply?.question && (
-                  <p className="flex items-start gap-2 rounded-xl border border-brand-200/70 bg-brand-100/50 px-3.5 py-2.5 text-sm font-medium text-brand-800">
+                  <p className="flex items-start gap-2 border border-brand-200/70 bg-brand-100/50 px-3.5 py-2.5 text-sm font-medium text-brand-800">
                     <HelpCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                     {m.reply.question}
                   </p>
@@ -125,7 +125,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
                 {m.reply?.followUps && m.reply.followUps.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {m.reply.followUps.map((f) => (
-                      <button key={f} onClick={() => ask(f)} className="rounded-full border edge fill-strong px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:border-brand-300 hover:bg-brand-50">
+                      <button key={f} onClick={() => ask(f)} className="border edge fill-strong px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:border-brand-300 hover:bg-brand-50">
                         {f}
                       </button>
                     ))}
@@ -138,13 +138,13 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
 
         {pending && (
           <div className="flex gap-2.5" aria-live="polite">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-brand-600 text-white">
+            <span className="grid h-8 w-8 shrink-0 place-items-center bg-gradient-to-br from-accent-500 to-brand-600 text-white">
               <Bot size={15} aria-hidden="true" />
             </span>
-            <span className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm fill px-4 py-3.5">
+            <span className="flex items-center gap-1.5 rounded-tl-sm fill px-4 py-3.5">
               <span className="sr-only">{t('mentor_is_typing')}</span>
               {[0, 1, 2].map((i) => (
-                <span key={i} className="h-2 w-2 animate-bounce rounded-full bg-ink-400" style={{ animationDelay: `${i * 120}ms` }} />
+                <span key={i} className="h-2 w-2 animate-bounce bg-ink-400" style={{ animationDelay: `${i * 120}ms` }} />
               ))}
             </span>
           </div>

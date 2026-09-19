@@ -13,7 +13,7 @@ export default function ThemeToggle({ compact }: { compact?: boolean }) {
   const { choice, setChoice } = useTheme()
 
   return (
-    <div className="chrome inline-flex rounded-full p-0.5" role="radiogroup" aria-label={t('colour_theme')}>
+    <div className="chrome inline-flex p-0.5" role="radiogroup" aria-label={t('colour_theme')}>
       {OPTIONS.map((option) => {
         const active = choice === option.value
         return (
@@ -23,7 +23,7 @@ export default function ThemeToggle({ compact }: { compact?: boolean }) {
             aria-checked={active}
             title={t(option.label)}
             onClick={() => setChoice(option.value)}
-            className={`relative grid place-items-center rounded-full transition ${compact ? 'h-8 w-8' : 'h-9 w-9'} ${
+            className={`relative grid place-items-center transition ${compact ? 'h-8 w-8' : 'h-9 w-9'} ${
               active ? 'fill-strong text-brand-600 shadow-[0_1px_2px_rgb(11_18_32/0.12)] dark:text-brand-300' : 'text-ink-500 hover:text-ink-900'
             }`}
           >

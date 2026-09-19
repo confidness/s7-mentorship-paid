@@ -30,7 +30,7 @@ export default function Profile() {
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
           <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
             <div className="flex items-end gap-4">
-              <span className="rounded-full ring-4 ring-white">
+              <span className="ring-4 ring-white">
                 <Avatar name={user.name} initials={user.avatar} size={76} />
               </span>
               <div className="pb-1">
@@ -90,7 +90,7 @@ export default function Profile() {
         </Card>
 
         <Card className="flex items-center gap-4 p-5">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200 ring-inset">
+          <span className="grid h-12 w-12 place-items-center bg-rose-50 text-rose-600 ring-1 ring-rose-200 ring-inset">
             <Flame size={20} aria-hidden="true" />
           </span>
           <div>
@@ -100,7 +100,7 @@ export default function Profile() {
         </Card>
 
         <Card className="flex items-center gap-4 p-5">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 ring-inset">
+          <span className="grid h-12 w-12 place-items-center bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 ring-inset">
             <CheckCircle2 size={20} aria-hidden="true" />
           </span>
           <div>
@@ -112,7 +112,7 @@ export default function Profile() {
 
       <Card className="p-5 sm:p-6">
         <SectionHeading title={t('current_goal')} icon={Target} />
-        <p className="rounded-xl border border-brand-200/70 bg-brand-100/50 px-4 py-3 text-sm font-medium text-brand-800">{t(profile.goal)}</p>
+        <p className="border border-brand-200/70 bg-brand-100/50 px-4 py-3 text-sm font-medium text-brand-800">{t(profile.goal)}</p>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -156,7 +156,7 @@ export default function Profile() {
       <Card className="p-5 sm:p-6">
         <SectionHeading title={t('portfolio')} subtitle={t('projects_submitted_to_mentors')} />
         {projects.length === 0 ? (
-          <p className="rounded-xl border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('nothing_submitted_yet')}</p>
+          <p className="border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('nothing_submitted_yet')}</p>
         ) : (
           <ul className="divide-y divider">
             {projects.map((p) => (

@@ -24,7 +24,7 @@ export default function AIMentor() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2.5 text-[28px] font-bold tracking-[-0.03em] text-ink-900">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-brand-600 text-white">
+            <span className="grid h-10 w-10 place-items-center bg-gradient-to-br from-accent-500 to-brand-600 text-white">
               <Bot size={20} aria-hidden="true" />
             </span>
             {t('ai_robotics_mentor')}
@@ -42,7 +42,7 @@ export default function AIMentor() {
             <ul className="space-y-3.5">
               {TOPICS.map((topic) => (
                 <li key={topic.title} className="flex gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl fill text-ink-600">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center fill text-ink-600">
                     <topic.icon size={16} aria-hidden="true" />
                   </span>
                   <span className="min-w-0">

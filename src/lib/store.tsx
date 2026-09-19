@@ -366,12 +366,12 @@ function ToastViewport({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id:
     <div className="pointer-events-none fixed inset-x-3 top-3 z-[60] flex flex-col items-center gap-2 sm:inset-x-auto sm:top-24 sm:right-6 sm:items-end" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={`animate-toast chrome specular pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[20px] p-4 ring-1 ${tone[t.tone]}`}>
-          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dot[t.tone]}`} />
+          <span className={`mt-1.5 h-2 w-2 shrink-0 ${dot[t.tone]}`} />
           <div className="relative min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink-900">{t.title}</p>
             {t.body && <p className="mt-0.5 text-sm text-ink-600">{t.body}</p>}
           </div>
-          <button onClick={() => onDismiss(t.id)} className="relative grid h-6 w-6 shrink-0 place-items-center rounded-full text-ink-400 transition hover:bg-white/80 hover:text-ink-700" aria-label={translate('dismiss_notification')}>
+          <button onClick={() => onDismiss(t.id)} className="relative grid h-6 w-6 shrink-0 place-items-center text-ink-400 transition hover:bg-white/80 hover:text-ink-700" aria-label={translate('dismiss_notification')}>
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
               <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>

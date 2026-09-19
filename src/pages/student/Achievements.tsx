@@ -78,7 +78,7 @@ export default function Achievements() {
             return (
               <li key={l.index} className={`p-4 ${reached ? 'fill-strong' : ''}`}>
                 <div className="flex items-center gap-2">
-                  <span className={`grid h-7 w-7 place-items-center rounded-full text-xs font-bold ${reached ? 'bg-gradient-to-b from-brand-400 to-brand-600 text-white' : 'fill-strong text-ink-700 ring-1 rim'}`}>{l.index}</span>
+                  <span className={`grid h-7 w-7 place-items-center text-xs font-bold ${reached ? 'bg-ink-900 text-ink-50' : 'fill-strong text-ink-700 ring-1 rim'}`}>{l.index}</span>
                   <p className="text-sm font-bold text-ink-900">{localizeLevelName(l.name)}</p>
                 </div>
                 <p className="mt-1.5 text-xs text-ink-500">{formatNumber(l.minXp)} XP</p>
@@ -105,7 +105,7 @@ export default function Achievements() {
           <ul className="divide-y divider">
             {history.map((tx) => (
               <li key={tx.id} className="flex items-center gap-3 py-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-200 ring-inset">
+                <span className="grid h-9 w-9 shrink-0 place-items-center bg-amber-50 text-amber-600 ring-1 ring-amber-200 ring-inset">
                   <Zap size={15} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">

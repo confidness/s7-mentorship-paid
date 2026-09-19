@@ -34,8 +34,8 @@ export function CourseCard({ course, progress, instructor }: { course: Course; p
       <Link to={`/courses/${course.id}`} className="flex flex-1 flex-col focus-visible:outline-none">
         <CourseCover course={course} className="h-28 sm:h-32">
           <div className="absolute inset-0 flex items-end justify-between p-4">
-            <span className="rounded-lg bg-black/40 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">{platform.name}</span>
-            <span className="rounded-lg fill-strong px-2.5 py-1 text-xs font-bold text-ink-800">{localizeDifficulty(course.level)}</span>
+            <span className="bg-black/40 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">{platform.name}</span>
+            <span className="fill-strong px-2.5 py-1 text-xs font-bold text-ink-800">{localizeDifficulty(course.level)}</span>
           </div>
         </CourseCover>
 
@@ -120,7 +120,7 @@ export function ProjectCard({ project, author, to, onLike }: { project: Project;
             <button
               onClick={onLike}
               disabled={!onLike}
-              className={`inline-flex items-center gap-1 rounded-md px-1 py-0.5 transition ${onLike ? 'hover:bg-rose-50 hover:text-rose-600' : ''} ${project.likedByMe ? 'text-rose-600' : ''}`}
+              className={`inline-flex items-center gap-1 px-1 py-0.5 transition ${onLike ? 'hover:bg-rose-50 hover:text-rose-600' : ''} ${project.likedByMe ? 'text-rose-600' : ''}`}
               aria-label={project.likedByMe ? `Unlike ${project.title}` : `Like ${project.title}`}
             >
               <Heart size={13} fill={project.likedByMe ? 'currentColor' : 'none'} aria-hidden="true" />
@@ -163,7 +163,7 @@ export function ActivityChart({ data, height = 120 }: { data: { label: string; v
 }
 
 export function StudentRow({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center gap-3 rounded-xl border edge fill-strong p-3 transition hover:border-ink-300">{children}</div>
+  return <div className="flex items-center gap-3 border edge fill-strong p-3 transition hover:border-ink-300">{children}</div>
 }
 
 export const GroupMeta = ({ count }: { count: number }) => (

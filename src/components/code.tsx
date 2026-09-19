@@ -53,7 +53,7 @@ export function CopyButton({ text, label }: { text: string; label?: string }) {
         setDone(true)
         setTimeout(() => setDone(false), 1600)
       }}
-      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition hover:bg-white/10 hover:text-white"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition hover:bg-white/10 hover:text-white"
       aria-label={done ? t('copied') : (label ?? t('copy'))}
     >
       {done ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
@@ -66,13 +66,13 @@ export function CodeBlock({ source, filename, actions }: { source: string; filen
   const html = useMemo(() => highlight(source), [source])
   const lines = source.split('\n').length
   return (
-    <div className="overflow-hidden rounded-2xl border code-chrome code-surface">
+    <div className="overflow-hidden border code-chrome code-surface">
       <div className="flex items-center justify-between gap-2 border-b code-chrome px-3 py-2">
         <span className="flex items-center gap-2 font-mono text-xs text-[#94a3b8]">
           <span className="flex gap-1.5" aria-hidden="true">
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+            <span className="h-2.5 w-2.5 bg-rose-400/70" />
+            <span className="h-2.5 w-2.5 bg-amber-400/70" />
+            <span className="h-2.5 w-2.5 bg-emerald-400/70" />
           </span>
           {filename ?? 'sketch.ino'}
         </span>
@@ -101,13 +101,13 @@ export function CodeEditor({ value, onChange, filename, actions, minRows = 14 }:
   const lines = Math.max(value.split('\n').length, minRows)
 
   return (
-    <div className="overflow-hidden rounded-2xl border code-chrome code-surface">
+    <div className="overflow-hidden border code-chrome code-surface">
       <div className="flex items-center justify-between gap-2 border-b code-chrome px-3 py-2">
         <span className="flex items-center gap-2 font-mono text-xs text-[#94a3b8]">
           <span className="flex gap-1.5" aria-hidden="true">
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+            <span className="h-2.5 w-2.5 bg-rose-400/70" />
+            <span className="h-2.5 w-2.5 bg-amber-400/70" />
+            <span className="h-2.5 w-2.5 bg-emerald-400/70" />
           </span>
           {filename ?? 'sketch.ino'}
         </span>

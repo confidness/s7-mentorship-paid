@@ -86,7 +86,7 @@ export function PartIcon({ kind, className = '' }: { kind: Component['icon']; cl
 export function ComponentCard({ component }: { component: Component }) {
   return (
     <Card className="card-hover flex gap-4 p-4">
-      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-ink-900 to-ink-800 text-accent-400">
+      <span className="grid h-16 w-16 shrink-0 place-items-center bg-gradient-to-br from-ink-900 to-ink-800 text-accent-400">
         <PartIcon kind={component.icon} className="h-10 w-10" />
       </span>
       <div className="min-w-0">
@@ -192,7 +192,7 @@ export function WiringTable({ rows }: { rows: WiringRow[] }) {
               <td className="py-2.5 pr-3 font-mono text-xs text-ink-700">{row.to}</td>
               <td className="py-2.5 pr-3">
                 <span className="inline-flex items-center gap-1.5 text-xs text-ink-600">
-                  <span className="h-3 w-3 rounded-full ring-1 ring-ink-300" style={{ background: wireColor(row.color) }} aria-hidden="true" />
+                  <span className="h-3 w-3 ring-1 ring-ink-300" style={{ background: wireColor(row.color) }} aria-hidden="true" />
                   {row.color}
                 </span>
               </td>
@@ -283,7 +283,7 @@ export function VirtualLab() {
               max={120}
               value={distance}
               onChange={(e) => setDistance(Number(e.target.value))}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-ink-200 accent-brand-600"
+              className="h-2 w-full cursor-pointer appearance-none bg-ink-200 accent-brand-600"
               aria-label={t('object_distance_in_centimetres')}
             />
           </label>
@@ -301,11 +301,11 @@ export function VirtualLab() {
             ))}
           </div>
           <dl className="grid grid-cols-2 gap-2 text-sm">
-            <div className="rounded-xl fill p-3">
+            <div className="fill p-3">
               <dt className="text-xs font-semibold text-ink-500">{t('echo_duration')}</dt>
               <dd className="mt-1 font-mono font-bold text-ink-900">{duration} µs</dd>
             </div>
-            <div className="rounded-xl fill p-3">
+            <div className="fill p-3">
               <dt className="text-xs font-semibold text-ink-500">{t('led_state')}</dt>
               <dd className="mt-1 flex items-center gap-1.5 font-bold text-ink-900">
                 <Lightbulb size={14} className={ledOn ? 'text-amber-500' : 'text-ink-400'} aria-hidden="true" />

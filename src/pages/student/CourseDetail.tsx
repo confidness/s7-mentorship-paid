@@ -40,9 +40,9 @@ export default function CourseDetail() {
           <div className="absolute inset-0 flex items-end p-5 sm:p-6">
             <div className="text-white">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{platform.name}</span>
-                <span className="rounded-lg fill-strong px-2.5 py-1 text-xs font-bold text-ink-800">{localizeDifficulty(course.level)}</span>
-                <span className="rounded-lg bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{course.ageRange}</span>
+                <span className="bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{platform.name}</span>
+                <span className="fill-strong px-2.5 py-1 text-xs font-bold text-ink-800">{localizeDifficulty(course.level)}</span>
+                <span className="bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{course.ageRange}</span>
               </div>
               <h1 className="mt-3 text-2xl font-bold tracking-[-0.03em] drop-shadow sm:text-3xl">{course.title}</h1>
             </div>
@@ -59,7 +59,7 @@ export default function CourseDetail() {
                 { label: t('modules'), value: modules.length, icon: ListChecks },
                 { label: t('total_xp'), value: lessons.reduce((a, l) => a + l.xp + l.task.xp + l.challenge.xp, 0), icon: Zap },
               ].map((s) => (
-                <div key={s.label} className="rounded-xl fill p-3">
+                <div key={s.label} className="fill p-3">
                   <dt className="flex items-center gap-1.5 text-xs font-semibold text-ink-500">
                     <s.icon size={13} aria-hidden="true" />
                     {s.label}
@@ -83,7 +83,7 @@ export default function CourseDetail() {
                   <ProgressBar value={progress.percent} label={t('course_progress')} />
                 </div>
                 {next && (
-                  <div className="rounded-xl border edge fill-strong p-3.5">
+                  <div className="border edge fill-strong p-3.5">
                     <p className="text-xs font-medium text-ink-500">{t('next_lesson')}</p>
                     <p className="mt-1 text-sm font-bold text-ink-900">{next.title}</p>
                     <p className="mt-0.5 text-xs text-ink-500">
@@ -171,7 +171,7 @@ export default function CourseDetail() {
                     const isNext = next?.id === lesson.id
                     const Row = (
                       <div className={`flex items-center gap-4 px-5 py-4 ${unlocked ? 'transition hover:fill' : ''}`}>
-                        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${complete ? 'bg-emerald-50 text-emerald-600' : unlocked ? 'bg-brand-50 text-brand-600' : 'fill text-ink-400 opacity-70'}`}>
+                        <span className={`grid h-9 w-9 shrink-0 place-items-center ${complete ? 'bg-emerald-50 text-emerald-600' : unlocked ? 'bg-brand-50 text-brand-600' : 'fill text-ink-400 opacity-70'}`}>
                           {complete ? <CheckCircle2 size={17} aria-hidden="true" /> : unlocked ? <Circle size={17} aria-hidden="true" /> : <Lock size={15} aria-hidden="true" />}
                         </span>
                         <span className="min-w-0 flex-1">

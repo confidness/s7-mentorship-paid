@@ -240,7 +240,7 @@ function LessonPage() {
                     )}
 
                     {block.callout && callout && (
-                      <p className={`mt-4 flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm leading-relaxed ${callout.class}`}>
+                      <p className={`mt-4 flex items-start gap-2.5 border px-3.5 py-3 text-sm leading-relaxed ${callout.class}`}>
                         <callout.icon size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                         {block.callout.text}
                       </p>
@@ -309,7 +309,7 @@ function LessonPage() {
                       setReport(null)
                       toast({ title: t('worked_example_loaded'), body: t('read_it_then_make_it_yours_the_mentor_will_ask_h'), tone: 'info' })
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition hover:bg-white/10 hover:text-white"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition hover:bg-white/10 hover:text-white"
                   >
                     <Wand2 size={13} aria-hidden="true" />{t('example')}</button>
                   <button
@@ -317,7 +317,7 @@ function LessonPage() {
                       setCode(lesson.code.starter ?? lesson.code.source)
                       setReport(null)
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition hover:bg-white/10 hover:text-white"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition hover:bg-white/10 hover:text-white"
                   >
                     <RotateCcw size={13} aria-hidden="true" /> {t('reset')}
                   </button>
@@ -341,7 +341,7 @@ function LessonPage() {
             {report && (
               <div className="mt-4 space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                  <div className="border border-emerald-200 bg-emerald-50/60 p-4">
                     <p className="flex items-center gap-1.5 text-sm font-bold text-emerald-800">
                       <CheckCircle2 size={15} aria-hidden="true" /> {t('passed_n', { n: report.passed.length })}
                     </p>
@@ -356,7 +356,7 @@ function LessonPage() {
                     </ul>
                   </div>
 
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
+                  <div className="border border-rose-200 bg-rose-50/60 p-4">
                     <p className="flex items-center gap-1.5 text-sm font-bold text-rose-800">
                       <AlertTriangle size={15} aria-hidden="true" /> {t('checks_missing_n', { n: report.failed.length })}
                     </p>
@@ -372,7 +372,7 @@ function LessonPage() {
                 </div>
 
                 {report.warnings.length > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                  <div className="border border-amber-200 bg-amber-50/60 p-4">
                     <p className="flex items-center gap-1.5 text-sm font-bold text-amber-800">
                       <AlertTriangle size={15} aria-hidden="true" /> {t('warnings_n', { n: report.warnings.length })}
                     </p>
@@ -387,7 +387,7 @@ function LessonPage() {
                 )}
 
                 {report.suggestions.length > 0 && (
-                  <div className="rounded-xl border border-brand-200/70 bg-brand-100/50/60 p-4">
+                  <div className="border border-brand-200/70 bg-brand-100/50/60 p-4">
                     <p className="flex items-center gap-1.5 text-sm font-bold text-brand-800">
                       <Lightbulb size={15} aria-hidden="true" />{t('suggestions')}</p>
                     <ul className="mt-2.5 list-inside list-disc space-y-1 text-sm text-brand-800">
@@ -455,7 +455,7 @@ function LessonPage() {
                 const on = checked.includes(r)
                 return (
                   <li key={r}>
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${on ? 'border-emerald-200 bg-emerald-50/60' : 'edge fill-strong hover:border-ink-300'}`}>
+                    <label className={`flex cursor-pointer items-start gap-3 border p-3 transition ${on ? 'border-emerald-200 bg-emerald-50/60' : 'edge fill-strong hover:border-ink-300'}`}>
                       <input
                         type="checkbox"
                         checked={on}
@@ -481,7 +481,7 @@ function LessonPage() {
             <SectionHeading title={t('submit_your_project')} subtitle={t('a_mentor_reviews_it_and_awards_the_xp')} icon={Send} />
             {project ? (
               <div className="space-y-3">
-                <div className="rounded-xl border edge fill p-4">
+                <div className="border edge fill p-4">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-bold text-ink-900">{project.title}</p>
                     <Badge tone={STATUS_TONE[project.status]}>{t(STATUS_LABEL[project.status])}</Badge>
@@ -489,7 +489,7 @@ function LessonPage() {
                   <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-ink-600">{project.description}</p>
                 </div>
                 {project.feedback.length > 0 && (
-                  <div className="rounded-xl border border-brand-200/70 bg-brand-100/50 p-4">
+                  <div className="border border-brand-200/70 bg-brand-100/50 p-4">
                     <p className="text-xs font-bold text-brand-800">{t('mentor_feedback')}</p>
                     <p className="mt-1.5 text-sm leading-relaxed text-brand-800">{project.feedback[project.feedback.length - 1].message}</p>
                   </div>
@@ -527,13 +527,13 @@ function LessonPage() {
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-br from-accent-600 to-brand-700 p-5 text-white sm:p-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">
                 <Trophy size={12} aria-hidden="true" />{t('challenge')}</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1.5 bg-white/20 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">
                 <Zap size={12} aria-hidden="true" /> +{lesson.challenge.xp} XP
               </span>
               {challengeDone && (
-                <span className="inline-flex items-center gap-1.5 rounded-full fill-strong px-2.5 py-1 text-xs font-bold text-accent-700">
+                <span className="inline-flex items-center gap-1.5 fill-strong px-2.5 py-1 text-xs font-bold text-accent-700">
                   <CheckCircle2 size={12} aria-hidden="true" />{t('completed')}</span>
               )}
             </div>
@@ -547,13 +547,13 @@ function LessonPage() {
               {lesson.challenge.hints.map((hint, i) => (
                 <li key={hint}>
                   {i < hintsOpen ? (
-                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{hint}</p>
+                    <p className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{hint}</p>
                   ) : i === hintsOpen ? (
-                    <button onClick={() => setHintsOpen(i + 1)} className="w-full rounded-xl border border-dashed edge px-4 py-3 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700">
+                    <button onClick={() => setHintsOpen(i + 1)} className="w-full border border-dashed edge px-4 py-3 text-sm font-semibold text-ink-600 transition hover:border-brand-400 hover:text-brand-700">
                       {t('reveal_hint_n', { n: i + 1, total: lesson.challenge.hints.length })}
                     </button>
                   ) : (
-                    <p className="rounded-xl border border-dashed edge px-4 py-3 text-sm text-ink-500">{t('hint_n_locked', { n: i + 1 })}</p>
+                    <p className="border border-dashed edge px-4 py-3 text-sm text-ink-500">{t('hint_n_locked', { n: i + 1 })}</p>
                   )}
                 </li>
               ))}

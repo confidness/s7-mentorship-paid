@@ -162,7 +162,7 @@ export default function LessonBuilder() {
               <button
                 type="button"
                 onClick={() => setMaterial(undefined)}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full fill text-ink-500 transition hover:fill-raised hover:text-ink-900"
+                className="grid h-8 w-8 shrink-0 place-items-center fill text-ink-500 transition hover:fill-raised hover:text-ink-900"
                 aria-label={t('remove_file', { name: material.name })}
               >
                 <X size={15} aria-hidden="true" />
@@ -269,7 +269,7 @@ export default function LessonBuilder() {
               <li key={task.id} className="rounded-[18px] border edge fill-soft p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-bold text-ink-900">{t('question_n', { n: i + 1 })}</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100/80 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 rim ring-inset">
+                  <span className="inline-flex items-center gap-1.5 bg-brand-100/80 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 rim ring-inset">
                     <meta.icon size={12} aria-hidden="true" />
                     {t(meta.label)}
                   </span>
@@ -289,7 +289,7 @@ export default function LessonBuilder() {
                     <button
                       type="button"
                       onClick={() => setTasks((all) => all.filter((x) => x.id !== task.id))}
-                      className="grid h-8 w-8 place-items-center rounded-full fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
+                      className="grid h-8 w-8 place-items-center fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
                       aria-label={t('remove_question_n', { n: i + 1 })}
                     >
                       <Trash2 size={15} aria-hidden="true" />
@@ -315,7 +315,7 @@ export default function LessonBuilder() {
                             <button
                               type="button"
                               onClick={() => patchTask(task.id, { answerIndex: oi })}
-                              className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition ${
+                              className={`grid h-8 w-8 shrink-0 place-items-center transition ${
                                 task.answerIndex === oi ? 'bg-success-solid text-white' : 'fill text-ink-500 ring-1 rim hover:text-ink-900'
                               }`}
                               aria-label={t('mark_option_n_correct', { n: oi + 1 })}
@@ -339,7 +339,7 @@ export default function LessonBuilder() {
                                     answerIndex: (task.answerIndex ?? 0) >= oi ? Math.max(0, (task.answerIndex ?? 0) - 1) : (task.answerIndex ?? 0),
                                   })
                                 }
-                                className="grid h-8 w-8 shrink-0 place-items-center rounded-full fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
+                                className="grid h-8 w-8 shrink-0 place-items-center fill text-ink-500 transition hover:bg-rose-50 hover:text-rose-600"
                                 aria-label={t('remove_option_n', { n: oi + 1 })}
                               >
                                 <X size={14} aria-hidden="true" />

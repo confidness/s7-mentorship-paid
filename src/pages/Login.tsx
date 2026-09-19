@@ -115,7 +115,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
                 : t('students_begin_with_arduino_electronics_code')}
           </p>
 
-          <div className="chrome relative mt-6 mb-6 inline-flex w-full rounded-full p-1" role="tablist">
+          <div className="chrome relative mt-6 mb-6 inline-flex w-full p-1" role="tablist">
             {(['login', 'register'] as const).map((m) => (
               <button
                 key={m}
@@ -125,7 +125,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
                   setMode(m)
                   setErrors({})
                 }}
-                className={`relative flex-1 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`relative flex-1 px-4 py-2 text-sm font-semibold transition ${
                   mode === m ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12)]' : 'text-ink-600'
                 }`}
               >

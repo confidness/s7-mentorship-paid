@@ -113,13 +113,13 @@ function NotificationBell() {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative grid h-10 w-10 place-items-center rounded-full fill text-ink-600 ring-1 rim transition hover:fill-raised hover:text-ink-900"
+        className="relative grid h-10 w-10 place-items-center fill text-ink-600 ring-1 rim transition hover:fill-raised hover:text-ink-900"
         aria-label={unread ? t('notifications_n_unread', { n: unread }) : t('notifications')}
         aria-expanded={open}
       >
         <Bell size={18} aria-hidden="true" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-danger-solid px-1 text-[10px] font-bold text-white ring-2 ring-white">{unread}</span>
+          <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center bg-danger-solid px-1 text-[10px] font-bold text-white ring-2 ring-white">{unread}</span>
         )}
       </button>
 
@@ -147,7 +147,7 @@ function NotificationBell() {
                       if (n.href) navigate(n.href)
                     }}
                   >
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? 'bg-ink-300' : 'bg-brand-600'}`} />
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 ${n.read ? 'bg-ink-300' : 'bg-brand-600'}`} />
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-ink-900">{t(n.title)}</span>
                       <span className="mt-0.5 block text-xs leading-relaxed text-ink-600">{t(n.body, resolveVars(state, n.vars))}</span>
@@ -172,7 +172,7 @@ function UserMenu() {
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 rounded-full fill py-1.5 pr-3 pl-1.5 ring-1 rim transition hover:fill-raised" aria-expanded={open} aria-label={t('account_menu')}>
+      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 fill py-1.5 pr-3 pl-1.5 ring-1 rim transition hover:fill-raised" aria-expanded={open} aria-label={t('account_menu')}>
         <Avatar name={user.name} initials={user.avatar} size={30} />
         <span className="hidden text-left sm:block">
           <span className="block text-xs font-bold text-ink-900">{user.name.split(' ')[0]}</span>
@@ -221,8 +221,8 @@ function XpPill() {
   if (!profile) return null
   const lv = levelFor(profile.xp)
   return (
-    <Link to="/achievements" className="hidden items-center gap-3 rounded-full fill px-3 py-1.5 ring-1 rim transition hover:fill-raised md:flex" aria-label={t('level_and_xp', { n: lv.level.index, xp: profile.xp })}>
-      <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-b from-amber-400 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgb(249_115_22/0.9)]">
+    <Link to="/achievements" className="hidden items-center gap-3 fill px-3 py-1.5 ring-1 rim transition hover:fill-raised md:flex" aria-label={t('level_and_xp', { n: lv.level.index, xp: profile.xp })}>
+      <span className="grid h-8 w-8 place-items-center bg-gradient-to-b from-amber-400 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgb(249_115_22/0.9)]">
         <Zap size={15} aria-hidden="true" />
       </span>
       <span className="leading-tight">
@@ -303,8 +303,8 @@ export default function Layout() {
 
       <div className="lg:pl-[17.5rem]">
         <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6">
-          <div className="chrome specular mx-auto flex h-16 max-w-7xl items-center gap-2.5 rounded-full px-3 sm:px-4">
-            <button className="grid h-10 w-10 place-items-center rounded-full fill text-ink-700 ring-1 rim lg:hidden" onClick={() => setDrawer(true)} aria-label={t('open_navigation')}>
+          <div className="chrome specular mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-3 sm:px-4">
+            <button className="grid h-10 w-10 place-items-center fill text-ink-700 ring-1 rim lg:hidden" onClick={() => setDrawer(true)} aria-label={t('open_navigation')}>
               <Menu size={18} aria-hidden="true" />
             </button>
             <Link to={user?.role === 'mentor' ? '/m' : '/'} className="lg:hidden">
@@ -345,7 +345,7 @@ export default function Layout() {
             <div className="relative">
               <div className="mb-7 flex items-center justify-between px-1">
                 <Logo />
-                <button onClick={() => setDrawer(false)} className="grid h-8 w-8 place-items-center rounded-full fill text-ink-500 hover:fill-raised hover:text-ink-900" aria-label={t('close_navigation')}>
+                <button onClick={() => setDrawer(false)} className="grid h-8 w-8 place-items-center fill text-ink-500 hover:fill-raised hover:text-ink-900" aria-label={t('close_navigation')}>
                   <X size={17} aria-hidden="true" />
                 </button>
               </div>

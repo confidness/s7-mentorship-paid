@@ -247,7 +247,7 @@ function GroupEditor({
                         studentIds: inGroup ? draft.studentIds.filter((id) => id !== student.id) : [...draft.studentIds, student.id],
                       })
                     }
-                    className={`flex items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 text-xs font-medium transition ${
+                    className={`flex items-center gap-1.5 py-1 pr-2.5 pl-1 text-xs font-medium transition ${
                       inGroup ? 'bg-accent-100/80 text-accent-800 ring-1 rim ring-inset' : 'fill text-ink-600 ring-1 rim hover:text-ink-900'
                     }`}
                   >

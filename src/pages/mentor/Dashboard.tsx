@@ -22,7 +22,7 @@ export default function MentorDashboard() {
   if (!ready) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-28 w-full rounded-2xl" />
+        <Skeleton className="h-28 w-full" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
             <SkeletonCard key={i} />
@@ -213,7 +213,7 @@ export default function MentorDashboard() {
               <ul className="space-y-2.5">
                 {needsAttention.map((r) => (
                   <li key={r.user.id}>
-                    <Link to={`/m/students/${r.user.id}`} className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3 transition hover:bg-amber-50">
+                    <Link to={`/m/students/${r.user.id}`} className="flex items-center gap-3 border border-amber-200 bg-amber-50/60 p-3 transition hover:bg-amber-50">
                       <Avatar name={r.user.name} initials={r.user.avatar} size={32} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-ink-900">{r.user.name}</span>
@@ -235,7 +235,7 @@ export default function MentorDashboard() {
                 .slice(0, 3)
                 .map((r, i) => (
                   <li key={r.user.id} className="flex items-center gap-3">
-                    <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
+                    <span className={`grid h-7 w-7 shrink-0 place-items-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
                     <Avatar name={r.user.name} initials={r.user.avatar} size={28} />
                     <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">{r.user.name}</span>
                     <span className="shrink-0 text-xs font-bold text-ink-600 tabular-nums">{localizeLevelName(levelFor(profileOf(state, r.user.id)?.xp ?? 0).level.name)}</span>

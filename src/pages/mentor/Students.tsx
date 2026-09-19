@@ -77,7 +77,7 @@ function StudentList() {
                     { label: t('streak'), value: r.profile?.streak ?? 0 },
                     { label: t('projects'), value: r.projects.length },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-xl fill py-2">
+                    <div key={s.label} className="fill py-2">
                       <dt className="text-[11px] text-ink-500">{s.label}</dt>
                       <dd className="text-sm font-bold text-ink-900 tabular-nums">{s.value}</dd>
                     </div>
@@ -175,7 +175,7 @@ function StudentDetail({ id }: { id: string }) {
           <Card className="p-5 sm:p-6">
             <SectionHeading title={t('submissions')} subtitle={t('n_projects_count', { n: projects.length })} />
             {projects.length === 0 ? (
-              <p className="rounded-xl border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('nothing_submitted_yet')}</p>
+              <p className="border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('nothing_submitted_yet')}</p>
             ) : (
               <ul className="divide-y divider">
                 {projects.map((p) => {
@@ -202,7 +202,7 @@ function StudentDetail({ id }: { id: string }) {
           <Card className="p-5 sm:p-6">
             <SectionHeading title={t('completed_lessons')} subtitle={t('n_finished', { n: lessons.length })} icon={GraduationCap} />
             {lessons.length === 0 ? (
-              <p className="rounded-xl border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_lessons_completed_yet_worth_a_message')}</p>
+              <p className="border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('no_lessons_completed_yet_worth_a_message')}</p>
             ) : (
               <ul className="flex flex-wrap gap-2">
                 {lessons.map((l) => (

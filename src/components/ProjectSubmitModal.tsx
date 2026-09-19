@@ -98,7 +98,7 @@ export default function ProjectSubmitModal({
       }
     >
       <div className="space-y-4">
-        <div className="rounded-xl border border-brand-200/70 bg-brand-100/50 p-3.5 text-sm text-brand-800">
+        <div className="border border-brand-200/70 bg-brand-100/50 p-3.5 text-sm text-brand-800">
           <p className="font-semibold">{t('what_the_mentor_checks')}</p>
           <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-brand-800">
             {lesson.task.requirements.map((r) => (
@@ -134,7 +134,7 @@ export default function ProjectSubmitModal({
               <button
                 type="button"
                 onClick={() => slot.ref.current?.click()}
-                className="flex w-full flex-col items-center gap-1.5 rounded-xl border border-dashed edge fill-soft px-4 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50/50"
+                className="flex w-full flex-col items-center gap-1.5 border border-dashed edge fill-soft px-4 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50/50"
               >
                 <slot.icon size={20} className="text-ink-400" aria-hidden="true" />
                 <span className="text-sm font-semibold text-ink-800">{slot.label}</span>
@@ -145,7 +145,7 @@ export default function ProjectSubmitModal({
         </div>
 
         {errors.upload && (
-          <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+          <p role="alert" className="border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-700">
             {errors.upload}
           </p>
         )}
@@ -153,7 +153,7 @@ export default function ProjectSubmitModal({
         {attachments.length > 0 && (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {attachments.map((a) => (
-              <li key={a.id} className="group relative overflow-hidden rounded-xl border edge">
+              <li key={a.id} className="group relative overflow-hidden border edge">
                 {a.kind === 'image' ? (
                   <img src={a.url} alt={a.name} className="h-24 w-full object-cover" />
                 ) : (
@@ -164,7 +164,7 @@ export default function ProjectSubmitModal({
                 <p className="truncate fill-strong px-2 py-1.5 text-[11px] text-ink-600">{a.name}</p>
                 <button
                   onClick={() => setAttachments((all) => all.filter((x) => x.id !== a.id))}
-                  className="absolute top-1.5 right-1.5 grid h-7 w-7 place-items-center rounded-lg fill-strong text-rose-600 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                  className="absolute top-1.5 right-1.5 grid h-7 w-7 place-items-center fill-strong text-rose-600 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
                   aria-label={t('remove_file', { name: a.name })}
                 >
                   <Trash2 size={14} aria-hidden="true" />

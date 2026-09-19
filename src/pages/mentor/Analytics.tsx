@@ -55,7 +55,7 @@ function Donut({ segments, total }: { segments: { label: string; value: number; 
       <ul className="min-w-[10rem] flex-1 space-y-2">
         {segments.map((s) => (
           <li key={s.label} className="flex items-center gap-2.5 text-sm">
-            <span className="h-3 w-3 shrink-0 rounded-sm" style={{ background: s.color }} aria-hidden="true" />
+            <span className="h-3 w-3 shrink-0" style={{ background: s.color }} aria-hidden="true" />
             <span className="flex-1 text-ink-600">{s.label}</span>
             <span className="font-bold text-ink-900 tabular-nums">{s.value}</span>
           </li>
@@ -121,13 +121,13 @@ export default function MentorAnalytics() {
               <li key={b.course.id}>
                 <div className="mb-1.5 flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 font-semibold text-ink-800">
-                    <span className={`h-2.5 w-2.5 rounded-full bg-gradient-to-br ${b.course.gradient}`} aria-hidden="true" />
+                    <span className={`h-2.5 w-2.5 bg-gradient-to-br ${b.course.gradient}`} aria-hidden="true" />
                     {b.course.title}
                   </span>
                   <span className="text-xs font-semibold text-ink-500 tabular-nums">{b.completed}</span>
                 </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-ink-200/70">
-                  <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-500 transition-[width] duration-500" style={{ width: `${(b.completed / maxCompleted) * 100}%` }} />
+                <div className="h-2.5 w-full overflow-hidden bg-ink-200/70">
+                  <div className="h-full bg-gradient-to-r from-brand-500 to-accent-500 transition-[width] duration-500" style={{ width: `${(b.completed / maxCompleted) * 100}%` }} />
                 </div>
               </li>
             ))}

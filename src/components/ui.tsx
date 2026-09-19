@@ -7,22 +7,30 @@ import { t } from '../i18n'
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'dark'
 type Size = 'sm' | 'md' | 'lg'
 
+/**
+ * Blocks, not gradients. Each one is a filled rectangle with a black rule and a hard offset,
+ * and pressing it moves the block into its own shadow — the shadow is the affordance, so the
+ * button looks like something that can physically go down.
+ *
+ * Only `primary` is allowed to be loud, and it is the signal yellow with black on it. White
+ * on yellow is unreadable, which is the whole reason this ramp carries black.
+ */
 const VARIANTS: Record<Variant, string> = {
-  primary: 'glow-cta bg-gradient-to-br from-brand-500 via-brand-600 to-accent-600 text-white hover:from-brand-400 hover:to-accent-500 active:from-brand-600 active:to-accent-700',
-  secondary: 'glass-dim text-ink-800 hover:fill',
-  ghost: 'text-ink-600 hover:fill hover:text-ink-900',
-  danger: 'bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-[0_10px_24px_-10px_rgb(244_63_94/0.7)] hover:from-rose-400 hover:to-rose-500',
-  success: 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-[0_10px_24px_-10px_rgb(16_185_129/0.7)] hover:from-emerald-400 hover:to-emerald-500',
-  dark: 'bg-ink-800 text-ink-50 hover:bg-ink-700',
+  primary: 'bg-accent-400 text-on-accent border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:bg-accent-300',
+  secondary: 'fill-strong text-ink-900 border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:fill',
+  ghost: 'text-ink-700 border-2 border-transparent hover:border-ink-900 hover:fill',
+  danger: 'bg-danger-solid text-white border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:bg-brand-500',
+  success: 'bg-success-solid text-white border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:bg-slate-cool',
+  dark: 'bg-ink-900 text-ink-50 border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-500)] hover:bg-ink-800',
 }
 const SIZES: Record<Size, string> = {
-  sm: 'h-9 px-4 text-sm gap-1.5 rounded-full',
-  md: 'h-11 px-5 text-sm gap-2 rounded-full',
-  lg: 'h-13 px-7 text-[15px] gap-2.5 rounded-full',
+  sm: 'h-9 px-4 text-sm gap-1.5',
+  md: 'h-11 px-5 text-sm gap-2',
+  lg: 'h-13 px-7 text-[15px] gap-2.5',
 }
 
 export const btn = (variant: Variant = 'primary', size: Size = 'md', extra = '') =>
-  `inline-flex items-center justify-center font-semibold tracking-[-0.01em] transition duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 select-none ${VARIANTS[variant]} ${SIZES[size]} ${extra}`
+  `inline-flex items-center justify-center font-semibold tracking-[-0.01em] transition duration-150 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 select-none ${VARIANTS[variant]} ${SIZES[size]} ${extra}`
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -76,19 +84,27 @@ export function SectionHeading({ title, subtitle, action, icon: Icon }: { title:
 
 export type Tone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'accent' | 'cyan'
 
+/**
+ * Four families and no more, because the shader only contains four: ink, the molten red, the
+ * signal yellow, and the cool slate. Tailwind's own cyan and emerald were still leaking in
+ * here and they belong to no part of this picture.
+ *
+ * `brand` is solid black rather than a tint — it is the platform speaking, and on a page made
+ * of white rectangles a black chip is the loudest thing that is not the primary action.
+ */
 const TONES: Record<Tone, string> = {
-  neutral: 'fill text-ink-600 rim',
-  brand: 'bg-brand-100/80 text-brand-800 rim',
-  success: 'bg-emerald-100/80 text-emerald-800 rim',
-  warning: 'bg-amber-100/85 text-amber-800 rim',
-  danger: 'bg-rose-100/80 text-rose-800 rim',
-  accent: 'bg-accent-100/80 text-accent-800 rim',
-  cyan: 'bg-cyan-100/80 text-cyan-800 rim',
+  neutral: 'fill text-ink-700 rim',
+  brand: 'bg-ink-900 text-ink-50 rim',
+  success: 'bg-slate-50 text-slate-deep rim',
+  warning: 'bg-accent-100 text-accent-800 rim',
+  danger: 'bg-brand-100 text-brand-800 rim',
+  accent: 'bg-accent-200 text-accent-800 rim',
+  cyan: 'bg-slate-50 text-slate-deep rim',
 }
 
 export function Badge({ tone = 'neutral', icon: Icon, children, className = '' }: { tone?: Tone; icon?: LucideIcon; children: ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset backdrop-blur-sm ${TONES[tone]} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${TONES[tone]} ${className}`}>
       {Icon && <Icon size={12} aria-hidden="true" />}
       {children}
     </span>
@@ -125,14 +141,14 @@ export function ProgressBar({ value, tone = 'brand', size = 'md', label }: { val
   const clamped = Math.max(0, Math.min(100, Math.round(value)))
   return (
     <div
-      className={`w-full overflow-hidden rounded-full bg-ink-400/25 shadow-[0_1px_2px_rgb(11_18_32/0.06)_inset] ${heights[size]}`}
+      className={`w-full overflow-hidden bg-ink-400/25 shadow-[0_1px_2px_rgb(11_18_32/0.06)_inset] ${heights[size]}`}
       role="progressbar"
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label ?? t('progress')}
     >
-      <div className={`h-full rounded-full transition-[width] duration-500 ease-out ${fills[tone]}`} style={{ width: `${clamped}%` }} />
+      <div className={`h-full transition-[width] duration-500 ease-out ${fills[tone]}`} style={{ width: `${clamped}%` }} />
     </div>
   )
 }
@@ -200,7 +216,7 @@ export function Avatar({ name, initials, size = 40, tone }: { name: string; init
   const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-full font-bold text-white ring-2 ring-white"
+      className="grid shrink-0 place-items-center font-bold text-white ring-2 ring-white"
       style={{ width: size, height: size, fontSize: size * 0.36, background: tone ?? `linear-gradient(135deg, hsl(${hue} 65% 52%), hsl(${(hue + 40) % 360} 70% 42%))` }}
       aria-hidden="true"
       title={name}
@@ -268,7 +284,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, wide }
               <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink-900">{title}</h2>
               {subtitle && <p className="mt-0.5 text-sm text-ink-500">{subtitle}</p>}
             </div>
-            <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-full fill text-ink-500 transition hover:fill-raised hover:text-ink-900" aria-label={t('close_dialog')}>
+            <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center fill text-ink-500 transition hover:fill-raised hover:text-ink-900" aria-label={t('close_dialog')}>
               <svg width="15" height="15" viewBox="0 0 14 14" aria-hidden="true">
                 <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
@@ -287,7 +303,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, wide }
 export function Tabs<T extends string>({ tabs, value, onChange, className = '' }: { tabs: { id: T; label: string; icon?: LucideIcon; count?: number }[]; value: T; onChange: (id: T) => void; className?: string }) {
   return (
     <div className={`-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 ${className}`}>
-      <div role="tablist" className="chrome inline-flex min-w-full gap-1 rounded-full p-1 sm:min-w-0">
+      <div role="tablist" className="chrome inline-flex min-w-full gap-1 p-1 sm:min-w-0">
         {tabs.map((t) => {
           const active = t.id === value
           return (
@@ -296,14 +312,14 @@ export function Tabs<T extends string>({ tabs, value, onChange, className = '' }
               role="tab"
               aria-selected={active}
               onClick={() => onChange(t.id)}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition ${
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition ${
                 active ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12),0_4px_10px_-4px_rgb(11_18_32/0.25)]' : 'text-ink-600 hover:text-ink-900'
               }`}
             >
               {t.icon && <t.icon size={15} aria-hidden="true" />}
               {t.label}
               {t.count !== undefined && (
-                <span className={`rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${active ? 'bg-brand-100 text-brand-700' : 'fill text-ink-500'}`}>{t.count}</span>
+                <span className={`px-1.5 py-0.5 text-[11px] tabular-nums ${active ? 'bg-brand-100 text-brand-700' : 'fill text-ink-500'}`}>{t.count}</span>
               )}
             </button>
           )
@@ -343,7 +359,7 @@ export const Tooltip = ({ label, children }: { label: string; children: ReactNod
     {children}
     <span
       role="tooltip"
-      className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden -translate-x-1/2 rounded-xl bg-[#0f1724]/92 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/tt:block group-hover/tt:opacity-100 sm:block"
+      className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden -translate-x-1/2 bg-[#0f1724]/92 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/tt:block group-hover/tt:opacity-100 sm:block"
     >
       {label}
     </span>

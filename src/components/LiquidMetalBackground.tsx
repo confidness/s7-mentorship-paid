@@ -11,11 +11,10 @@ import { useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
  * Two things this component exists to get right, both of which a bare <LiquidMetal> would get
  * wrong:
  *
- * **Contrast.** The brief's background is `#aaaaac`, a mid grey. Every glass surface in
- * index.css was measured against a pale canvas in light mode and a near-black one in dark, at
- * WCAG AA. A mid-grey field moving behind frosted cards makes that measurement vary frame to
- * frame. So `veil` is not decoration: it is a canvas-coloured layer at the opacity that keeps
- * the measured contrast, and the shader runs uncovered only where there is no dense text.
+ * **Contrast.** Since the interface went brutalist every panel is opaque, so nothing reads
+ * *through* the shader any more and the veil could be thinned a long way — the metal is
+ * properly visible now. It cannot go to zero: page headings and section subtitles sit
+ * directly on the background with no sheet under them, and those are what the veil protects.
  *
  * **Motion.** index.css collapses CSS animation under `prefers-reduced-motion`, but that rule
  * cannot reach WebGL. The canvas has to read the preference itself, which it does by dropping
@@ -32,44 +31,28 @@ const LIGHT = { colorBack: '#aaaaac', colorTint: '#ffffff' }
  * Dark mode is not in the brief and cannot be, since one grey cannot serve both. These keep the
  * same metal read — a cool, desaturated pair — against the dark canvas rather than glowing on it.
  */
-const DARK = { colorBack: '#101724', colorTint: '#5f7fae' }
+const DARK = { colorBack: '#1b1b21', colorTint: '#6f7790' }
 
 /**
  * The brief's parameters, verbatim.
  *
- * They come from a shader *preview* URL, where the diamond is the subject of the picture — so at
- * `scale: 0.6` with `fit: 'contain'` they draw a discrete object centred in the frame, not an
- * ambient field. That is exactly right for a hero and wrong for a page behind dense text, where
- * a recognisable silhouette drifting under the cards reads as a rendering fault. Hence two
- * settings of the same shader rather than two shaders.
+ * Unlike the first set these are composed as a background rather than as a portrait of a
+ * shape: metaballs at fit cover and scale 1 fill the frame edge to edge, with nothing left to
+ * recognise as an object. One setting now serves every surface, and only the veil changes.
  */
-const HERO = {
-  shape: 'diamond',
-  repetition: 2,
-  softness: 0.1,
+const FIELD = {
+  shape: 'metaballs',
+  repetition: 1.5,
+  softness: 0.05,
   shiftRed: 0.3,
   shiftBlue: 0.3,
-  distortion: 0.07,
-  contour: 0.4,
-  angle: 70,
-  scale: 0.6,
+  distortion: 0.1,
+  contour: 0.43,
+  angle: 202,
+  scale: 1,
   rotation: 0,
   offsetX: 0,
   offsetY: 0,
-  fit: 'contain',
-} as const
-
-/**
- * The same diamond, enlarged past the viewport so only its interior shows. What is left is the
- * metal itself — a slow shift of light with no edge to recognise. Softer and less contoured for
- * the same reason: an edge is what the eye would catch behind a paragraph.
- */
-const FIELD = {
-  ...HERO,
-  softness: 0.55,
-  contour: 0.15,
-  distortion: 0.12,
-  scale: 3.4,
   fit: 'cover',
 } as const
 
@@ -83,8 +66,8 @@ const FIELD = {
 export type Depth = 'hero' | 'app'
 
 const VEIL: Record<Depth, { light: number; dark: number }> = {
-  hero: { light: 0.3, dark: 0.42 },
-  app: { light: 0.82, dark: 0.92 },
+  hero: { light: 0.12, dark: 0.2 },
+  app: { light: 0.66, dark: 0.72 },
 }
 
 export default function LiquidMetalBackground({ depth = 'app', className = '' }: { depth?: Depth; className?: string }) {
@@ -108,7 +91,7 @@ export default function LiquidMetalBackground({ depth = 'app', className = '' }:
   return (
     <div aria-hidden="true" className={`pointer-events-none fixed inset-0 -z-10 overflow-hidden ${className}`}>
       <LiquidMetal
-        {...(depth === 'hero' ? HERO : FIELD)}
+        {...FIELD}
         {...colors}
         speed={still ? 0 : 1}
         frame={still ? 8000 : 0}

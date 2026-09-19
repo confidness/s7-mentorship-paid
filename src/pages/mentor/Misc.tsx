@@ -34,7 +34,7 @@ export function MentorCourses() {
           return (
             <Card key={course.id} className="overflow-hidden">
               <div className="flex flex-wrap items-center gap-4 border-b edge p-5">
-                <span className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${course.gradient}`} aria-hidden="true" />
+                <span className={`h-12 w-12 shrink-0 bg-gradient-to-br ${course.gradient}`} aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-ink-900">{course.title}</h2>
                   <p className="mt-0.5 text-sm text-ink-500">{course.tagline}</p>
@@ -54,7 +54,7 @@ export function MentorCourses() {
                       const ml = lessons.filter((l) => l.moduleId === m.id)
                       return (
                         <li key={m.id} className="flex items-start gap-3 rounded-[16px] border edge fill-soft p-3">
-                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-b from-brand-400 to-accent-500 text-white text-xs font-bold">{i + 1}</span>
+                          <span className="grid h-7 w-7 shrink-0 place-items-center bg-gradient-to-b from-brand-400 to-accent-500 text-white text-xs font-bold">{i + 1}</span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-semibold text-ink-900">{m.title}</span>
                             <span className="block text-xs text-ink-500">{m.summary}</span>
@@ -69,7 +69,7 @@ export function MentorCourses() {
                 <div>
                   <SectionHeading title={t('students_on_this_track')} icon={Users} />
                   {enrolled.length === 0 ? (
-                    <p className="rounded-xl border border-dashed edge px-4 py-6 text-center text-sm text-ink-500">{t('nobody_is_enrolled_yet')}</p>
+                    <p className="border border-dashed edge px-4 py-6 text-center text-sm text-ink-500">{t('nobody_is_enrolled_yet')}</p>
                   ) : (
                     <ul className="space-y-2.5">
                       {enrolled.map((u) => {
@@ -143,7 +143,7 @@ export function MentorCompetition() {
               key={c.id}
               onClick={() => setPicked(c.id)}
               aria-pressed={c.id === competition.id}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+              className={`px-3.5 py-1.5 text-xs font-semibold transition ${
                 c.id === competition.id ? 'bg-accent-600 text-white' : 'fill text-ink-600 ring-1 rim hover:text-ink-900'
               }`}
             >
@@ -192,7 +192,7 @@ export function MentorCompetition() {
       <Card className="overflow-hidden">
         <div className="tint-accent specular relative p-6 sm:p-8">
           {competition.season && (
-            <span className="inline-flex items-center gap-1.5 rounded-full fill-strong px-3 py-1 text-xs font-bold text-accent-700">
+            <span className="inline-flex items-center gap-1.5 fill-strong px-3 py-1 text-xs font-bold text-accent-700">
               <Trophy size={13} aria-hidden="true" /> {competition.season}
             </span>
           )}
@@ -222,7 +222,7 @@ export function MentorCompetition() {
                   <li key={team.id} className="rounded-[16px] border edge fill-soft p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="flex items-center gap-2 text-sm font-bold text-ink-900">
-                        <span className={`grid h-6 w-6 place-items-center rounded-md text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
+                        <span className={`grid h-6 w-6 place-items-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
                         {team.name}
                       </p>
                       <Badge tone={i === 0 ? 'warning' : 'neutral'}>{t('n_pts', { n: team.points })}</Badge>
@@ -232,7 +232,7 @@ export function MentorCompetition() {
                       {team.memberIds.map((id) => {
                         const m = state.users.find((u) => u.id === id)
                         return m ? (
-                          <Link key={id} to={`/m/students/${id}`} className="flex items-center gap-1.5 rounded-full border edge py-1 pr-2.5 pl-1 transition hover:border-brand-300">
+                          <Link key={id} to={`/m/students/${id}`} className="flex items-center gap-1.5 border edge py-1 pr-2.5 pl-1 transition hover:border-brand-300">
                             <Avatar name={m.name} initials={m.avatar} size={20} />
                             <span className="text-xs font-medium text-ink-700">{m.name.split(' ')[0]}</span>
                           </Link>
@@ -300,7 +300,7 @@ export function MentorCompetition() {
             <ol className="space-y-2.5">
               {board.map((e, i) => (
                 <li key={e.user.id} className="flex items-center gap-3">
-                  <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
+                  <span className={`grid h-7 w-7 shrink-0 place-items-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
                   <Avatar name={e.user.name} initials={e.user.avatar} size={28} />
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">{e.user.name}</span>
                   <span className="shrink-0 text-xs font-bold text-ink-600 tabular-nums">{formatNumber(e.profile?.xp ?? 0)}</span>
@@ -315,7 +315,7 @@ export function MentorCompetition() {
             <ol className="relative space-y-3.5 border-l edge pl-5">
               {competition.schedule.map((s) => (
                 <li key={s.id} className="relative">
-                  <span className="absolute top-1.5 -left-[1.65rem] h-2.5 w-2.5 rounded-full bg-accent-600 ring-4 ring-white" aria-hidden="true" />
+                  <span className="absolute top-1.5 -left-[1.65rem] h-2.5 w-2.5 bg-accent-600 ring-4 ring-white" aria-hidden="true" />
                   <p className="font-mono text-xs font-bold text-accent-700">
                     {t('day_n', { n: s.day })} · {s.time}
                   </p>
@@ -365,7 +365,7 @@ export function MentorSettings() {
             [t('students'), groups.reduce((a, g) => a + g.studentIds.length, 0)],
             [t('reviews_given'), state.projects.reduce((a, p) => a + p.feedback.filter((f) => f.mentorId === user.id).length, 0)],
           ].map(([k, v]) => (
-            <div key={k} className="rounded-xl fill p-3">
+            <div key={k} className="fill p-3">
               <dt className="text-xs font-semibold text-ink-500">{k}</dt>
               <dd className="mt-1 text-lg font-bold text-ink-900 tabular-nums">{v}</dd>
             </div>
@@ -421,7 +421,7 @@ export function MentorSettings() {
           </>
         }
       >
-        <p className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="flex items-start gap-3 border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertTriangle size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
           {t('this_cannot_be_undone_and_it_affects_every_accou')}
         </p>

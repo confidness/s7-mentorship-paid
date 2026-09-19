@@ -57,7 +57,7 @@ export default function Competition() {
               key={c.id}
               onClick={() => setPicked(c.id)}
               aria-pressed={c.id === competition.id}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+              className={`px-3.5 py-1.5 text-xs font-semibold transition ${
                 c.id === competition.id ? 'bg-accent-600 text-white' : 'fill text-ink-600 ring-1 rim hover:text-ink-900'
               }`}
             >
@@ -72,7 +72,7 @@ export default function Competition() {
           <div className="relative flex flex-wrap items-end justify-between gap-5">
             <div>
               {competition.season && (
-                <span className="inline-flex items-center gap-1.5 rounded-full fill-strong px-3 py-1 text-xs font-bold text-accent-700">
+                <span className="inline-flex items-center gap-1.5 fill-strong px-3 py-1 text-xs font-bold text-accent-700">
                   <Trophy size={13} aria-hidden="true" /> {competition.season}
                 </span>
               )}
@@ -182,7 +182,7 @@ export default function Competition() {
               const mine = team?.memberIds.includes(user.id)
               return (
                 <Card key={task.id} className="flex flex-wrap items-start gap-4 p-5">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-50 text-accent-700 ring-1 ring-accent-200 ring-inset">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center bg-accent-50 text-accent-700 ring-1 ring-accent-200 ring-inset">
                     <Target size={18} aria-hidden="true" />
                   </span>
                   <div className="min-w-[14rem] flex-1">
@@ -232,7 +232,7 @@ export default function Competition() {
           <ol className="relative space-y-4 border-l edge pl-6">
             {competition.schedule.map((item) => (
               <li key={item.id} className="relative">
-                <span className="absolute top-1.5 -left-[1.9rem] h-3 w-3 rounded-full bg-accent-600 ring-4 ring-white" aria-hidden="true" />
+                <span className="absolute top-1.5 -left-[1.9rem] h-3 w-3 bg-accent-600 ring-4 ring-white" aria-hidden="true" />
                 <p className="font-mono text-xs font-bold text-accent-700">
                   {t('day_n', { n: item.day })} · {item.time}
                 </p>
@@ -254,7 +254,7 @@ export default function Competition() {
           <ol className="divide-y divider">
             {board.map((entry, i) => (
               <li key={entry.user.id} className={`flex items-center gap-4 px-5 py-3.5 ${entry.user.id === user.id ? 'bg-brand-50/60' : ''}`}>
-                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm font-bold tabular-nums ${i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-ink-200 text-ink-700' : i === 2 ? 'bg-orange-100 text-orange-700' : 'fill text-ink-500'}`}>
+                <span className={`grid h-8 w-8 shrink-0 place-items-center text-sm font-bold tabular-nums ${i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-ink-200 text-ink-700' : i === 2 ? 'bg-orange-100 text-orange-700' : 'fill text-ink-500'}`}>
                   {i + 1}
                 </span>
                 <Avatar name={entry.user.name} initials={entry.user.avatar} size={34} />

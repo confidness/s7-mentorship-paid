@@ -133,7 +133,7 @@ export default function Settings() {
           </>
         }
       >
-        <p className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="flex items-start gap-3 border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertTriangle size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
           {t('this_cannot_be_undone_and_it_affects_every_accou')}
         </p>

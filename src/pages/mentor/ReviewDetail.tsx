@@ -113,7 +113,7 @@ export default function ReviewDetail() {
             <SectionHeading title={t('what_the_student_says')} icon={Sparkles} />
             <p className="text-[15px] leading-relaxed whitespace-pre-line text-ink-700">{project.description}</p>
             {project.notes && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+              <div className="mt-4 border border-amber-200 bg-amber-50/70 p-4">
                 <p className="text-xs font-semibold text-amber-800">{t('notes_for_you')}</p>
                 <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-line text-amber-900">{project.notes}</p>
               </div>
@@ -127,7 +127,7 @@ export default function ReviewDetail() {
 
               {report && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5">
+                  <div className="border border-emerald-200 bg-emerald-50/60 p-3.5">
                     <p className="text-xs font-bold text-emerald-800">{t('checks_passed_n', { n: report.passed.length })}</p>
                     <ul className="mt-2 space-y-1 text-sm text-emerald-900">
                       {report.passed.map((c) => (
@@ -136,7 +136,7 @@ export default function ReviewDetail() {
                       {report.passed.length === 0 && <li className="text-emerald-900/70">{t('none')}</li>}
                     </ul>
                   </div>
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3.5">
+                  <div className="border border-rose-200 bg-rose-50/60 p-3.5">
                     <p className="text-xs font-bold text-rose-800">{t('checks_missing_n', { n: report.failed.length })}</p>
                     <ul className="mt-2 space-y-1 text-sm text-rose-900">
                       {report.failed.map((c) => (
@@ -153,12 +153,12 @@ export default function ReviewDetail() {
           <Card className="p-5 sm:p-6">
             <SectionHeading title={t('attachments')} subtitle={t('files_n', { n: project.attachments.length })} />
             {project.attachments.length === 0 ? (
-              <p className="rounded-xl border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('nothing_attached_consider_asking_for_a_photo_of_')}</p>
+              <p className="border border-dashed edge px-4 py-8 text-center text-sm text-ink-500">{t('nothing_attached_consider_asking_for_a_photo_of_')}</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {project.attachments.map((a) =>
                   a.kind === 'image' ? (
-                    <figure key={a.id} className="overflow-hidden rounded-xl border edge">
+                    <figure key={a.id} className="overflow-hidden border edge">
                       <img src={a.url} alt={a.name} className="w-full object-cover" loading="lazy" />
                       <figcaption className="fill px-3 py-2 text-xs text-ink-600">{a.name}</figcaption>
                     </figure>
@@ -194,7 +194,7 @@ export default function ReviewDetail() {
                     ))}
                   </ul>
                 </div>
-                <div className="rounded-xl border border-accent-200 bg-accent-50/60 p-4">
+                <div className="border border-accent-200 bg-accent-50/60 p-4">
                   <p className="flex items-center gap-1.5 text-xs font-bold text-accent-800">
                     <Trophy size={13} aria-hidden="true" /> {t('challenge_title', { title: lesson.challenge.title })}
                   </p>
@@ -211,7 +211,7 @@ export default function ReviewDetail() {
             <Card className="p-5 sm:p-6">
               <SectionHeading title={t('decision_recorded')} icon={CheckCircle2} />
               {project.feedback.map((f) => (
-                <div key={f.id} className="rounded-xl border edge fill p-4">
+                <div key={f.id} className="border edge fill p-4">
                   <Badge tone={f.decision === 'approved' ? 'success' : 'warning'}>{f.decision === 'approved' ? t('approved') : t('changes_requested')}</Badge>
                   <p className="mt-2.5 text-sm leading-relaxed whitespace-pre-line text-ink-700">{f.message}</p>
                 </div>
@@ -239,7 +239,7 @@ export default function ReviewDetail() {
                         max={5}
                         value={rubric[r.key]}
                         onChange={(e) => setRubric({ ...rubric, [r.key]: Number(e.target.value) })}
-                        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-ink-200 accent-brand-600"
+                        className="h-2 w-full cursor-pointer appearance-none bg-ink-200 accent-brand-600"
                         aria-label={t('score_of', { name: t(r.label) })}
                       />
                     </label>
@@ -261,7 +261,7 @@ export default function ReviewDetail() {
 
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {QUICK_FEEDBACK.map((q) => (
-                  <button key={q} onClick={() => setMessage((m) => `${m}${t(q)} `)} className="rounded-full border edge fill-strong px-2.5 py-1 text-[11px] font-medium text-ink-600 transition hover:border-brand-300 hover:bg-brand-50">
+                  <button key={q} onClick={() => setMessage((m) => `${m}${t(q)} `)} className="border edge fill-strong px-2.5 py-1 text-[11px] font-medium text-ink-600 transition hover:border-brand-300 hover:bg-brand-50">
                     {t(q)}
                   </button>
                 ))}
@@ -276,7 +276,7 @@ export default function ReviewDetail() {
                 </Button>
               </div>
 
-              <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+              <div className="mt-5 border border-emerald-200 bg-emerald-50/60 p-4">
                 <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                   <Zap size={13} aria-hidden="true" />{t('on_approval')}</p>
                 <ul className="mt-2 space-y-1 text-sm text-emerald-900">

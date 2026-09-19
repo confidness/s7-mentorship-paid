@@ -4,218 +4,253 @@
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 /*
-  Liquid Glass design system, finished matte.
+  Brutalist system, coloured by the shader it sits on.
 
-  The material is frosted rather than polished: panels are a near-uniform fill over a heavily
-  blurred backdrop, with no specular rim, no white inset lip and only a touch of added
-  saturation. A high saturate() makes what is behind a panel read through it as if the surface
-  were wet; a falling gradient plus a bright top edge is what reads as gloss. Both are gone.
+  The palette is not invented. It is read off the liquid-metal field: the near-black at the
+  centre of a metaball, the cool slate of its shadow side, the white of the tint, and the
+  molten red running into signal yellow that the chromatic aberration throws along every
+  edge. There is no green anywhere in that image, so there is none here.
 
-  Three rules the whole surface follows:
-  1. Glass is chrome, never content. Navigation and controls float and diffuse; text and data
-     sit on a fill opaque enough to read against anything behind it.
-  2. Corners are concentric. A 26px card holds 18px rows holding 12px controls, so the curves
-     stay parallel instead of fighting.
-  3. One saturated element per screen — the primary action. Everything else is glass, ink or air.
+  What brutalism means in this file, concretely, since the word gets used loosely:
+
+  1. Nothing pretends to be glass. No blur, no saturation lift, no specular rim, no soft
+     shadow. A panel is an opaque rectangle with a black rule around it, and it says so.
+  2. Corners are square. Every radius token is 0 and the utilities were squared with them —
+     a 26px card holding 18px rows was the old system's idea of care, and it is gone.
+  3. Depth is a hard offset, not a blur. 4px 4px 0 black reads as one sheet of paper resting
+     on another, which is honest about what the interface is.
+  4. Hierarchy is weight and size. Colour is rationed: yellow for the one thing that matters
+     on a screen, red for what is destructive or wrong, and nothing else.
 */
 
 @theme {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Porcelain canvas — the light the glass bends. */
-  --color-canvas: #eaeff8;
+  /* The metal's own light grey. Not white — white is the paper laid on top of it. */
+  --color-canvas: #dcdcde;
 
-  --color-ink-50: #f5f8fc;
-  --color-ink-100: #eaf0f8;
-  --color-ink-200: #dde5f0;
-  --color-ink-300: #c3cfdf;
-  --color-ink-400: #8e9cb0;
-  --color-ink-500: #596579;
-  --color-ink-600: #4a5568;
-  --color-ink-700: #333d4e;
-  --color-ink-800: #1d2635;
-  --color-ink-900: #0f1724;
-  --color-ink-950: #0a0f19;
+  --color-ink-50: #f7f7f8;
+  --color-ink-100: #ececed;
+  --color-ink-200: #d6d6d9;
+  --color-ink-300: #b4b4b9;
+  --color-ink-400: #8a8a92;
+  --color-ink-500: #4d4d55;
+  --color-ink-600: #3d3d45;
+  --color-ink-700: #2a2a31;
+  --color-ink-800: #1b1b21;
+  --color-ink-900: #000000;
+  --color-ink-950: #000000;
 
-  /* The logo blue, as a ramp. 500 is the mark's own #1560ec; 600 is a notch deeper because
-     it carries link text and has to clear AA on pale glass, where 500 would not. */
-  --color-brand-50: #eef4ff;
-  --color-brand-100: #d9e6ff;
-  --color-brand-200: #b9d1ff;
-  --color-brand-300: #8bb2ff;
-  --color-brand-400: #5a8dff;
-  --color-brand-500: #1560ec;
-  --color-brand-600: #1050d8;
-  --color-brand-700: #0d43b4;
-  --color-brand-800: #0b368f;
+  /* Molten red, the inner edge of the aberration. 500 is the fill; 600 and up are the type
+     weights, because red has to be this dark to clear AA on paper. */
+  --color-brand-50: #ffeceb;
+  --color-brand-100: #ffd6d3;
+  --color-brand-200: #ffb0aa;
+  --color-brand-300: #ff7a70;
+  --color-brand-400: #f8483c;
+  --color-brand-500: #e6332a;
+  --color-brand-600: #c81e14;
+  --color-brand-700: #9d150d;
+  --color-brand-800: #6d0f09;
 
-  /* Amber, emerald and rose text sit on pale glass, where Tailwind's own 600s reach only
-     2.8:1, 3.8:1 and 3.9:1. Each is darkened here so every status shade clears AA as text,
-     and they stay the same gradient stops they always were. */
-  --color-amber-600: #92400e;
-  --color-emerald-600: #047857;
-  --color-rose-600: #be123c;
+  /* Signal yellow, the outer edge of the same aberration, and the loudest thing available.
+     It carries black text and never white, which is why the high end runs to olive:
+     text-accent-700 still has to be legible on paper. */
+  --color-accent-50: #fffbe0;
+  --color-accent-100: #fff4b0;
+  --color-accent-200: #ffec70;
+  --color-accent-300: #ffe63c;
+  --color-accent-400: #ffe000;
+  --color-accent-500: #e8cc00;
+  --color-accent-600: #a89300;
+  --color-accent-700: #6b5d00;
+  --color-accent-800: #473d00;
 
-  /* Those three are TEXT colours, and the dark theme lightens them so they read against a dark
-     surface. Used the other way round — as a solid fill carrying white text — that lightening
-     is exactly backwards, and a notification badge ends up at 2.7:1. These two are the fill
-     version: deliberately not re-tinted for dark, because white has to sit on them in both. */
-  --color-danger-solid: #be123c;
-  --color-success-solid: #047857;
+  /* The cool side of the metal. It carries settled states — reviewed, approved, done —
+     because the warm family is spoken for and this palette has no green to spend. */
+  --color-slate-50: #e7e9f0;
+  --color-slate-cool: #6f7790;
+  --color-slate-deep: #3f4558;
 
-  /* Deep green companion — the second stop in every accent gradient. Blue runs into it
-     through teal, which is why the ramp leans slightly cool rather than grassy. */
-  --color-accent-50: #eaf7f0;
-  --color-accent-100: #d3efe0;
-  --color-accent-200: #aadfc5;
-  --color-accent-300: #6ee7a8;
-  --color-accent-400: #2f9e6b;
-  --color-accent-500: #157a50;
-  --color-accent-600: #0f5c3c;
-  --color-accent-700: #0b4a31;
-  --color-accent-800: #093524;
+  /*
+   * Tailwind's own amber, rose and emerald are re-pointed at this palette, whole ramps rather
+   * than a step each. There are 150-odd call sites across the pages and overriding only the
+   * 600s left the rest of every ramp showing Tailwind's orange, pink and green — three hues
+   * that appear nowhere in the shader. Remapping here moves all of them without touching a
+   * component: amber becomes the signal yellow, rose the molten red, emerald the cool slate.
+   */
+  --color-amber-50: #fffbe0;
+  --color-amber-100: #fff4b0;
+  --color-amber-200: #ffec70;
+  --color-amber-300: #ffe63c;
+  --color-amber-400: #ffe000;
+  --color-amber-500: #e8cc00;
+  --color-amber-600: #6b5d00;
+  --color-amber-700: #5a4e00;
+  --color-amber-800: #473d00;
+  --color-amber-900: #2e2800;
 
-  /* Concentric radii. */
-  --radius-glass: 26px;
-  --radius-inner: 18px;
-  --radius-control: 14px;
+  --color-rose-50: #ffeceb;
+  --color-rose-100: #ffd6d3;
+  --color-rose-200: #ffb0aa;
+  --color-rose-300: #ff7a70;
+  --color-rose-400: #f8483c;
+  --color-rose-500: #d62419;
+  --color-rose-600: #c81e14;
+  --color-rose-700: #9d150d;
+  --color-rose-800: #6d0f09;
+  --color-rose-900: #4a0a06;
 
-  /* The material, as variables. Light values live here; the dark block below swaps them. */
-  --glass-card: linear-gradient(152deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.87));
-  --glass-chrome: linear-gradient(160deg, rgb(252 253 255 / 0.95), rgb(249 251 254 / 0.93));
-  --glass-dim: linear-gradient(150deg, rgb(255 255 255 / 0.66), rgb(255 255 255 / 0.6));
-  --glass-border: rgb(15 23 36 / 0.07);
-  --glass-rim: linear-gradient(125deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.05) 45%, rgb(255 255 255 / 0.11) 100%);
-  --fill-strong: rgb(255 255 255 / 0.9);
-  /* The lift a control gets on hover or focus. A literal white here would erase text in the dark. */
-  --fill-raised: rgb(255 255 255 / 0.99);
-  --fill: rgb(255 255 255 / 0.78);
-  --fill-soft: rgb(255 255 255 / 0.62);
-  --edge: rgb(15 23 36 / 0.07);
-  --divider: rgb(15 23 36 / 0.06);
-  --tint-blue: linear-gradient(152deg, rgb(190 215 255 / 0.92), rgb(186 236 214 / 0.62) 58%, rgb(255 255 255 / 0.5));
-  --tint-accent: linear-gradient(152deg, rgb(183 231 208 / 0.9), rgb(255 255 255 / 0.5));
-  --tint-mint: linear-gradient(152deg, rgb(186 242 220 / 0.9), rgb(255 255 255 / 0.5));
-  --aurora-1: rgb(96 158 255 / 0.74);
-  --aurora-2: rgb(42 158 108 / 0.58);
-  --aurora-3: rgb(110 214 176 / 0.62);
-  --aurora-4: rgb(96 186 156 / 0.46);
+  --color-emerald-50: #e7e9f0;
+  --color-emerald-100: #d3d7e4;
+  --color-emerald-200: #b6bcd0;
+  --color-emerald-300: #9098b4;
+  --color-emerald-400: #6f7790;
+  --color-emerald-500: #565d75;
+  --color-emerald-600: #3f4558;
+  --color-emerald-700: #333849;
+  --color-emerald-800: #262a37;
+  --color-emerald-900: #1a1d28;
 
-  /* Code keeps its own dark palette in both themes — an editor is always a dark instrument. */
-  --code-bg: #0b1120;
-  --code-fg: #e2e8f0;
-  --code-muted: #94a3b8;
-  --code-line: #5b6880;
-  --code-edge: rgb(255 255 255 / 0.1);
+  /* The handful of stragglers, folded into the same three families. */
+  --color-orange-50: #fffbe0;
+  --color-orange-100: #fff4b0;
+  --color-orange-400: #ffe000;
+  --color-orange-500: #e8cc00;
+  --color-orange-600: #a89300;
+  --color-teal-500: #565d75;
+  --color-teal-600: #3f4558;
+  --color-cyan-100: #d3d7e4;
+  --color-cyan-800: #262a37;
+  --color-sky-500: #6f7790;
+  --color-violet-500: #3f4558;
 
-  /* Two shadow recipes only: one for floating chrome, one for resting content. */
-  --shadow-soft: 0 1px 2px rgb(11 18 32 / 0.05), 0 12px 28px -20px rgb(11 18 32 / 0.22);
-  --shadow-lift: 0 2px 6px rgb(11 18 32 / 0.06), 0 24px 44px -26px rgb(11 18 32 / 0.26);
-  --shadow-float: 0 18px 38px -24px rgb(11 18 32 / 0.3);
+  /* Black on yellow, and it stays black in the dark theme too. ink-900 inverts to white,
+     which on the signal yellow is 1.3:1 — this is the token the primary action must use. */
+  --color-on-accent: #000000;
+
+  /* Solid fills that carry white text in both themes. Separate from the text colours above
+     for the reason this file learned the hard way: a colour tuned to read ON paper is the
+     wrong colour to print paper on. */
+  --color-danger-solid: #c81e14;
+  --color-success-solid: #3f4558;
+
+  /* Square. All of them. Left as tokens so the intent stays greppable. */
+  --radius-glass: 0px;
+  --radius-inner: 0px;
+  --radius-control: 0px;
+
+  /* The material: opaque paper, black rules, hard offsets. */
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f2f2f3;
+  --glass-border: #000000;
+  --glass-rim: transparent;
+  --fill-strong: #ffffff;
+  --fill-raised: #ffe000;
+  --fill: #f2f2f3;
+  --fill-soft: #ececed;
+  --edge: #000000;
+  --divider: #000000;
+  --tint-blue: #e7e9f0;
+  --tint-accent: #fff4b0;
+  --tint-mint: #ececed;
+
+  /* Code keeps its own dark surface in both themes — an editor is always a dark instrument. */
+  --code-bg: #0c0c0f;
+  --code-fg: #f2f2f3;
+  --code-muted: #8a8a92;
+  --code-line: #5b5b64;
+  --code-edge: #2a2a31;
+
+  /* Depth is an offset, not a blur. Resting, lifted, floating. */
+  --shadow-soft: 4px 4px 0 0 var(--color-ink-900);
+  --shadow-lift: 8px 8px 0 0 var(--color-ink-900);
+  --shadow-float: 6px 6px 0 0 var(--color-ink-900);
 }
 
-/* Dark is the same material over a dark room: the ink ramp inverts, the glass thins out. */
+/* Dark is the same system with the paper and the ink swapped. Nothing softens. */
 [data-theme='dark'] {
-  --color-canvas: #070b14;
+  --color-canvas: #141418;
 
-  --color-ink-50: #141b26;
-  --color-ink-100: #1b2330;
-  --color-ink-200: #2a3444;
-  --color-ink-300: #3d4859;
-  --color-ink-400: #6b7a90;
-  /* 500 is the secondary text colour and carries 219 call sites, including 12px labels sitting
-     on three or four stacked translucent washes — which lift the backdrop to about #44474e, far
-     lighter than the canvas. At #94a2b8 those landed at 3.6:1. Raised until the deepest of them
-     clears AA, with 600 moved up in step so the ramp keeps its separation. */
-  --color-ink-500: #b9c5d6;
-  --color-ink-600: #ccd6e3;
-  --color-ink-700: #cdd8e6;
-  --color-ink-800: #e2e9f3;
-  --color-ink-900: #f3f7fc;
+  --color-ink-50: #16161a;
+  --color-ink-100: #1e1e24;
+  --color-ink-200: #2c2c34;
+  --color-ink-300: #43434e;
+  --color-ink-400: #7d7d88;
+  --color-ink-500: #b3b3bd;
+  --color-ink-600: #cfcfd7;
+  --color-ink-700: #e2e2e8;
+  --color-ink-800: #f2f2f5;
+  --color-ink-900: #ffffff;
+  --color-ink-950: #ffffff;
 
-  --color-brand-50: #0e1c36;
-  --color-brand-100: #152746;
-  --color-brand-200: #1c3665;
-  --color-brand-700: #9dc0ff;
-  --color-brand-800: #c4daff;
+  /* The ramp inverts so the numbers keep meaning the same thing: low is a fill, high is type. */
+  --color-brand-50: #3a0b07;
+  --color-brand-100: #5c110b;
+  --color-brand-200: #8a1a11;
+  --color-brand-600: #ff6a5e;
+  --color-brand-700: #ff938a;
+  --color-brand-800: #ffc0ba;
 
-  --glass-card: linear-gradient(152deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.065));
-  --glass-chrome: linear-gradient(160deg, rgb(22 29 43 / 0.93), rgb(19 26 38 / 0.91));
-  --glass-dim: linear-gradient(150deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.06));
-  --glass-border: rgb(255 255 255 / 0.1);
-  --glass-rim: linear-gradient(125deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.02) 45%, rgb(255 255 255 / 0.04) 100%);
-  --fill-strong: rgb(255 255 255 / 0.14);
-  --fill-raised: rgb(255 255 255 / 0.2);
-  --fill: rgb(255 255 255 / 0.09);
-  --fill-soft: rgb(255 255 255 / 0.055);
-  --edge: rgb(255 255 255 / 0.13);
-  --divider: rgb(255 255 255 / 0.09);
-  --tint-blue: linear-gradient(152deg, rgb(56 104 190 / 0.5), rgb(24 116 86 / 0.4) 62%, rgb(255 255 255 / 0.05));
-  --tint-accent: linear-gradient(152deg, rgb(24 110 78 / 0.5), rgb(255 255 255 / 0.05));
-  --tint-mint: linear-gradient(152deg, rgb(46 150 124 / 0.45), rgb(255 255 255 / 0.05));
-  --aurora-1: rgb(44 100 220 / 0.5);
-  --aurora-2: rgb(20 116 80 / 0.56);
-  --aurora-3: rgb(28 144 112 / 0.5);
-  --aurora-4: rgb(24 96 82 / 0.38);
+  --color-accent-50: #2e2800;
+  --color-accent-100: #4a3f00;
+  --color-accent-200: #6b5c00;
+  --color-accent-600: #ffe63c;
+  --color-accent-700: #fff08a;
+  --color-accent-800: #fff7c4;
 
-  /* Pale tints are surfaces, not colours: in the dark they become translucent washes, and the
-     deep shades that sit on them become light. One override retints every callout at once. */
-  --color-accent-50: rgb(21 122 80 / 0.16);
-  --color-accent-100: rgb(21 122 80 / 0.22);
-  --color-accent-200: rgb(47 158 107 / 0.32);
-  --color-accent-700: #6ee7a8;
-  --color-accent-800: #a7f3ca;
+  /* The same three ramps, inverted: low steps become dark fills, high steps become light type. */
+  --color-amber-50: #2e2800;
+  --color-amber-100: #4a3f00;
+  --color-amber-200: #6b5c00;
+  --color-amber-300: #8f7c00;
+  --color-amber-600: #ffe63c;
+  --color-amber-700: #fff08a;
+  --color-amber-800: #fff7c4;
+  --color-amber-900: #fffce6;
 
-  --color-emerald-50: rgb(16 185 129 / 0.14);
-  --color-emerald-100: rgb(16 185 129 / 0.2);
-  --color-emerald-200: rgb(52 211 153 / 0.3);
-  --color-emerald-600: #34d399;
-  --color-emerald-700: #6ee7b7;
-  --color-emerald-800: #a7f3d0;
-  --color-emerald-900: #d1fae5;
+  --color-rose-50: #3a0b07;
+  --color-rose-100: #5c110b;
+  --color-rose-200: #8a1a11;
+  --color-rose-300: #b8241a;
+  --color-rose-600: #ff6a5e;
+  --color-rose-700: #ff938a;
+  --color-rose-800: #ffc0ba;
+  --color-rose-900: #ffe0dc;
 
-  --color-amber-50: rgb(245 158 11 / 0.14);
-  --color-amber-100: rgb(245 158 11 / 0.2);
-  --color-amber-200: rgb(251 191 36 / 0.32);
-  --color-amber-600: #fbbf24;
-  --color-amber-700: #fcd34d;
-  --color-amber-800: #fde68a;
-  --color-amber-900: #fef3c7;
+  --color-emerald-50: #1a1d28;
+  --color-emerald-100: #242938;
+  --color-emerald-200: #333a4d;
+  --color-emerald-300: #4a5268;
+  --color-emerald-600: #aab2cc;
+  --color-emerald-700: #c3c9dc;
+  --color-emerald-800: #dde1ec;
+  --color-emerald-900: #eef0f6;
 
-  --color-rose-600: #fb7185;
-  --color-rose-50: rgb(244 63 94 / 0.14);
-  --color-rose-100: rgb(244 63 94 / 0.2);
-  --color-rose-200: rgb(251 113 133 / 0.3);
-  --color-rose-700: #fda4af;
-  --color-rose-800: #fecdd3;
-  --color-rose-900: #ffe4e6;
+  --color-orange-50: #2e2800;
+  --color-orange-100: #4a3f00;
+  --color-cyan-100: #242938;
+  --color-cyan-800: #dde1ec;
 
-  --color-violet-50: rgb(139 92 246 / 0.14);
-  --color-violet-100: rgb(139 92 246 / 0.2);
-  --color-violet-200: rgb(167 139 250 / 0.3);
-  --color-violet-700: #c4b5fd;
-  --color-violet-800: #ddd6fe;
-  --color-violet-900: #ede9fe;
+  --color-slate-50: #1a1d28;
+  --color-slate-cool: #aab2cc;
+  --color-slate-deep: #8d95b0;
 
-  --color-cyan-50: rgb(6 182 212 / 0.14);
-  --color-cyan-100: rgb(6 182 212 / 0.2);
-  --color-cyan-200: rgb(34 211 238 / 0.3);
-  --color-cyan-700: #67e8f9;
-  --color-cyan-800: #a5f3fc;
-
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.25), 0 14px 30px -20px rgb(0 0 0 / 0.6);
-  --shadow-lift: 0 2px 8px rgb(0 0 0 / 0.3), 0 26px 48px -26px rgb(0 0 0 / 0.7);
-  --shadow-float: 0 20px 42px -24px rgb(0 0 0 / 0.65);
-}
-
-/* Utility-level exception: the gradients keep 600 as a stop, text does not. */
-[data-theme='dark'] .text-brand-600 {
-  color: var(--color-brand-300);
-}
-
-[data-theme='dark'] .text-accent-600 {
-  color: var(--color-accent-300);
+  --glass-card: #000000;
+  --glass-chrome: #000000;
+  --glass-dim: #0c0c0f;
+  --glass-border: #ffffff;
+  --fill-strong: #1e1e24;
+  --fill-raised: #ffe000;
+  --fill: #16161a;
+  --fill-soft: #0c0c0f;
+  --edge: #ffffff;
+  --divider: #ffffff;
+  --tint-blue: #1a1d28;
+  --tint-accent: #4a3f00;
+  --tint-mint: #1e1e24;
 }
 
 @layer base {
@@ -231,30 +266,33 @@
   body {
     @apply text-ink-900 font-sans antialiased;
     margin: 0;
+    /* No aurora. The shader is the background now, and anything painted here would only sit
+       between it and the content. */
     background-color: var(--color-canvas);
-    /* Three fixed light sources. Without something behind it, glass is just a grey box. */
-    background-image:
-      radial-gradient(48rem 34rem at 4% -4%, var(--aurora-1), transparent 62%),
-      radial-gradient(44rem 34rem at 99% 2%, var(--aurora-2), transparent 64%),
-      radial-gradient(40rem 30rem at 72% 96%, var(--aurora-3), transparent 62%),
-      radial-gradient(38rem 30rem at 18% 88%, var(--aurora-4), transparent 62%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+  }
+
+  /* Tight and heavy: size and weight do the work colour used to. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.03em;
   }
 
   * {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(11 18 32 / 0.18) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-ink-900) transparent;
   }
 
+  /* Focus is a block, not a hairline — it has to survive on top of a moving shader. */
   :focus-visible {
-    outline: 2.5px solid var(--color-brand-500);
+    outline: 3px solid var(--color-ink-900);
     outline-offset: 2px;
-    border-radius: 10px;
+    border-radius: 0;
   }
 
   ::selection {
-    background: var(--color-brand-200);
+    background: #ffe000;
+    color: #000000;
   }
 
   /* Grid children default to min-width:auto, so one long unbreakable string widens the whole
@@ -271,81 +309,56 @@
 @layer components {
   /* ---------------------------------------------------------------- the material */
 
-  /* Content surface: opaque enough to read on, still lets the aurora through.
-     `.glass` is the same material under an older name, kept for the concept page. */
+  /* A sheet of paper with a rule around it. `.glass` is the same thing under the name the
+     old system used; renaming 31 call sites to say the opposite of what they said before
+     would not make anything truer. */
   .card,
   .glass {
     background: var(--glass-card);
-    /* Matte, not glossy: blur enough to diffuse what is behind, and barely lift its saturation.
-       A high saturate() makes the backdrop read through the panel as if it were wet. */
-    backdrop-filter: blur(26px) saturate(115%);
-    -webkit-backdrop-filter: blur(26px) saturate(115%);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-glass);
+    border: 2px solid var(--glass-border);
+    border-radius: 0;
     box-shadow: var(--shadow-soft);
   }
 
-  /* Floating chrome: thinner fill, deeper blur, sits above scrolling content. */
+  /* Chrome sits above scrolling content, so it takes the heavier rule and offset. */
   .chrome {
     background: var(--glass-chrome);
-    backdrop-filter: blur(32px) saturate(118%);
-    -webkit-backdrop-filter: blur(32px) saturate(118%);
-    border: 1px solid var(--glass-border);
+    border: 3px solid var(--glass-border);
     box-shadow: var(--shadow-float);
   }
 
-  /* Recessed well inside a card — rows, wells, code frames. */
+  /* Recessed well inside a sheet — rows, wells, code frames. */
   .inset {
     background: var(--fill-soft);
-    border: 1px solid var(--edge);
+    border: 2px solid var(--edge);
   }
 
   .glass-dim {
     background: var(--glass-dim);
-    backdrop-filter: blur(22px) saturate(112%);
-    -webkit-backdrop-filter: blur(22px) saturate(112%);
-    border: 1px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
   }
 
-  /* The lensing streak along a panel's lit edge. Decoration only — never over text. */
+  /* Was the lensing streak along a lit edge. There is no lit edge now; the class stays so its
+     19 call sites keep parsing, and does nothing. */
   .specular {
     position: relative;
   }
-  /* A rim, not a wash: masked to a 1.5px edge so it can never sit over content. */
-  .specular::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    padding: 1.5px;
-    background: var(--glass-rim);
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-  }
 
+  /* The primary action does not glow. It sits on the page like a stamped plate. */
   .glow-cta {
-    box-shadow:
-      0 10px 28px -8px rgb(21 96 236 / 0.5),
-      0 12px 30px -14px rgb(21 122 80 / 0.55),
-      0 1px 0 0 rgb(255 255 255 / 0.5) inset;
+    box-shadow: var(--shadow-soft);
   }
 
+  /* Hover moves the sheet into its own shadow rather than lifting it out of one. */
   .card-hover {
-    @apply transition-[transform,box-shadow] duration-300;
+    @apply transition-[transform,box-shadow] duration-150;
   }
   .card-hover:hover {
-    transform: translateY(-2px);
+    transform: translate(-2px, -2px);
     box-shadow: var(--shadow-lift);
   }
 
-  /* Tinted glass — accent surfaces that still read as the same material. */
+  /* Flat tints — surfaces that carry a role, with no gradient left in them. */
   .tint-blue {
     background: var(--tint-blue);
   }
@@ -391,16 +404,18 @@
     color: var(--code-line);
   }
 
+  /* The exposed grid, which brutalism is entitled to leave showing. */
   .surface-grid {
     background-image:
-      linear-gradient(to right, rgb(255 255 255 / 0.22) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(255 255 255 / 0.22) 1px, transparent 1px);
-    background-size: 30px 30px;
+      linear-gradient(to right, rgb(0 0 0 / 0.16) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(0 0 0 / 0.16) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 
   .skeleton {
-    @apply animate-pulse rounded-2xl;
+    @apply animate-pulse;
     background: var(--fill);
+    border: 2px solid var(--edge);
   }
 }
 
@@ -422,7 +437,7 @@
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.97);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
