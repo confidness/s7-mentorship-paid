@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "check": "esbuild test/flow.test.ts test/mentor.test.ts test/monetization.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/flow.test.mjs && node node_modules/.cache/mentor.test.mjs && node node_modules/.cache/monetization.test.mjs"
+    "check": "esbuild test/flow.test.ts test/mentor.test.ts test/monetization.test.ts test/progress.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/flow.test.mjs && node node_modules/.cache/mentor.test.mjs && node node_modules/.cache/monetization.test.mjs && node node_modules/.cache/progress.test.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.81",
