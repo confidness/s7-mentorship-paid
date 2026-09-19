@@ -47,8 +47,6 @@ function withDemoCourse(base: AppState): AppState {
     xp: 100,
     objectives: ['Understand the fixture'],
     theory: [{ id: `d-l${n}-t1`, title: 'Theory', body: 'Body' }],
-    components: [],
-    wiring: { description: '', rows: [] },
     code: {
       filename: 'demo.ino',
       source: ['void setup() {', '  Serial.begin(9600);', '}', 'void loop() {', '  Serial.println(1);', '}'].join(String.fromCharCode(10)),

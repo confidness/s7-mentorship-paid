@@ -17,7 +17,6 @@ export interface LessonPack {
   objectives?: string[]
   theory?: Record<string, { title?: string; body?: string; callout?: string; formula?: string }>
   components?: Record<string, { name?: string; role?: string; description?: string }>
-  wiring?: { description?: string; notes?: string[] }
   explain?: string[]
   task?: { title?: string; brief?: string; requirements?: string[] }
   challenge?: { title?: string; brief?: string; hints?: string[] }
@@ -30,13 +29,8 @@ export interface ContentPack {
   achievements: Record<string, { name?: string; description?: string; hint?: string }>
   levels: Record<string, { name?: string; blurb?: string }>
   difficulty: Record<string, string>
-  /** Component names shared by many lessons, keyed by component id. */
-  parts: Record<string, { name?: string; role?: string; description?: string }>
-  /** Wiring terminals and wire colours shared by every lesson, looked up by their English text.
-   *  Pure identifiers (`Arduino D6 (~)`, `Port A`) need no entry — they pass through unchanged. */
-  terminals: Record<string, string>
-  wireColors: Record<string, string>
 }
+
 
 const PACKS: Record<string, ContentPack | undefined> = { ru: RU, kk: KK, en: undefined }
 
@@ -93,20 +87,6 @@ export function localizeLesson(lesson: Lesson): Lesson {
         callout: block.callout && tb.callout ? { ...block.callout, text: tb.callout } : block.callout,
       }
     }),
-    components: lesson.components.map((component) => {
-      const cp = p.components?.[component.id] ?? current.parts[component.id]
-      return cp ? { ...component, ...cp } : component
-    }),
-    wiring: {
-      description: p.wiring?.description ?? lesson.wiring.description,
-      rows: lesson.wiring.rows.map((row, i) => ({
-        ...row,
-        from: current.terminals[row.from] ?? row.from,
-        to: current.terminals[row.to] ?? row.to,
-        color: current.wireColors[row.color] ?? row.color,
-        note: p.wiring?.notes?.[i] ?? row.note,
-      })),
-    },
     code: { ...lesson.code, explain: p.explain ?? lesson.code.explain },
     task: {
       ...lesson.task,

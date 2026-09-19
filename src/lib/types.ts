@@ -44,28 +44,12 @@ export interface StudentProfile {
   goal: string
 }
 
-export interface Component {
-  id: string
-  name: string
-  qty: number
-  role: string
-  description: string
-  icon: 'board' | 'sensor' | 'led' | 'wire' | 'breadboard' | 'resistor' | 'motor' | 'battery'
-}
-
 export interface TheoryBlock {
   id: string
   title: string
   body: string
   callout?: { kind: 'info' | 'warning' | 'tip'; text: string }
   formula?: string
-}
-
-export interface WiringRow {
-  from: string
-  to: string
-  color: string
-  note: string
 }
 
 export interface Lesson {
@@ -80,8 +64,6 @@ export interface Lesson {
   xp: number
   objectives: string[]
   theory: TheoryBlock[]
-  components: Component[]
-  wiring: { description: string; rows: WiringRow[] }
   /** `starter` is what the editor opens with; `source` is the worked reference. */
   code: { filename: string; source: string; starter?: string; explain: string[] }
   task: { title: string; brief: string; requirements: string[]; xp: number }

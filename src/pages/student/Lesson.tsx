@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  AlertTriangle, ArrowLeft, ArrowRight, Bot, Check, CheckCircle2, ChevronRight, CircuitBoard, Code2, Cpu, FlaskConical, Info, Lightbulb, ListChecks, Lock, PlayCircle,
+  AlertTriangle, ArrowLeft, ArrowRight, Bot, Check, CheckCircle2, ChevronRight, Code2, Info, Lightbulb, ListChecks, Lock, PlayCircle,
   RotateCcw, Send, Sparkles, Target, Trophy, Wand2, Zap,
- Usb } from 'lucide-react'
+} from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { isLessonUnlocked, nextLessonAfter, profileOf } from '../../lib/selectors'
 import { lessonsForCourse, modulesForCourse } from '../../lib/curriculum'
 import { runChecks, type CheckReport } from '../../lib/codecheck'
-import type { PlatformId } from '../../lib/types'
 import { Badge, Button, Card, EmptyState, Modal, ProgressBar, SectionHeading, Tabs, btn, STATUS_LABEL, STATUS_TONE } from '../../components/ui'
 import { CodeBlock, CodeEditor } from '../../components/code'
-import { ComponentCard, VirtualLab, WiringDiagram, WiringTable } from '../../components/lesson-parts'
-import SerialTerminal from '../../components/SerialTerminal'
 import ProjectSubmitModal from '../../components/ProjectSubmitModal'
 import AiMentorPanel from '../../components/AiMentorPanel'
 import NotFound from '../NotFound'
@@ -20,11 +17,10 @@ import { t } from '../../i18n'
 import { localizeDifficulty } from '../../i18n/content'
 import { TransitionPanel } from '../../components/motion'
 
-type Section = 'theory' | 'components' | 'wiring' | 'code' | 'task' | 'challenge'
-const ORDER: Section[] = ['theory', 'components', 'wiring', 'code', 'task', 'challenge']
+type Section = 'theory' | 'code' | 'task' | 'challenge'
+const ORDER: Section[] = ['theory', 'code', 'task', 'challenge']
 
 /** Boards running MicroPython take code straight over the wire; C++ has to be compiled first. */
-const MICROPYTHON = new Set<PlatformId>(['esp32', 'pico'])
 
 const CALLOUT = {
   info: { icon: Info, class: 'border-brand-200/70 bg-brand-100/50 text-brand-800' },
@@ -209,8 +205,6 @@ function LessonPage() {
           className="flex-1"
           tabs={[
             { id: 'theory', label: t('theory'), icon: Sparkles },
-            { id: 'components', label: t('components'), icon: Cpu },
-            { id: 'wiring', label: t('wiring'), icon: CircuitBoard },
             { id: 'code', label: t('code'), icon: Code2 },
             { id: 'task', label: t('task'), icon: ListChecks },
             { id: 'challenge', label: t('challenge'), icon: Trophy },
@@ -250,45 +244,6 @@ function LessonPage() {
               </Card>
             )
           })}
-        </div>
-      )}
-
-      {/* ------------------------------------------------------------ components */}
-      {section === 'components' && (
-        <Card className="p-5 sm:p-6">
-          <SectionHeading title={t('what_you_need')} subtitle={t('parts_for_this_build', { n: lesson.components.length })} icon={Cpu} />
-          {lesson.components.length === 0 ? (
-            <EmptyState icon={Cpu} title={t('no_hardware_for_this_lesson')} body={t('this_one_runs_entirely_in_code_no_parts_to_colle')} />
-          ) : (
-            <div className="grid gap-3.5 md:grid-cols-2">
-              {lesson.components.map((c) => (
-                <ComponentCard key={c.id} component={c} />
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* ------------------------------------------------------------ wiring */}
-      {section === 'wiring' && (
-        <div className="space-y-4">
-          <Card className="overflow-hidden">
-            <div className="border-b edge px-5 py-4">
-              <h3 className="flex items-center gap-2 text-base font-bold text-ink-900">
-                <CircuitBoard size={17} className="text-brand-600" aria-hidden="true" />{t('wiring_scheme')}</h3>
-              <p className="mt-1 text-sm text-ink-600">{lesson.wiring.description}</p>
-            </div>
-            <div className="p-3 sm:p-5">
-              <WiringDiagram rows={lesson.wiring.rows} />
-            </div>
-          </Card>
-
-          {lesson.wiring.rows.length > 0 && (
-            <Card className="p-5 sm:p-6">
-              <SectionHeading title={t('connection_list')} subtitle={t('check_each_one_off_as_you_build')} icon={ListChecks} />
-              <WiringTable rows={lesson.wiring.rows} />
-            </Card>
-          )}
         </div>
       )}
 
@@ -414,23 +369,6 @@ function LessonPage() {
             </ul>
           </Card>
 
-          {/* A real board, when one is plugged in. MicroPython platforms can be handed the code
-              itself; an Arduino sketch needs compiling, so there it is a monitor only. */}
-          <div>
-            <SectionHeading
-              title={t('board_terminal')}
-              subtitle={MICROPYTHON.has(course.platform) ? t('run_this_code_on_a_board_over_usb') : t('watch_what_the_board_prints_over_usb')}
-              icon={Usb}
-            />
-            <SerialTerminal code={code} canRun={MICROPYTHON.has(course.platform)} />
-          </div>
-
-          {lesson.components.some((c) => c.id === 'hc-sr04') && (
-            <div>
-              <SectionHeading title={t('virtual_lab')} subtitle={t('try_the_behaviour_before_you_have_the_hardware_i')} icon={FlaskConical} />
-              <VirtualLab />
-            </div>
-          )}
         </div>
       )}
 
