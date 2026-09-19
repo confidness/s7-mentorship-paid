@@ -53,7 +53,7 @@ export default function ProjectSubmitModal({
     setErrors((e) => ({ ...e, upload: '' }))
   }
 
-  function save(status: 'draft' | 'submitted') {
+  async function save(status: 'draft' | 'submitted') {
     const next: Record<string, string> = {}
     if (title.trim().length < 4) next.title = t('give_the_project_a_title_of_at_least_4_character')
     if (status === 'submitted') {
@@ -64,7 +64,15 @@ export default function ProjectSubmitModal({
     if (Object.keys(next).length) return
 
     setBusy(true)
-    const project = saveProject({ id: existing?.id, title: title.trim(), description: description.trim(), code, notes: notes.trim(), attachments, courseId: lesson.courseId, lessonId: lesson.id }, status)
+    let project
+    try {
+      project = await saveProject({ id: existing?.id, title: title.trim(), description: description.trim(), code, notes: notes.trim(), attachments, courseId: lesson.courseId, lessonId: lesson.id }, status)
+    } catch (error) {
+      // A project that failed to reach the server is not submitted, whatever the modal says.
+      setBusy(false)
+      toast({ title: t('could_not_submit'), body: error instanceof Error ? error.message : '', tone: 'error' })
+      return
+    }
     setBusy(false)
 
     toast(
@@ -88,10 +96,10 @@ export default function ProjectSubmitModal({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {t('cancel')}
           </Button>
-          <Button variant="secondary" icon={Save} onClick={() => save('draft')} disabled={busy}>
+          <Button variant="secondary" icon={Save} onClick={() => void save('draft')} disabled={busy}>
             {t('save_draft')}
           </Button>
-          <Button icon={Send} onClick={() => save('submitted')} loading={busy}>
+          <Button icon={Send} onClick={() => void save('submitted')} loading={busy}>
             {t('submit_for_review')}
           </Button>
         </>

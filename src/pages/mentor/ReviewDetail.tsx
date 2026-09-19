@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, CheckCircle2, Film, ListChecks, MessageSquare, Send, Sparkles, Target, Trophy, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, ClipboardCheck, Film, ListChecks, MessageSquare, Send, Sparkles, Target, Trophy, Zap } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { APPROVAL_BONUS } from '../../lib/logic'
 import { runChecks } from '../../lib/codecheck'
 import { levelFor } from '../../lib/gamification'
 import { courseProgress, nextLessonAfter, profileOf } from '../../lib/selectors'
-import { Avatar, Badge, Button, Card, Field, ProgressBar, SectionHeading, inputClass, STATUS_LABEL, STATUS_TONE } from '../../components/ui'
+import { Avatar, Badge, Button, Card, EmptyState, Field, ProgressBar, SectionHeading, btn, inputClass, STATUS_LABEL, STATUS_TONE } from '../../components/ui'
 import { CodeBlock } from '../../components/code'
 import { relativeTime } from '../../lib/hooks'
 import NotFound from '../NotFound'
@@ -35,13 +35,26 @@ export default function ReviewDetail() {
 
   const project = state.projects.find((p) => p.id === projectId)
 
+  const [claimedByOther, setClaimedByOther] = useState(false)
+
   useEffect(() => {
-    if (project?.status === 'submitted') startReview(project.id)
     // Opening the submission is what claims it — the student sees "Under review" immediately.
+    // The claim can be lost: another mentor may have opened it a second earlier, and the
+    // server answers 409 rather than letting two people write the same review.
+    if (project?.status !== 'submitted') return
+    void startReview(project.id).catch(() => setClaimedByOther(true))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id])
 
   if (!project || !user) return <NotFound />
+
+  if (claimedByOther) {
+    return (
+      <div className="space-y-6">
+        <EmptyState icon={ClipboardCheck} title={t('already_being_reviewed')} body={t('another_mentor_opened_this_first')} action={<Link to="/m/reviews" className={btn('primary')}>{t('back_to_reviews')}</Link>} />
+      </div>
+    )
+  }
 
   const author = state.users.find((u) => u.id === project.authorId)
   const lesson = state.lessons.find((l) => l.id === project.lessonId)
@@ -53,13 +66,19 @@ export default function ReviewDetail() {
   const report = lesson && project.code ? runChecks(project.code, lesson.checks) : null
   const reward = (lesson?.task.xp ?? 0) + APPROVAL_BONUS
 
-  function decide(decision: 'approved' | 'needs_changes') {
+  async function decide(decision: 'approved' | 'needs_changes') {
     if (message.trim().length < 20) {
       setError('Write at least a sentence of feedback — this is the part the student actually reads.')
       return
     }
     setBusy(true)
-    reviewProject(project!.id, decision, message.trim(), rubric)
+    try {
+      await reviewProject(project!.id, decision, message.trim(), rubric)
+    } catch (err) {
+      setBusy(false)
+      toast({ title: t('could_not_save_the_review'), body: err instanceof Error ? err.message : '', tone: 'error' })
+      return
+    }
     setBusy(false)
     toast(
       decision === 'approved'
@@ -268,10 +287,10 @@ export default function ReviewDetail() {
               </div>
 
               <div className="mt-5 space-y-2.5">
-                <Button variant="success" size="lg" icon={CheckCircle2} className="w-full" loading={busy} onClick={() => decide('approved')}>
+                <Button variant="success" size="lg" icon={CheckCircle2} className="w-full" loading={busy} onClick={() => void decide('approved')}>
                   {t('approve_project')}
                 </Button>
-                <Button variant="secondary" size="lg" icon={Send} className="w-full" disabled={busy} onClick={() => decide('needs_changes')}>
+                <Button variant="secondary" size="lg" icon={Send} className="w-full" disabled={busy} onClick={() => void decide('needs_changes')}>
                   {t('request_changes')}
                 </Button>
               </div>

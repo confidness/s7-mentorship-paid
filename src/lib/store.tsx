@@ -101,9 +101,17 @@ interface Ctx {
   refreshStanding: () => Promise<void>
   completeLesson: (lessonId: string) => void
   completeChallenge: (lessonId: string) => void
-  saveProject: (draft: ProjectDraft, status: 'draft' | 'submitted') => Project
-  startReview: (projectId: string) => void
-  reviewProject: (projectId: string, decision: 'approved' | 'needs_changes', message: string, rubric?: Feedback['rubric']) => void
+  /**
+   * Projects round-trip through the server, so these can fail and have to be awaited.
+   *
+   * They used to be written to localStorage, which meant a mentor could only ever see work
+   * submitted from the browser they were reviewing in. Claiming a review can also lose a
+   * race — another mentor may have taken it a second earlier — and the caller has to be able
+   * to say so rather than open an editor over somebody else's review.
+   */
+  saveProject: (draft: ProjectDraft, status: 'draft' | 'submitted') => Promise<Project>
+  startReview: (projectId: string) => Promise<void>
+  reviewProject: (projectId: string, decision: 'approved' | 'needs_changes', message: string, rubric?: Feedback['rubric']) => Promise<void>
   toggleLike: (projectId: string) => void
   enroll: (courseId: string) => void
   updateProfile: (patch: { name?: string; bio?: string; city?: string; goal?: string }) => void
@@ -320,6 +328,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         /* storage blocked — the queue still works for this session */
       }
       await outbox.flush()
+
+      /**
+       * Pull the projects this person may see — their own, the approved gallery, and for a
+       * mentor the whole queue. Row level security decides which, so there is no filter here
+       * to get wrong.
+       *
+       * Server wins for anything it knows about. A project exists on the server only because
+       * it was accepted there, whereas a local copy may be a draft that never made it, so
+       * local-only rows are kept rather than dropped.
+       */
+      const remoteProjects = await api.listProjects().then((r) => r.projects).catch(() => null)
+      if (alive && remoteProjects) {
+        setState((s) => {
+          const byId = new Map(s.projects.map((p) => [p.id, p]))
+          for (const p of remoteProjects) byId.set(p.id, { ...(byId.get(p.id) ?? {}), ...p, feedback: p.feedback } as Project)
+          return { ...s, projects: [...byId.values()] }
+        })
+      }
+
       const remote = await api.getProgress().catch(() => null)
       if (!alive || !remote) return
       setState((s) => applyOps(s, uid, fromSnapshot(remote)))
@@ -447,14 +474,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       refreshStanding,
       completeLesson: (lessonId) => user && commit((s) => logic.completeLesson(s, user.id, lessonId)),
       completeChallenge: (lessonId) => user && commit((s) => logic.completeChallenge(s, user.id, lessonId)),
-      saveProject(draft, status) {
+      // Server first, then state — the same order the lesson mutators use, and for the same
+      // reason: a refusal must not arrive underneath a success message.
+      async saveProject(draft, status) {
         if (!user) throw new Error('not signed in')
-        const result = logic.upsertProject(state, user.id, draft, status)
+        let id = draft.id
+        if (backendConfigured) {
+          const saved = await api.saveProject({
+            // A locally minted id is not a uuid, so an unsaved project asks for one.
+            id: id && !id.startsWith('p-') ? id : undefined,
+            title: draft.title,
+            description: draft.description,
+            code: draft.code,
+            notes: draft.notes,
+            courseId: draft.courseId,
+            lessonId: draft.lessonId,
+            attachments: draft.attachments,
+            status,
+          })
+          id = saved.id
+        }
+        const result = logic.upsertProject(state, user.id, { ...draft, id }, status)
         setState(result.state)
         return result.project
       },
-      startReview: (projectId) => user && setState((s) => logic.startReview(s, user.id, projectId)),
-      reviewProject: (projectId, decision, message, rubric) => user && commit((s) => logic.reviewProject(s, user, projectId, decision, message, rubric)),
+      startReview: async (projectId) => {
+        if (!user) return
+        if (backendConfigured) await api.claimProject(projectId)
+        setState((s) => logic.startReview(s, user.id, projectId))
+      },
+      reviewProject: async (projectId, decision, message, rubric) => {
+        if (!user) return
+        if (backendConfigured) await api.decideProject(projectId, decision, message, rubric)
+        commit((s) => logic.reviewProject(s, user, projectId, decision, message, rubric))
+      },
       toggleLike: (projectId) => setState((s) => logic.toggleLike(s, projectId)),
       enroll: (courseId) => user && commit((s) => logic.enroll(s, user.id, courseId)),
       updateProfile: (patch) => user && setState((s) => logic.updateUser(s, user.id, patch)),
