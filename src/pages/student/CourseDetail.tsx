@@ -40,7 +40,7 @@ export default function CourseDetail() {
           <div className="absolute inset-0 flex items-end p-5 sm:p-6">
             <div className="text-white">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{platform.name}</span>
+                {platform && <span className="bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{platform.name}</span>}
                 <span className="fill-strong px-2.5 py-1 text-xs font-bold text-ink-800">{localizeDifficulty(course.level)}</span>
                 <span className="bg-black/40 px-2.5 py-1 text-xs font-bold backdrop-blur-sm">{course.ageRange}</span>
               </div>
@@ -229,9 +229,7 @@ export default function CourseDetail() {
             <SectionHeading title={t('platform_tooling')} icon={BookOpen} />
             <dl className="space-y-3 text-sm">
               {[
-                ['Hardware', platform.name],
-                ['Vendor', platform.vendor],
-                ['Language', platform.language],
+                ...(platform ? [['Hardware', platform.name], ['Vendor', platform.vendor], ['Language', platform.language]] : []),
                 ['Recommended age', course.ageRange],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between border-b edge pb-2.5">

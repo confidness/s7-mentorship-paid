@@ -1,6 +1,21 @@
 import type { AppState, Lesson, Project, ProjectStatus, TextVars, User } from './types'
 import { t } from '../i18n'
-import { courseLessonOrder, lessonsForCourse } from './curriculum'
+/**
+ * Lesson order comes from state, not from the curriculum constants.
+ *
+ * It used to come from `courseLessonOrder`, which reads a module-level array. That was
+ * indistinguishable from reading state while the two were the same object — the platform
+ * shipped the only courses there were. Now that content arrives from a mentor, a selector
+ * handed a state and then ignoring it for the ordering is simply wrong, and it fails
+ * silently: every lesson looks locked because the order is empty.
+ */
+const orderedFor = (s: AppState, courseId: string): Lesson[] => {
+  const rank = (moduleId: string) => s.modules.find((m) => m.id === moduleId)?.order ?? 0
+  return s.lessons.filter((l) => l.courseId === courseId).sort((a, b) => rank(a.moduleId) - rank(b.moduleId) || a.order - b.order)
+}
+
+/** Flat ordered lesson ids for a course — the chain every unlock decision walks. */
+export const lessonOrder = (s: AppState, courseId: string): string[] => orderedFor(s, courseId).map((l) => l.id)
 import { levelFor } from './gamification'
 
 export const userById = (s: AppState, id?: string) => s.users.find((u) => u.id === id)
@@ -13,8 +28,8 @@ export const students = (s: AppState) => s.users.filter((u) => u.role === 'stude
 
 export function courseProgress(s: AppState, userId: string, courseId: string) {
   const profile = profileOf(s, userId)
-  const total = lessonsForCourse(courseId).length
-  const done = profile ? lessonsForCourse(courseId).filter((l) => profile.completedLessonIds.includes(l.id)).length : 0
+  const total = orderedFor(s, courseId).length
+  const done = profile ? orderedFor(s, courseId).filter((l) => profile.completedLessonIds.includes(l.id)).length : 0
   return { done, total, percent: total ? Math.round((done / total) * 100) : 0 }
 }
 
@@ -22,7 +37,7 @@ export function courseProgress(s: AppState, userId: string, courseId: string) {
 export function isLessonUnlocked(s: AppState, userId: string, lessonId: string) {
   const lesson = lessonById(s, lessonId)
   if (!lesson) return false
-  const order = courseLessonOrder(lesson.courseId)
+  const order = lessonOrder(s, lesson.courseId)
   const index = order.indexOf(lessonId)
   if (index <= 0) return true
   const profile = profileOf(s, userId)
@@ -33,7 +48,7 @@ export function isLessonUnlocked(s: AppState, userId: string, lessonId: string) 
 /** The first lesson in the course the student has not finished yet. */
 export function currentLesson(s: AppState, userId: string, courseId: string): Lesson | undefined {
   const profile = profileOf(s, userId)
-  const order = courseLessonOrder(courseId)
+  const order = lessonOrder(s, courseId)
   const nextId = order.find((id) => !profile?.completedLessonIds.includes(id))
   return lessonById(s, nextId ?? order[order.length - 1])
 }
@@ -41,7 +56,7 @@ export function currentLesson(s: AppState, userId: string, courseId: string): Le
 export function nextLessonAfter(s: AppState, lessonId: string): Lesson | undefined {
   const lesson = lessonById(s, lessonId)
   if (!lesson) return undefined
-  const order = courseLessonOrder(lesson.courseId)
+  const order = lessonOrder(s, lesson.courseId)
   return lessonById(s, order[order.indexOf(lessonId) + 1])
 }
 

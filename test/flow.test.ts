@@ -18,19 +18,69 @@ const assert = {
 }
 
 import { createInitialState } from '../src/lib/seed'
+import type { AppState, Lesson } from '../src/lib/types'
 import * as logic from '../src/lib/logic'
 import { currentLesson, isLessonUnlocked, mentorStats, profileOf } from '../src/lib/selectors'
 import { levelFor } from '../src/lib/gamification'
 import { parseReply } from '../api/mentor'
 import { runChecks } from '../src/lib/codecheck'
 
-let state = createInitialState()
+/**
+ * A course the test owns, because the product no longer ships one.
+ *
+ * The unlock chain, the review loop and the XP rules are all written against courses and
+ * lessons, and they still have to work for whoever puts content back. Building the fixture
+ * here rather than leaning on what the app happens to include is how this check stops
+ * breaking every time the content changes — which is exactly what happened when the robotics
+ * curriculum was retired.
+ */
+function withDemoCourse(base: AppState): AppState {
+  const lesson = (n: number, requiresProject: boolean): Lesson => ({
+    id: `d-l${n}`,
+    moduleId: 'd-m1',
+    courseId: 'demo',
+    order: n,
+    title: `Lesson ${n}`,
+    summary: 'Fixture lesson',
+    minutes: 30,
+    difficulty: 'Beginner',
+    xp: 100,
+    objectives: ['Understand the fixture'],
+    theory: [{ id: `d-l${n}-t1`, title: 'Theory', body: 'Body' }],
+    components: [],
+    wiring: { description: '', rows: [] },
+    code: {
+      filename: 'demo.ino',
+      source: ['void setup() {', '  Serial.begin(9600);', '}', 'void loop() {', '  Serial.println(1);', '}'].join(String.fromCharCode(10)),
+      starter: 'void setup() {}',
+      explain: ['Prints a number'],
+    },
+    task: { title: 'Task', brief: 'Do the thing', requirements: ['Hand it in'], xp: 60 },
+    challenge: { id: `d-l${n}-challenge`, title: 'Challenge', brief: 'Go further', hints: ['Try harder'], xp: 40 },
+    checks: ['serial', 'loop'],
+    requiresProject,
+  })
+  return {
+    ...base,
+    courses: [{
+      id: 'demo', title: 'Demo track', tagline: 'Fixture', description: 'Fixture course',
+      platform: 'arduino', level: 'Beginner', ageRange: '10-14', hours: 6, instructorId: '',
+      gradient: 'from-ink-900 to-ink-700', accent: '#000000', tags: [], outcomes: [],
+    }],
+    modules: [{ id: 'd-m1', courseId: 'demo', title: 'Module one', summary: 'Fixture module', order: 1 }],
+    lessons: [lesson(1, false), lesson(2, false), lesson(3, true)],
+  }
+}
 
-// --- a fresh deployment ships content, not people -------------------------------------------
-assert.equal(state.users.length, 0, 'no seeded accounts')
-assert.equal(state.projects.length, 0, 'no seeded projects')
-assert.ok(state.courses.length >= 5, 'courses ship with the product')
-assert.ok(state.lessons.length >= 15, 'lessons ship with the product')
+let state = withDemoCourse(createInitialState())
+
+// --- a fresh deployment ships nothing at all --------------------------------------------------
+const bare = createInitialState()
+assert.equal(bare.users.length, 0, 'no seeded accounts')
+assert.equal(bare.projects.length, 0, 'no seeded projects')
+assert.equal(bare.courses.length, 0, 'the platform brings no subject of its own')
+assert.equal(bare.lessons.length, 0, 'and no lessons — a mentor supplies those')
+assert.ok(bare.achievements.length > 0, 'achievements are platform mechanics, so they do ship')
 
 // --- registration ----------------------------------------------------------------------------
 const studentResult = logic.registerUser(state, { name: 'Aisha Kim', email: 'aisha@school.kz', password: 'secret123', role: 'student' })
@@ -49,14 +99,17 @@ assert.ok(logic.registerUser(state, { name: 'Twin', email: 'AISHA@school.kz', pa
 assert.equal(mentorStats(state, mentor.id).total, 1, 'mentor sees every student without needing groups')
 
 // --- the new student starts at lesson one ------------------------------------------------------
-const lesson = currentLesson(state, STUDENT, 'arduino')!
-assert.equal(lesson.id, 'ar-l1', 'a new student starts at the first Arduino lesson')
-assert.equal(isLessonUnlocked(state, STUDENT, 'ar-l2'), false, 'the second lesson starts locked')
+assert.equal(profileOf(state, STUDENT)!.enrolledCourseIds.length, 0, 'a new account is enrolled in nothing')
+state = logic.enroll(state, STUDENT, 'demo')
+state = logic.setCurrentCourse(state, STUDENT, 'demo')
+const lesson = currentLesson(state, STUDENT, 'demo')!
+assert.equal(lesson.id, 'd-l1', 'a new student starts at the first Arduino lesson')
+assert.equal(isLessonUnlocked(state, STUDENT, 'd-l2'), false, 'the second lesson starts locked')
 
 // --- the auto checker separates a stub from a finished sketch ------------------------------------
-const ultrasonic = state.lessons.find((l) => l.id === 'ar-l4')!
-assert.ok(runChecks(ultrasonic.code.starter!, ultrasonic.checks).failed.length > 0, 'starter code should fail checks')
-const full = runChecks(ultrasonic.code.source, ultrasonic.checks)
+const projectLesson = state.lessons.find((l) => l.id === 'd-l3')!
+assert.ok(runChecks(projectLesson.code.starter!, projectLesson.checks).failed.length > 0, 'starter code should fail checks')
+const full = runChecks(projectLesson.code.source, projectLesson.checks)
 assert.equal(full.failed.length, 0, 'the worked example passes every check')
 assert.equal(full.score, 100)
 
@@ -65,7 +118,7 @@ const xpBefore = profileOf(state, STUDENT)!.xp
 const submitted = logic.upsertProject(
   state,
   STUDENT,
-  { title: 'Blinking LED', description: 'The LED blinks once a second and the state prints to Serial.', code: lesson.code.source, notes: '', attachments: [], courseId: 'arduino', lessonId: lesson.id },
+  { title: 'Blinking LED', description: 'The LED blinks once a second and the state prints to Serial.', code: lesson.code.source, notes: '', attachments: [], courseId: 'demo', lessonId: lesson.id },
   'submitted',
 )
 state = submitted.state
@@ -90,7 +143,7 @@ const profile = profileOf(state, STUDENT)!
 assert.equal(project.status, 'approved')
 assert.equal(project.feedback.length, 1, 'feedback is stored with the project')
 assert.ok(profile.completedLessonIds.includes(lesson.id), 'approval completes the lesson')
-assert.equal(isLessonUnlocked(state, STUDENT, 'ar-l2'), true, 'the next lesson unlocks')
+assert.equal(isLessonUnlocked(state, STUDENT, 'd-l2'), true, 'the next lesson unlocks')
 assert.ok(
   profile.xp >= xpBefore + logic.SUBMIT_XP + logic.APPROVAL_BONUS + lesson.task.xp + lesson.xp,
   'approval pays the bonus, the task XP and the lesson XP',
@@ -99,10 +152,10 @@ assert.ok(state.notifications.some((n) => n.userId === STUDENT && n.kind === 'ap
 assert.ok(state.notifications.some((n) => n.userId === STUDENT && n.kind === 'unlock'))
 
 // --- returning work instead of approving ----------------------------------------------------------------
-const retry = logic.upsertProject(state, STUDENT, { title: 'Retry', description: 'x', code: 'void loop() {}', notes: '', attachments: [], courseId: 'arduino', lessonId: 'ar-l2' }, 'submitted')
+const retry = logic.upsertProject(state, STUDENT, { title: 'Retry', description: 'x', code: 'void loop() {}', notes: '', attachments: [], courseId: 'demo', lessonId: 'd-l2' }, 'submitted')
 const returned = logic.reviewProject(retry.state, mentor, retry.project.id, 'needs_changes', 'Add the fade and resubmit.')
 assert.equal(returned.projects.find((p) => p.id === retry.project.id)!.status, 'needs_changes')
-assert.ok(!profileOf(returned, STUDENT)!.completedLessonIds.includes('ar-l2'), 'a returned project must not complete the lesson')
+assert.ok(!profileOf(returned, STUDENT)!.completedLessonIds.includes('d-l2'), 'a returned project must not complete the lesson')
 
 // --- levels ---------------------------------------------------------------------------------------------
 assert.equal(levelFor(0).level.name, 'Beginner')
@@ -176,10 +229,10 @@ assert.ok(!ls.lessonSubmissions.some((s) => s.lessonId === 'cl-3'), 'answers do 
 // Reported from the outside: a project sent back for changes and resubmitted paid its submission
 // XP again. The guard now lives in awardXp, so every path is covered, not just this one.
 {
-  const start = logic.upsertProject(returned, STUDENT, { title: 'Farm', description: 'x', code: 'void loop() {}', notes: '', attachments: [], courseId: 'arduino', lessonId: 'ar-l4' }, 'submitted')
+  const start = logic.upsertProject(returned, STUDENT, { title: 'Farm', description: 'x', code: 'void loop() {}', notes: '', attachments: [], courseId: 'demo', lessonId: 'd-l3' }, 'submitted')
   const paidOnce = profileOf(start.state, STUDENT)!.xp
   const bounced = logic.reviewProject(start.state, mentor, start.project.id, 'needs_changes', 'Add the timeout.')
-  const again = logic.upsertProject(bounced, STUDENT, { id: start.project.id, title: 'Farm', description: 'x', code: 'void loop() {}', notes: '', attachments: [], courseId: 'arduino', lessonId: 'ar-l4' }, 'submitted').state
+  const again = logic.upsertProject(bounced, STUDENT, { id: start.project.id, title: 'Farm', description: 'x', code: 'void loop() {}', notes: '', attachments: [], courseId: 'demo', lessonId: 'd-l3' }, 'submitted').state
   // Total XP may legitimately move — an achievement can become eligible — so the assertion is
   // about the submission award itself, which is what was being farmed.
   const paidFor = (s: typeof again) => s.xp.filter((t) => t.kind === 'submission' && t.refId === start.project.id)
@@ -192,7 +245,7 @@ assert.ok(!ls.lessonSubmissions.some((s) => s.lessonId === 'cl-3'), 'answers do 
   void paidOnce
 
   // The same guard, asked directly and from a different angle.
-  const twice = logic.awardXp(again, STUDENT, 500, 'xp_lesson_completed', 'lesson', 'ar-l1')
+  const twice = logic.awardXp(again, STUDENT, 500, 'xp_lesson_completed', 'lesson', 'd-l1')
   assert.equal(profileOf(twice, STUDENT)!.xp, profileOf(again, STUDENT)!.xp, 'a lesson already paid cannot pay again')
 
   // An award with nothing to identify it still goes through — there is nothing to deduplicate.
@@ -226,7 +279,7 @@ console.log('✓ empty install, registration, progress chain, code check, levels
 // A mentor-written assignment pays on its own account, not out of the curriculum's namespace.
 // ---------------------------------------------------------------------------------------
 {
-  let s2 = createInitialState()
+  let s2 = withDemoCourse(createInitialState())
   const m = logic.registerUser(s2, { name: 'Mentor Two', email: 'm2@s7.kz', password: 'secret123', role: 'mentor' })
   s2 = m.state
   const st = logic.registerUser(s2, { name: 'Student Two', email: 's2@s7.kz', password: 'secret123', role: 'student' })
@@ -235,9 +288,9 @@ console.log('✓ empty install, registration, progress chain, code check, levels
   const studentId = st.user!.id
 
   // The id deliberately collides with a curriculum lesson. Before assignments had a kind of
-  // their own, both payments were recorded as ('lesson', ar-l1) and the second was refused —
+  // their own, both payments were recorded as ('lesson', d-l1) and the second was refused —
   // silently, because refusing a duplicate award is the guard working as designed.
-  const clash = 'ar-l1'
+  const clash = 'd-l1'
   s2 = logic.saveCustomLesson(s2, {
     id: clash,
     authorId: mentorId,
@@ -251,7 +304,7 @@ console.log('✓ empty install, registration, progress chain, code check, levels
     updatedAt: new Date().toISOString(),
   })
 
-  s2 = logic.completeLesson(s2, studentId, 'ar-l1')
+  s2 = logic.completeLesson(s2, studentId, 'd-l1')
   const afterLesson = s2.profiles.find((p) => p.userId === studentId)!.xp
   assert.ok(afterLesson > 0, 'completing a curriculum lesson pays')
 

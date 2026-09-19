@@ -5,7 +5,7 @@
 import type { AppState, Attachment, Competition, CompetitionTask, CustomLesson, Feedback, Group, LessonSubmission, Notification, Project, ProjectStatus, StudentProfile, TaskAnswer, Team, TextVars, User, XPTransaction } from './types'
 import { MAX_TASKS_PER_LESSON } from './types'
 import { evaluateAchievements } from './gamification'
-import { courseLessonOrder } from './curriculum'
+import { lessonOrder } from './selectors'
 import { lessonById } from './selectors'
 
 export const uid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`
@@ -71,7 +71,7 @@ export function completeLesson(s: AppState, userId: string, lessonId: string): A
   let next = patchProfile(s, userId, (p) => ({ ...p, completedLessonIds: [...p.completedLessonIds, lessonId] }))
   next = awardXp(next, userId, lesson.xp, 'xp_lesson_completed', 'lesson', lessonId, { lessonId })
 
-  const order = courseLessonOrder(lesson.courseId)
+  const order = lessonOrder(s, lesson.courseId)
   const unlocked = lessonById(next, order[order.indexOf(lessonId) + 1])
   if (unlocked) {
     next = notify(next, {
@@ -260,8 +260,11 @@ export function registerUser(s: AppState, input: { name: string; email: string; 
       xp: 0,
       streak: 1,
       lastActiveDate: now(),
-      enrolledCourseIds: ['arduino'],
-      currentCourseId: 'arduino',
+      // Nobody is enrolled in anything on day one. This used to sign every new account up to
+      // the built-in Arduino track, which was reasonable while the platform had a subject and
+      // is now an enrolment in a course that does not exist.
+      enrolledCourseIds: [],
+      currentCourseId: '',
       completedLessonIds: [],
       completedChallengeIds: [],
       passedCheckLessonIds: [],

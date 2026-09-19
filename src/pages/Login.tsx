@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
-import { LESSONS } from '../lib/curriculum'
 import { Button, Field, inputClass } from '../components/ui'
 import { Logo } from '../components/Layout'
 import ThemeToggle from '../components/ThemeToggle'
@@ -56,11 +55,21 @@ export default function Login({ register: startOnRegister }: { register?: boolea
     navigate(user.role === 'mentor' ? '/m' : '/', { replace: true })
   }
 
-  const facts = [
-    { value: state.courses.length, label: t('courses') },
-    { value: LESSONS.length, label: t('lessons') },
-    { value: state.achievements.length, label: t('achievements') },
-  ]
+  /**
+   * Counted, not claimed — and on an empty platform there is nothing to count.
+   *
+   * These used to read 5 courses, 18 lessons, 10 achievements, which was true while the
+   * product shipped a curriculum. It no longer does, and "0 courses, 0 lessons" is a worse
+   * first impression than saying plainly how the thing works, so below a real roster the
+   * numbers give way to three sentences.
+   */
+  const mentors = state.users.filter((u) => u.role === 'mentor').length
+  const published = state.customLessons.filter((l) => l.published).length
+  const facts = published > 0 ? [
+    { value: mentors, label: t('mentors') },
+    { value: published, label: t('lessons') },
+    { value: state.users.filter((u) => u.role === 'student').length, label: t('students') },
+  ] : []
 
   return (
     <div className="relative min-h-screen lg:grid lg:grid-cols-[1fr_minmax(26rem,32rem)]">
@@ -74,6 +83,23 @@ export default function Login({ register: startOnRegister }: { register?: boolea
         <p className="mt-6 max-w-md text-[17px] leading-relaxed text-ink-600">
           {t('lessons_projects_mentor_review_and_progress_in_o')}
         </p>
+
+        {facts.length === 0 && (
+          <ul className="mt-12 max-w-md space-y-2.5 text-sm text-ink-600">
+            <li className="flex gap-3">
+              <span className="font-bold text-ink-900 tabular-nums">01</span>
+              {t('how_it_works_apply')}
+            </li>
+            <li className="flex gap-3">
+              <span className="font-bold text-ink-900 tabular-nums">02</span>
+              {t('how_it_works_publish')}
+            </li>
+            <li className="flex gap-3">
+              <span className="font-bold text-ink-900 tabular-nums">03</span>
+              {t('how_it_works_review')}
+            </li>
+          </ul>
+        )}
 
         <dl className="mt-12 flex gap-10">
           {facts.map((fact) => (

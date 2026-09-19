@@ -34,7 +34,7 @@ export function CourseCard({ course, progress, instructor }: { course: Course; p
       <Link to={`/courses/${course.id}`} className="flex flex-1 flex-col focus-visible:outline-none">
         <CourseCover course={course} className="h-28 sm:h-32">
           <div className="absolute inset-0 flex items-end justify-between p-4">
-            <span className="bg-black/40 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">{platform.name}</span>
+            {platform && <span className="bg-black/40 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">{platform.name}</span>}
             <span className="fill-strong px-2.5 py-1 text-xs font-bold text-ink-800">{localizeDifficulty(course.level)}</span>
           </div>
         </CourseCover>
