@@ -42,249 +42,138 @@ interface Entry {
 
 export const KB: Entry[] = [
   {
-    id: 'upload',
-    match: /\b(avrdude|upload(ing)?|com\d|port not|not responding|access is denied|ch340|stk500)\b|не видит плату|порт не|не прошива|жүктелмей|порт көрінбе/i,
+    id: 'stuck',
+    match: /\b(stuck|no idea|don'?t know what to do|i am lost|feeling lost|confused)\b|застрял|не знаю, ?что делать|непонятно|потерялся|тұрып қалдым|не істеу керегін білмеймін/i,
     en: {
-      text: 'An upload failure is not a code problem — the compiler already agreed to your code before this step even started. Something between the IDE and the board is in the way, and on Windows it is almost always one of three things.\n\n**Tools → Port** is empty or pointing at the wrong COM number. A clone board needs the CH340 driver installed before Windows will hand it a port at all. And a cable that came with a phone is often charge-only: it carries power, so the board lights up and looks fine, but no data can cross it.\n\nIf the port is there and the upload still fails, close the Serial Monitor. It holds the port open and the uploader cannot take it from you.',
-      question: 'Unplug the board and plug it back in — does the list under Tools → Port change at all?',
-      followUps: ['Nothing prints in Serial Monitor', 'Which board do I pick?', 'avrdude says not responding'],
+      text: 'Being stuck is information, and which kind of stuck you are tells you what to do next.\n\nThere are only three. **You do not understand the task** — then reread it and write, in your own words, what a finished version would look like. **You understand it but cannot start** — then the task is too big, and the next move is to find the smallest piece you could finish in ten minutes. **You started and it is wrong** — then you have something concrete, which is the easiest of the three.\n\nName which one it is before you do anything else. Most of the time naming it is the whole answer.',
+      question: 'Which of the three is it right now — not understood, too big, or started and wrong?',
+      followUps: ['I cannot start at all', 'I do not understand the task', 'How do I ask my mentor?'],
     },
   },
   {
-    id: 'analog',
-    match: /\b(analog ?read|potentiometer|map\(|adc|1023)\b|аналог|потенциометр|переменн\w* резистор|аналогтық|реттегіш/i,
+    id: 'where-to-start',
+    match: /\b(where (do i|to) start|how (do i|to) begin|first step|blank)\b|с чего (начать|мне начать)|как начать|первый шаг|неден бастау|қалай бастаймын/i,
     en: {
-      text: '`analogRead` does not give you volts. It gives a number from 0 to 1023, because the converter splits the range between GND and 5 V into 1024 steps. A knob turned halfway reads about 512 — that is a position on a scale, not a measurement of anything yet.\n\n`map()` is proportion written out: take a value sitting in one range, return where it sits in another. It does **not** clamp. A reading outside the input range gives you an output outside the target range, cheerfully and without warning. `constrain()` is what stops that.',
-      caption: 'Raw reading to a percentage',
-      question: 'If your knob never quite reaches 0 or 1023 at the stops, which two numbers in that map() are wrong?',
-      followUps: ['Why does my reading drift?', 'How do I smooth a noisy reading?', 'Can I read several analog pins?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `int raw = analogRead(A0);
-int percent = map(raw, 0, 1023, 0, 100);`,
+      text: 'Do not start at the beginning. Start at the part you already understand, wherever it sits.\n\nA task you cannot begin is almost always several tasks wearing one label. Read it again and mark every separate thing it actually asks for — usually there are three or four. One of them you already know how to do. Do that one, and the page stops being blank, which is most of the problem.\n\nThe order you hand it in matters. The order you build it does not.',
+      question: 'Read the task once more: how many separate things is it actually asking for?',
+      followUps: ['I still cannot split it up', 'What is my mentor looking for?', 'How much time should this take?'],
     },
   },
   {
-    id: 'dht11',
-    match: /\b(dht-?11|dht-?22|humidity|isnan)\b|влажност|датчик температур|ылғалдылық/i,
+    id: 'feedback',
+    match: /\b(feedback|comment|review said|what does .* mean|unclear)\b|замечани|комментарий|не понял.*(наставник|проверк)|что имел в виду|пікір|түсінбедім/i,
     en: {
-      text: 'The DHT11 is slow and speaks over a single wire, which is why it ships with a library — the timing is far too tight to hand-roll. Two consequences follow, and both catch people out.\n\nIt needs roughly two seconds between reads. Ask it faster and you get the previous sample back, or nothing at all. And when a read fails it does not raise an error — it returns **NaN**. NaN is not a number, so every comparison against it is false, and your code sails past the check you thought you wrote and uses garbage.\n\nTest `isnan()` before the value reaches anything else. Always.',
-      caption: 'Reject a failed read before your logic sees it',
-      question: 'On a failed read, should your robot hold the last good value or stop? Which is safer for the thing you are building?',
-      followUps: ['Why is my humidity always identical?', 'How do I print two values on one line?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `float t = dht.readTemperature();
-if (isnan(t)) return;   // a failed read, not a temperature`,
+      text: 'A review comment is usually shorter than the thought behind it. The useful move is to turn it into a question you can answer yes or no to.\n\n"This is unclear" becomes "would it be clear if I explained why I chose this?" — and now you can check. "Wrong approach" becomes "which step was the wrong one, the first or the last?" A comment you cannot convert into a yes-or-no question is one you should ask about directly.\n\nAsking a mentor to expand is not admitting anything. It is the cheapest thing in the whole loop.',
+      question: 'Take the comment that puzzled you: what yes-or-no question would settle it?',
+      followUps: ['How do I ask without sounding rude?', 'My work came back with changes', 'What are they grading?'],
     },
   },
   {
-    id: 'line-following',
-    match: /\b(line follow|follow(ing)? the line|proportional|p-?control|kp|zig-?zag|wobbl)\b|по линии|пропорционал|виля|сызық бойымен|пропорционалды/i,
+    id: 'changes',
+    match: /\b(changes requested|sent back|rejected|returned|redo|failed review)\b|вернул|на доработку|отклонил|переделать|қайтарды|түзетуге/i,
     en: {
-      text: 'If the robot only knows *on the line* or *off the line*, it can do exactly one thing: turn hard until the answer flips. That is the wobble, and no amount of tuning will remove it, because the information simply is not there.\n\nProportional control needs a number, not a yes or no. The error is how far off centre you are; the correction is that error multiplied by a constant. A small error nudges, a large error swings. One sensor gives you almost no error signal — two give you a real one.',
-      caption: 'Error in, correction out',
-      question: 'Too small a Kp and it drifts off the line, too large and it oscillates. Which of those two is yours doing right now?',
-      followUps: ['How do I pick Kp?', 'What if it loses the line entirely?', 'Why calibrate the sensors first?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `int error = leftSensor - rightSensor;   // 0 means centred
-int correction = Kp * error;
-setMotors(baseSpeed + correction, baseSpeed - correction);`,
+      text: 'Work coming back is the system doing its job, not a verdict on you. A mentor who returns something has read it — that is more attention than an approval sometimes gets.\n\nBefore you change anything, separate the comments into two piles: **this is wrong** and **this could be better**. Fix the first pile completely. Touch the second pile only if you have time, and say in your note which of those you chose not to do and why. A mentor reading a second submission wants to know you understood, not that you obeyed.\n\nResubmitting does not cost you the XP you already earned.',
+      question: 'Of the comments you got, which are actually wrong-versus-better?',
+      followUps: ['I disagree with one of the comments', 'How do I write the resubmission note?', 'Do I lose progress?'],
     },
   },
   {
-    id: 'line-sensor',
-    match: /\b(ir sensor|infrared|line sensor|tcrt|reflectance|calibrat)\b|инфракрасн|датчик лини|калибров|инфрақызыл|калибрле/i,
+    id: 'ask-well',
+    match: /\b(how (do i|to) ask|good question|what should i ask|ask my mentor)\b|как [^.?!]{0,20}(спросить|задать вопрос)|задать вопрос|что спросить|сұрақ қою|қалай сұраймын/i,
     en: {
-      text: 'An IR line sensor does not see black and white. It shines infrared downward and measures how much comes back — a dark surface absorbs, a light one reflects. What reaches your code is a reflectance number, and it shifts with the height of the sensor, the lighting in the room, and the paper itself.\n\nThat is exactly why a hardcoded threshold works on your desk and fails at the competition venue. Measure over white, measure over black, put the threshold between them — and do it at the start of every run, not once while writing the code.',
-      caption: 'A threshold measured, never guessed',
-      question: 'Suppose your two measurements come back close together, say 480 and 530. What does that tell you to fix before writing another line of code?',
-      followUps: ['How do I follow the line, not just see it?', 'Why do readings change near a window?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `int white = analogRead(IR_PIN);   // hold it over the light surface
-int black = analogRead(IR_PIN);   // then over the line
-int threshold = (white + black) / 2;`,
+      text: 'A question that gets a fast answer has three parts, and most questions are missing the middle one.\n\n**What you were trying to do.** **What you tried.** **What happened instead.** The middle part is what turns "it does not work" into something answerable — it tells the mentor which wrong idea to correct, and without it they have to guess.\n\nIf writing the middle part solves it before you send, that is not wasted time. That is the most common outcome, and it is why the habit is worth having.',
+      question: 'Try it on your current problem: what did you try, and what happened instead?',
+      followUps: ['I do not know what I tried', 'My mentor has not replied', 'I do not understand their comment'],
     },
   },
   {
-    id: 'board-repl',
-    match: /\b(esp-?32|pico|micro-?python|repl|thonny|ampy|web serial|boot\.py|main\.py)\b|есп32|пико|микропайтон|репл/i,
+    id: 'deadline',
+    match: /\b(deadline|late|behind|out of time|no time|running out)\b|дедлайн|не успева|опазда|мало времени|отстал|үлгермей|уақыт жоқ/i,
     en: {
-      text: 'An ESP32 or a Pico running MicroPython is a different workflow from an Arduino, and expecting the Arduino one is where most of the confusion comes from. There is no compile-and-upload step: the board is running a Python interpreter, and you are talking to it live over the serial port.\n\nThat gives you a REPL — type a line, it runs immediately, you see the result. **Ctrl-C** interrupts a running program, which is how you take back control when a loop has swallowed the board. A file saved as `main.py` runs by itself at power-up.\n\nThe board terminal in this platform speaks Web Serial, so all of that works from the browser with nothing installed.',
-      question: 'Which board is it, and does it already have MicroPython on it, or is it still running whatever it shipped with?',
-      followUps: ['Ctrl-C does nothing', 'How do I save a program to the board?', 'Which baud rate?'],
+      text: 'Hand in what you have, on time, with a note saying what is missing. That is almost always better than handing in nothing, later.\n\nA mentor can review partial work. They cannot review work that has not arrived, and a submission that says "the first two parts are done, the third is not started and here is why" gives them something to respond to. You get feedback on the two parts instead of on nothing.\n\nWhat you should not do is disappear. Being behind is ordinary; going quiet is what makes it a problem.',
+      question: 'What is actually finished right now, even partly?',
+      followUps: ['Can I ask for more time?', 'What do I write in the note?', 'I have not started at all'],
     },
   },
   {
-    id: 'ultrasonic',
-    match: /\b(hc-?sr-?04|ultrasonic|distance sensor)\b|ультразвук|датчик расстояния|ультрадыбыс|қашықтық сенсор/i,
+    id: 'motivation',
+    match: /\b(motivat\w*|lazy|gave up|procrastinat\w*|streak|burn(t|ed) out|cannot focus)\b|мотивац|лень|забросил|прокрастин|серия дней|выгорел|не могу сосредоточ|жалқау|тастап кеттім/i,
     en: {
-      text: 'The HC-SR04 never reports a distance — it reports a duration. You pulse TRIG high for 10 µs, the sensor fires eight bursts at 40 kHz, and ECHO then stays high for exactly as long as the sound took to travel out and back.\n\nSo the whole conversion is: take the microseconds, multiply by the speed of sound in cm/µs, and halve it because the sound made the trip twice.',
-      caption: 'The conversion, not the whole sketch',
-      question: 'Before you write the rest — what should your code do when `pulseIn` returns 0?',
-      followUps: ['Why does pulseIn need a timeout?', 'My readings jump around', 'How do I light an LED under 20 cm?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `long duration = pulseIn(ECHO_PIN, HIGH, 30000UL);
-float distanceCm = (duration * 0.0343) / 2.0;`,
+      text: 'A broken streak is not a reason to stop; it is just a number that went back to one. The number was never the point.\n\nWhat actually works is making the next session smaller than your resistance to it. Not "finish the lesson" — open the task and read it. That is a real session. The reason it works is that starting is the expensive part, and a small start spends it cheaply.\n\nIf you have been away a while, do not try to catch up. Start from wherever you are, today.',
+      question: 'What is the smallest piece of this you could finish in ten minutes?',
+      followUps: ['I have been away for weeks', 'I cannot start at all', 'How long should a lesson take?'],
     },
   },
   {
-    id: 'pulsein',
-    match: /\b(pulsein|timeout|freeze|hang|blocks?)\b|таймаут|зависа|подвисает|қатып қал|кідіріс/i,
+    id: 'submit',
+    match: /\b(submit|hand in|upload my work|send my work|attach)\b|сдать|отправить работу|прикрепить|загрузить работу|тапсыру|жіберу/i,
     en: {
-      text: 'pulseIn waits for the pin to go high and then times how long it stays there. If nothing ever comes back — soft surface, steep angle, nothing in range — it waits for its default timeout of one full second, and your loop stops dead for that whole time.\n\nThe third argument caps that wait. 30000UL is about five metres of range, far more than the sensor can actually see.',
-      caption: 'Bounded wait, with a sentinel for "no echo"',
-      question: 'A returned -1 is not a distance. Where in your loop should that be handled so it never gets printed as a measurement?',
-      followUps: ['What else makes a reading fail?', 'How fast can I poll the sensor?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `long duration = pulseIn(ECHO_PIN, HIGH, 30000UL);
-if (duration == 0) return -1;   // nothing came back`,
+      text: 'Hand in the work and the thinking. The work alone makes the mentor reconstruct what you were doing, and they will reconstruct it wrong.\n\nWith the submission, write three lines: what you were going for, what you are unsure about, and anything you deliberately left out. The middle line is the one that earns you the best feedback, because it tells the mentor where to look.\n\nIf the task asked for a file, attach it before you write the note — people forget in that order, not the other one.',
+      question: 'What is the one thing in your work you are least sure about?',
+      followUps: ['What are they grading?', 'Can I resubmit later?', 'How long does review take?'],
     },
   },
   {
-    id: 'noisy',
-    match: /\b(jump|noisy|unstable|jitter|fluctuat|inconsistent|random numbers)\b|скач|шум|нестабиль|прыга|тұрақсыз|секір/i,
+    id: 'rubric',
+    match: /\b(grade|grading|marked|rubric|criteria|what.*look(ing)? for|score)\b|оценива|критери|за что ставят|что смотрят|баға|нені қарайды/i,
     en: {
-      text: 'Three usual causes, in the order worth checking:\n\n1. **Polling too fast.** Fire the sensor again before the previous echo has died away and you read the old burst. Leave at least 60 ms between measurements.\n2. **Surface.** Fabric, foam and anything at an angle scatter the burst. A flat board at 90° is your test target.\n3. **Power.** A servo or motor on the same supply drops the rail while it moves, and the sensor misfires.\n\nIf the readings are stable but wrong, that is a different problem — that is calibration, not noise.',
-      question: 'Are your bad readings random spikes, or consistently off by the same amount?',
-      followUps: ['How do I smooth the readings?', 'Why would readings be consistently wrong?'],
-    },
-  },
-  {
-    id: 'smooth',
-    match: /\b(smooth|average|median|filter)\b|сглаж|средне|медиан|фильтр|тегісте|орташа/i,
-    en: {
-      text: 'Averaging the last few readings is the standard first move, but a median is usually better here: one wild spike drags an average sideways, while a median simply ignores it.\n\nTake three readings, sort them, keep the middle one. Three is enough for an ultrasonic sensor and costs you almost no time.',
-      question: 'What does averaging cost you if the object is moving quickly?',
-      followUps: ['Show me the median idea in code', 'How fast can I poll the sensor?'],
-    },
-  },
-  {
-    id: 'led-threshold',
-    match: /\b(led|threshold|light up|turn on|blink).*(distance|close|near|cm)|(distance|close|near).*(led|light)|светодиод|порог|жарықдиод|шекті мән/i,
-    en: {
-      text: 'Keep the two jobs apart: one piece of code measures, another decides. That separation is what lets you change the rule later without touching the sensor logic.\n\nName your limits as constants — `NEAR_CM`, `WARN_CM` — instead of leaving bare numbers in the middle of an `if`. When you re-tune on a different table, you change one line.',
-      caption: 'The shape, not your answer',
-      question: 'The challenge asks for three zones, not two. What is the cleanest way to express "between 10 and 20"?',
-      followUps: ['How do I blink without delay()?', 'How do I only print when the state changes?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `const int NEAR_CM = 20;
-
-// ... after you have a valid distance:
-digitalWrite(LED_PIN, distance < NEAR_CM ? HIGH : LOW);`,
-    },
-  },
-  {
-    id: 'millis',
-    match: /\b(millis|without delay|non-?blocking|blink.*delay)\b|без delay|миллис|мига|жыпылық|бөгетсіз/i,
-    en: {
-      text: 'delay() stops everything — the sensor cannot be read while the LED is waiting. millis() gives you the number of milliseconds since the board started, and you compare it against the last time you acted.\n\nThe pattern is always the same: remember `lastToggle`, and when `millis() - lastToggle >= interval`, do the thing and update `lastToggle`.',
-      caption: 'The pattern',
-      question: 'Why is `millis() - lastToggle >= INTERVAL` safer than `millis() >= lastToggle + INTERVAL`?',
-      followUps: ['What is unsigned long for?', 'How do I structure a state machine?'],
-    },
-    code: {
-      language: 'cpp',
-      source: `unsigned long lastToggle = 0;
-const unsigned long INTERVAL = 250;
-
-if (millis() - lastToggle >= INTERVAL) {
-  lastToggle = millis();
-  // toggle here
-}`,
-    },
-  },
-  {
-    id: 'state-machine',
-    match: /\b(state machine|states|driving|backing|turning)\b|конечн\w* автомат|состояни|күй машина|күйлер/i,
-    en: {
-      text: 'A state machine is three things written down: the list of states, what each one does, and exactly what moves you out of it. Write those sentences before any code.\n\n"DRIVING → BACKING when distance is under 20 cm. BACKING → TURNING after 500 ms. TURNING → DRIVING after 400 ms."\n\nIf your code does not read like those sentences, the structure is wrong, not the values.',
-      question: 'What should happen if the robot enters BACKING three times in five seconds?',
-      followUps: ['How do I log state changes?', 'Should I use enum or int?'],
-    },
-  },
-  {
-    id: 'compile-error',
-    match: /\b(not declared|was not declared|undefined reference|expected|error:|compil|won'?t upload|does not name a type)\b|ошибк\w* компил|не компилируется|не загружается|компиляц|қате шығ/i,
-    en: {
-      text: 'Arduino compiler errors point at the first line that stopped making sense, which is often one line *after* the real mistake. Three that cover most cases:\n\n• **"was not declared in this scope"** — a typo, or the variable was declared inside a different pair of braces.\n• **"expected \';\' before..."** — the missing semicolon is on the line above the one named.\n• **"does not name a type"** — usually a missing `#include`, or code sitting outside any function.\n\nAlways read the *first* error. The rest are frequently its echoes.',
-      question: 'Paste the exact first error line and the five lines around it — what does the line above the arrow end with?',
-      followUps: ['My board will not upload', 'Serial Monitor shows nothing'],
-    },
-  },
-  {
-    id: 'serial-monitor',
-    match: /\b(serial monitor|nothing prints|no output|garbage|question marks|baud)\b|монитор порта|ничего не выводит|нет вывода|порт монитор|ештеңе шықпа/i,
-    en: {
-      text: 'Two causes, and they look identical from the outside.\n\nIf the monitor is **empty**: `Serial.begin(9600)` is missing from setup(), or you are printing inside a branch that never runs.\n\nIf the monitor shows **garbage characters**: the baud rate selector at the bottom right of the Serial Monitor does not match the number in your `Serial.begin()`. They have to be the same.',
-      question: 'Empty, or garbled? The two point at completely different lines.',
-      followUps: ['How do I print a float with one decimal?', 'Can I plot the values?'],
-    },
-  },
-  {
-    id: 'servo',
-    match: /\b(servo|sg90|angle|pwm pulse)\b|серво|сервопривод|угол|бұрыш/i,
-    en: {
-      text: 'A servo reads the width of a pulse arriving every 20 ms: 1.0 ms means 0°, 2.0 ms means 180°. The Servo library writes those pulses for you.\n\nIf it twitches, resets the board, or hums without holding position, suspect power before code. A stalled SG90 pulls more current than the Uno regulator will give. Separate supply, grounds joined.',
-      question: 'Does the twitching get worse when the servo is under load?',
-      followUps: ['How do I mount the sensor on the servo?', 'Why join the grounds?'],
-    },
-  },
-  {
-    id: 'motor',
-    match: /\b(motor|l298|h-?bridge|driver|wheels? (do not|don't) (turn|move))\b|мотор|двигател|колёс|колес|драйвер|қозғалтқыш|дөңгелек/i,
-    en: {
-      text: 'An H-bridge has four switches around the motor. One diagonal pair gives you forward, the other reverse — and a vertical pair shorts the supply, which is why IN1 and IN2 must never both be HIGH.\n\nIf the motor hums but does not turn, your PWM value is below its stall threshold. Most small geared motors need 60 or more out of 255 before they actually move. Measure yours once, keep it as a constant.',
-      question: 'Does the motor turn if you set ENA to 255 directly?',
-      followUps: ['How do I make both wheels the same speed?', 'Why does the board reset when the motor starts?'],
-    },
-  },
-  {
-    id: 'python',
-    match: /\b(python|spike|micropython|def |indent)\b|питон|пайтон|отступ|шегініс/i,
-    en: {
-      text: 'Python for robots is the same three tools as any other language — a value, a decision, a repeat — with indentation doing what braces do in C++.\n\nOne habit worth forming early: put each behaviour in its own function with a name that says what it does. `drive_cm(40)` reads as intent; forty lines in a row reads as a puzzle.',
-      question: 'What would the inputs and outputs of your function be, in one sentence each?',
-      followUps: ['How do I convert cm to motor degrees?', 'What is a state machine in Python?'],
-    },
-  },
-  {
-    id: 'wiring',
-    match: /\b(wiring|wire|connect|pins?|breadboard|ground|gnd)\b|провод|подключ|пин|макетн|земл|сым|қосылым|жалға/i,
-    en: {
-      text: 'Check in this order, it finds most faults in under a minute:\n\n1. **Ground.** Every part must share a ground with the Arduino. Missing ground is the single most common fault, and it produces the weirdest symptoms.\n2. **Power.** Sensors on 5 V, motors on their own supply.\n3. **Signal.** Does the pin number in your code match the hole the wire is actually in?\n4. **Breadboard rows.** The rows are horizontal, the rails are vertical, and the centre channel separates the two halves.',
-      question: 'Trace the ground wire with a finger from the sensor back to the Arduino GND pin — is it unbroken?',
-      followUps: ['Why does ground matter so much?', 'Can I power the sensor from a digital pin?'],
+      text: 'Most mentors are reading for three things, in this order: does it do what was asked, can they follow your reasoning, and did you notice the parts that do not work.\n\nThe third one surprises people. Saying "this part is fragile and here is why" scores better than hoping nobody looks, because it shows you can see your own work clearly — which is the thing that actually transfers to the next task.\n\nPolish comes last, and it is the cheapest to fix. Do not spend your remaining hour there.',
+      question: 'Looking at your work now: which part would you flag as the weakest?',
+      followUps: ['How do I write the submission note?', 'My work came back with changes', 'How is XP calculated?'],
     },
   },
   {
     id: 'do-my-homework',
-    match: /\b(write (the|my) (whole|entire|full)|do (my|the) (project|homework|task)|give me the (full|complete) (code|answer)|solve it for me)\b|напиши (весь|целиком|полностью)|сделай (за меня|проект|задание)|реши за меня|дай весь код|толық код|бәрін жаз|орныма жаса/i,
+    match: /\b(write (the|my) (whole|entire|full)|do (my|the) (project|homework|task|assignment)|give me the (full|complete) (code|answer|solution)|solve it for me|just tell me the answer)\b|напиши (весь|целиком|полностью)|сделай (за меня|проект|задание)|реши за меня|дай (весь код|готовый ответ)|просто скажи ответ|толық жаз|бәрін жаз|орныма жаса/i,
     en: {
-      text: 'Not that one — the project is the part that teaches you, and a mentor reviewing it will ask you how it works.\n\nWhat I will do is take it apart with you. Tell me which piece is stuck: the wiring, the reading, the maths, or the decision that drives the output. We solve that one piece, you write it, and we move to the next.',
-      question: 'Which of those four is the one that is actually blocking you right now?',
-      followUps: ['I am stuck on the wiring', 'I am stuck on the distance maths', 'My code compiles but does nothing'],
+      text: 'No. Not because of a rule, but because it would waste the thing you are paying a mentor for.\n\nThe work is the only part that changes what you can do next time. Handing you a finished answer produces a submission with your name on it and nothing behind it, and your mentor will see that in about ten seconds — they read your earlier work.\n\nWhat I will do is take it apart with you. Which piece is actually blocking you: understanding what is being asked, knowing where to start, or getting something you started to work?',
+      question: 'Which of those three is the real blocker?',
+      followUps: ['I do not understand the task', 'I cannot start at all', 'I started and it is wrong'],
+    },
+  },
+  {
+    id: 'honesty',
+    match: /\b(cheat|copy|plagiar|use ai|chatgpt|is it allowed|someone else.s work)\b|списать|скопировать|плагиат|можно ли исполь|чужую работу|көшіру|бөтен жұмыс/i,
+    en: {
+      text: 'The line is not about tools, it is about whether you could rebuild it. Using help to understand something is learning. Submitting something you could not explain is not, whoever or whatever produced it.\n\nA practical test before you hand in: cover the work and explain to yourself what each part does and why it is there. Anything you cannot explain, either understand it or take it out.\n\nIf you did use help substantially, say so in the note. Mentors respond to that far better than to being surprised by it later.',
+      question: 'Could you explain every part of your current work without looking at it?',
+      followUps: ['What should go in the note?', 'What are they grading?', 'I do not understand part of my own work'],
+    },
+  },
+  {
+    id: 'choose-mentor',
+    match: /\b(which mentor|choose a mentor|worth (it|paying)|is it worth|pick a (lesson|mentor)|price)\b|какого наставника|выбрать наставника|стоит ли (платить|брать)|цена урока|қай тәлімгер|тұра ма/i,
+    en: {
+      text: 'Read what the lesson actually asks you to hand in, not what it promises to teach. The tasks tell you the level far more honestly than the summary does.\n\nA lesson worth paying for has work in it that a person will read. If the whole thing marks itself, you are buying material, which is fine — just know that is what it is. If it asks for something written or built, you are buying somebody’s attention, and that is the part that is hard to get anywhere else.\n\nEvery mentor here was checked by a named reviewer before they could publish. That is a floor, not a recommendation.',
+      question: 'Look at the tasks in the lesson you are considering: how many need a human to read them?',
+      followUps: ['How does paying work?', 'Can I see a lesson before buying?', 'How do I become a mentor?'],
+    },
+  },
+  {
+    id: 'access',
+    match: /\b(paid|bought|purchase|cannot open|locked|access|refund)\b|оплатил|купил|не открывается|нет доступа|заблокирован|возврат|төледім|ашылмайды/i,
+    en: {
+      text: 'Access is decided on the server, not in your browser, and it is granted when the payment actually confirms rather than when you return from the checkout page. With most cards that is immediate; with a few methods it takes a minute.\n\nIf a lesson you paid for is still shut after that, reload once — the page asks again on load. If it is still shut, that is a real fault and worth reporting rather than retrying the payment, because a second payment would be a second order.\n\nA refund withdraws access again, which is the same mechanism running backwards.',
+      question: 'Did the payment confirm, or did you come back from the checkout page before it finished?',
+      followUps: ['I was charged twice', 'How do refunds work?', 'Is this lesson worth it?'],
+    },
+  },
+  {
+    id: 'become-mentor',
+    match: /\b(become a mentor|teach here|sell (a|my) lesson|apply to teach|how do i teach)\b|стать наставником|преподавать|продавать урок|подать заявку|тәлімгер болу|сабақ сату/i,
+    en: {
+      text: 'Register as a student first, then apply from **Teach on S7**. The application asks for your legal name, what you have taught, and at least one document, and a named reviewer approves or rejects it on the record.\n\nApproval lets you write and publish. Selling needs one more thing: a connected payout account, checked both when you publish a priced lesson and again when somebody tries to buy it — an account that gets restricted later stops sales rather than taking money it cannot forward.\n\nYour first lesson does not have to be long. It has to have something in it worth reading.',
+      question: 'What is the one thing you know well enough to review somebody else doing?',
+      followUps: ['What documents do I need?', 'How does the payout split work?', 'How long does approval take?'],
     },
   },
   {
     id: 'hello',
-    match: /\b(hi|hello|hey|salam)\b|привет|здравствуй|сәлем|салам/i,
+    match: /\b(hi|hello|hey|salam|good (morning|evening))\b|привет|здравствуй|добрый (день|вечер)|сәлем|салам/i,
     en: {
-      text: 'Hello, {name}. You are on **{lesson}** right now. Ask me about the wiring, the code, an error message you do not recognise, or why a reading looks wrong.',
+      text: 'Hello, {name}. You are on **{lesson}** — tell me where it is going wrong and we will take it apart.\n\nI give hints, explanations and questions back. I will not write the thing for you, because your mentor is going to read it and so should you.',
       question: 'What are you working on at this moment?',
-      followUps: ['Explain how the ultrasonic sensor works', 'My readings jump around', 'I have a compiler error'],
+      followUps: ['I am stuck', 'I do not understand the feedback', 'Where do I start?'],
     },
   },
 ]
@@ -292,23 +181,22 @@ if (millis() - lastToggle >= INTERVAL) {
 /** Greeting and fallback each have a second wording for when we do not know the lesson. */
 const NO_LESSON: Record<string, AiEntryText> = {
   hello: {
-    text: 'Hello, {name}. Ask me about the wiring, the code, an error message you do not recognise, or why a reading looks wrong.',
+    text: 'Hello, {name}. Ask me about a task you are stuck on, a review comment you did not follow, or simply where to begin.\n\nI give hints, explanations and questions back — never the finished answer.',
     question: 'What are you working on at this moment?',
-    followUps: ['Explain how the ultrasonic sensor works', 'My readings jump around', 'I have a compiler error'],
+    followUps: ['I am stuck', 'I do not understand the feedback', 'Where do I start?'],
   },
   fallback: {
-    text: 'I can help with that best if we narrow it down.\n\nTell me which layer the problem sits in:\n\n• **Hardware** — a wire, a pin, power\n• **Reading** — the sensor value itself looks wrong\n• **Logic** — the value is right but the robot decides badly\n• **Language** — the compiler is refusing the code\n\nIf you paste the exact error text or the numbers you are seeing, I can be much more specific.',
-    question: 'Which of those four layers is it?',
-    followUps: ['Explain how the ultrasonic sensor works', 'Help me debug a compiler error', 'How do I structure a state machine?'],
+    text: 'I can help best if we narrow it down.\n\nMost problems here are one of four:\n\n• **The task** — you are not sure what is being asked\n• **The start** — you know, but cannot get going\n• **The work** — you started and something is wrong\n• **The review** — a mentor said something you did not follow\n\nTell me which, and paste the exact wording if there is any.',
+    question: 'Which of those four is it?',
+    followUps: ['I am stuck', 'Where do I start?', 'I do not understand the feedback'],
   },
 }
 
 const FALLBACK: AiEntryText = {
-  text: 'I can help with that best if we narrow it down. You are in **{lesson}**, so I will assume that is the context.\n\nTell me which layer the problem sits in:\n\n• **Hardware** — a wire, a pin, power\n• **Reading** — the sensor value itself looks wrong\n• **Logic** — the value is right but the robot decides badly\n• **Language** — the compiler is refusing the code\n\nIf you paste the exact error text or the numbers you are seeing, I can be much more specific.',
-  question: 'Which of those four layers is it?',
-  followUps: ['Explain how the ultrasonic sensor works', 'Help me debug a compiler error', 'How do I structure a state machine?'],
+  text: 'I can help best if we narrow it down. You are on **{lesson}**, so I will assume that is the context.\n\nMost problems here are one of four:\n\n• **The task** — you are not sure what is being asked\n• **The start** — you know, but cannot get going\n• **The work** — you started and something is wrong\n• **The review** — a mentor said something you did not follow\n\nTell me which, and paste the exact wording if there is any.',
+  question: 'Which of those four is it?',
+  followUps: ['I am stuck', 'Where do I start?', 'I do not understand the feedback'],
 }
-
 let counter = 0
 
 /** How long to wait for the model before falling back — a stuck student will not sit through more. */
@@ -395,4 +283,4 @@ export async function askMentor(question: string, ctx: AskContext = {}): Promise
 }
 
 /** Keys into the UI dictionary — the prompts are translated at render time, like every other label. */
-export const STARTER_PROMPTS = ['ai_starter_ultrasonic', 'ai_starter_noisy', 'ai_starter_blink', 'ai_starter_scope_error', 'ai_starter_structure']
+export const STARTER_PROMPTS = ['ai_starter_stuck', 'ai_starter_begin', 'ai_starter_feedback', 'ai_starter_ask', 'ai_starter_grading']
