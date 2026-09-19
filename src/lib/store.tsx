@@ -4,6 +4,8 @@ import { createInitialState } from './seed'
 import { COURSES, LESSONS, MODULES } from './curriculum'
 import { ACHIEVEMENTS } from './gamification'
 import * as logic from './logic'
+import { applyOps, opsFor, snapshotOps, type ProgressOp } from './progress'
+import * as outbox from './outbox'
 import type { ProjectDraft } from './logic'
 import type { Competition, CompetitionTask, CustomLesson, Group, TaskAnswer, Team } from './types'
 import { profileOf } from './selectors'
@@ -149,10 +151,48 @@ export function useApp() {
 }
 export const useToast = () => useContext(ToastCtx)
 
+/**
+ * Turns the server's snapshot back into operations, so the merge goes through the same pure
+ * `applyOps` the queue does rather than a second, subtly different copy of the merge rules.
+ */
+function fromSnapshot(remote: api.ProgressSnapshot): ProgressOp[] {
+  const ops: ProgressOp[] = []
+  for (const row of remote.lessons) {
+    if (row.completedAt) ops.push({ id: `r-l-${row.lessonId}`, t: 'lesson', lessonId: row.lessonId, courseId: row.courseId, at: row.completedAt })
+    if (row.challengeCompletedAt) ops.push({ id: `r-c-${row.lessonId}`, t: 'challenge', lessonId: row.lessonId, courseId: row.courseId, at: row.challengeCompletedAt })
+    if (row.checkPassedAt) ops.push({ id: `r-k-${row.lessonId}`, t: 'check', lessonId: row.lessonId, courseId: row.courseId, at: row.checkPassedAt })
+  }
+  for (const row of remote.xp) {
+    ops.push({ id: row.id, t: 'xp', amount: row.amount, reason: row.reason, vars: row.vars, kind: row.kind as XPTransaction['kind'], refId: row.refId, at: row.createdAt })
+  }
+  if (remote.profile) {
+    const { xp: _total, ...patch } = remote.profile
+    ops.push({ id: 'r-profile', t: 'profile', patch, at: remote.profile.lastActiveDate })
+  }
+  return ops
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadState)
   const [standing, setStanding] = useState<Standing>(EMPTY_STANDING)
   const [toasts, setToasts] = useState<Toast[]>([])
+
+  /**
+   * Applies a reducer and records what it changed, in one place.
+   *
+   * Instrumenting each of the twenty-odd mutators separately would be twenty-odd chances to
+   * forget one, and the one forgotten is progress that silently never syncs. Diffing the
+   * state before and after cannot be forgotten.
+   */
+  const commit = useCallback((fn: (s: AppState) => AppState) => {
+    setState((prev) => {
+      const next = fn(prev)
+      // Nothing to queue for when there is no server: a purely local deployment would
+      // otherwise fill the outbox with operations that can never be flushed.
+      if (backendConfigured && prev.sessionUserId) outbox.push(opsFor(prev, next, prev.sessionUserId))
+      return next
+    })
+  }, [])
   const { locale } = useLocale()
 
   /**
@@ -247,6 +287,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
       achievements: ACHIEVEMENTS.map(localizeAchievement),
     }))
   }, [locale])
+
+  /**
+   * Keeps progress with the account rather than with the browser.
+   *
+   * Three things in order, and the order is the point. Everything banked before any of this
+   * existed is queued as ordinary operations — not an import path, just a diff against an
+   * empty profile, which is why running it twice or on two divergent devices converges
+   * instead of duplicating. Then the queue drains. Only then is the server's copy pulled and
+   * merged, so an operation still in flight is not erased by a read that predates it.
+   *
+   * The flag is keyed by user id, so two accounts on one browser each import once. It is an
+   * optimisation and not a correctness requirement: every operation is idempotent, so a
+   * second import would converge anyway.
+   */
+  useEffect(() => {
+    const uid = state.sessionUserId
+    if (!backendConfigured || !uid) return
+    outbox.install(() => uid)
+    let alive = true
+    void (async () => {
+      const flag = `s7.imported.${uid}`
+      try {
+        if (!localStorage.getItem(flag)) {
+          setState((s) => {
+            outbox.push(snapshotOps(s, uid))
+            return s
+          })
+          localStorage.setItem(flag, '1')
+        }
+      } catch {
+        /* storage blocked — the queue still works for this session */
+      }
+      await outbox.flush()
+      const remote = await api.getProgress().catch(() => null)
+      if (!alive || !remote) return
+      setState((s) => applyOps(s, uid, fromSnapshot(remote)))
+    })()
+    return () => {
+      alive = false
+    }
+  }, [state.sessionUserId])
 
   useEffect(() => {
     try {
@@ -364,8 +445,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       standing,
       refreshStanding,
-      completeLesson: (lessonId) => user && setState((s) => logic.completeLesson(s, user.id, lessonId)),
-      completeChallenge: (lessonId) => user && setState((s) => logic.completeChallenge(s, user.id, lessonId)),
+      completeLesson: (lessonId) => user && commit((s) => logic.completeLesson(s, user.id, lessonId)),
+      completeChallenge: (lessonId) => user && commit((s) => logic.completeChallenge(s, user.id, lessonId)),
       saveProject(draft, status) {
         if (!user) throw new Error('not signed in')
         const result = logic.upsertProject(state, user.id, draft, status)
@@ -373,12 +454,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return result.project
       },
       startReview: (projectId) => user && setState((s) => logic.startReview(s, user.id, projectId)),
-      reviewProject: (projectId, decision, message, rubric) => user && setState((s) => logic.reviewProject(s, user, projectId, decision, message, rubric)),
+      reviewProject: (projectId, decision, message, rubric) => user && commit((s) => logic.reviewProject(s, user, projectId, decision, message, rubric)),
       toggleLike: (projectId) => setState((s) => logic.toggleLike(s, projectId)),
-      enroll: (courseId) => user && setState((s) => logic.enroll(s, user.id, courseId)),
+      enroll: (courseId) => user && commit((s) => logic.enroll(s, user.id, courseId)),
       updateProfile: (patch) => user && setState((s) => logic.updateUser(s, user.id, patch)),
-      setCurrentCourse: (courseId) => user && setState((s) => logic.setCurrentCourse(s, user.id, courseId)),
-      codeCheckPassed: (lessonId) => user && setState((s) => logic.markCodeCheckPassed(s, user.id, lessonId)),
+      setCurrentCourse: (courseId) => user && commit((s) => logic.setCurrentCourse(s, user.id, courseId)),
+      codeCheckPassed: (lessonId) => user && commit((s) => logic.markCodeCheckPassed(s, user.id, lessonId)),
       joinTeam: (teamId) => user && setState((s) => logic.joinTeam(s, user.id, teamId)),
       setTaskStatus: (taskId, status, teamId) => setState((s) => logic.setTaskStatus(s, taskId, status, teamId)),
       readNotifications: (id) => user && setState((s) => logic.readNotifications(s, user.id, id)),
@@ -409,7 +490,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (backendConfigured) await api.publishLesson(lessonId, published)
         setState((s) => logic.setLessonPublished(s, lessonId, published))
       },
-      submitLessonAnswers: (lessonId, answers) => user && setState((s) => logic.submitLessonAnswers(s, user.id, lessonId, answers)),
+      submitLessonAnswers: (lessonId, answers) => user && commit((s) => logic.submitLessonAnswers(s, user.id, lessonId, answers)),
       reviewLessonSubmission: (submissionId, feedback, awardedXp) =>
         user && setState((s) => logic.reviewLessonSubmission(s, submissionId, user.id, feedback, awardedXp)),
       saveCompetition: (competition) => setState((s) => logic.saveCompetition(s, competition)),

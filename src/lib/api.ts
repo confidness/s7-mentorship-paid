@@ -148,3 +148,15 @@ export async function getLessonContent(lessonId: string): Promise<LessonContent 
 
 /** Returns the Stripe Checkout URL to send the buyer to. The purchase completes over there. */
 export const startCheckout = (lessonId: string) => call<{ url: string; sessionId: string }>('/api/checkout', { method: 'POST', body: JSON.stringify({ lessonId }) })
+
+/* -------------------------------------------------------------- progress */
+
+export interface ProgressSnapshot {
+  profile: { xp: number; streak: number; lastActiveDate: string; currentCourseId: string; enrolledCourseIds: string[]; goal: string } | null
+  lessons: { lessonId: string; courseId: string; checkPassedAt: string | null; completedAt: string | null; challengeCompletedAt: string | null }[]
+  xp: { id: string; amount: number; reason: string; vars?: Record<string, string | number>; kind: string; refId?: string; createdAt: string }[]
+}
+
+export const getProgress = () => call<ProgressSnapshot>('/api/progress')
+
+export const pushProgress = (ops: unknown[]) => call<{ ok: true; applied: number }>('/api/progress', { method: 'POST', body: JSON.stringify({ ops }) })

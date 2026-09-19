@@ -238,9 +238,20 @@ Supabase clients and the difference between them is the security model: `userCli
 the caller with RLS applied, `adminClient` bypasses RLS and is reserved for the Stripe webhook
 and admin review.
 
-One consequence worth knowing before a demo: local progress is per browser and does not follow
-an account between devices. Moving it into Postgres is the next piece of work, and the mentor
-review loop needs it — a mentor can currently only see projects submitted in their own browser.
+Progress is moving. `supabase/migrations/0002_progress.sql` adds three tables and the client
+is wired to them: a mutation is diffed into operations, queued, and flushed to
+`api/progress.ts`, which upserts and expresses no rules of its own. Run 0002 and it is on;
+without it the app keeps working exactly as before, because an unconfigured backend is the
+same code path as being offline.
+
+Operations rather than a snapshot, because a snapshot lets a stale tab overwrite a fresh one.
+Every one is a grow-only insert or a monotonic write, so replaying a queue is free and two
+devices converge whichever order they merge in — `test/progress.test.ts` asserts both, with
+no database. The streak is the single exception, being the only field that goes down, so an
+older operation is ignored rather than allowed to walk it back.
+
+Still local, and next: projects and notifications. Until projects move, a mentor can only see
+what was submitted in the browser they are reviewing in.
 
 ## Deploying to Vercel
 
