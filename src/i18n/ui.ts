@@ -1488,6 +1488,8 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   chose_answer: { en: 'Chose: {answer}', ru: 'Выбрано: {answer}', kk: 'Таңдағаны: {answer}' },
   correct_answer_was: { en: 'Correct answer: {answer}', ru: 'Правильный ответ: {answer}', kk: 'Дұрыс жауап: {answer}' },
   left_blank: { en: 'Left blank', ru: 'Не заполнено', kk: 'Бос қалдырылған' },
+  nothing_to_continue: { en: 'Nothing to continue yet', ru: 'Пока нечего продолжать', kk: 'Әзірге жалғастыратын ештеңе жоқ' },
+  work_appears_when_a_mentor_sets_it: { en: 'Lessons show up here once a mentor sets them. Until then, have a look at what is on offer.', ru: 'Уроки появятся здесь, когда наставник их назначит. А пока посмотри, что предлагают.', kk: 'Тәлімгер тағайындағанда сабақтар осында шығады. Әзірге не ұсынылғанын қарап шық.' },
   mentor_assignments: { en: 'Mentor assignments', ru: 'Задания наставника', kk: 'Тәлімгер тапсырмалары' },
   material_and_questions_set_by_your_mentor: {
     en: 'Material and questions set by your mentor.',

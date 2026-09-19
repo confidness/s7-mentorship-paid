@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Award, BookOpen, Bot, CheckCircle2, Clock, Flame, FolderKanban, Play, Target, TrendingUp, Trophy, Zap } from 'lucide-react'
+import { ArrowRight, Award, BookOpen, Bot, CheckCircle2, Clock, Flame, FolderKanban, Play, Target, TrendingUp, Trophy, Zap, ClipboardList } from 'lucide-react'
 import { useApp } from '../../lib/store'
 import { courseProgress, currentLesson, profileOf, projectsOf, xpSeries } from '../../lib/selectors'
 import { levelFor } from '../../lib/gamification'
@@ -17,16 +17,20 @@ export default function Dashboard() {
   if (!user) return null
   const profile = profileOf(state, user.id)!
 
-  const course = state.courses.find((c) => c.id === profile.currentCourseId)!
-  const lesson = currentLesson(state, user.id, course.id)
-  const progress = courseProgress(state, user.id, course.id)
+  // There may be no current course at all: the platform ships no curriculum, and a student
+  // only has one once a mentor's material puts them in it. The `!` here used to be harmless
+  // because a course always existed, and became a white screen on the landing page the moment
+  // that stopped being true.
+  const course = state.courses.find((c) => c.id === profile.currentCourseId)
+  const lesson = course ? currentLesson(state, user.id, course.id) : undefined
+  const progress = course ? courseProgress(state, user.id, course.id) : { done: 0, total: 0, percent: 0 }
   const lv = levelFor(profile.xp)
   const projects = projectsOf(state, user.id)
   const approved = projects.filter((p) => p.status === 'approved').length
   const pending = projects.filter((p) => p.status === 'submitted' || p.status === 'under_review')
-  const modules = modulesForCourse(course.id)
+  const modules = course ? modulesForCourse(course.id) : []
   const moduleOfLesson = modules.find((m) => m.id === lesson?.moduleId)
-  const lessonNumber = lesson ? lessonsForCourse(course.id).findIndex((l) => l.id === lesson.id) + 1 : 0
+  const lessonNumber = course && lesson ? lessonsForCourse(course.id).findIndex((l) => l.id === lesson.id) + 1 : 0
   const unlocked = state.achievements.filter((a) => profile.unlockedAchievementIds.includes(a.id))
   const nextUp = state.achievements.filter((a) => !profile.unlockedAchievementIds.includes(a.id)).slice(0, 3)
 
@@ -81,7 +85,19 @@ export default function Dashboard() {
       </section>
 
       {/* continue learning — the one main action on this screen */}
-      {lesson && (
+      {!lesson && (
+        <Card className="p-6 sm:p-8">
+          <SectionHeading title={t('nothing_to_continue')} subtitle={t('work_appears_when_a_mentor_sets_it')} icon={ClipboardList} />
+          <div className="mt-5">
+            <Link to="/assigned" className={btn('primary', 'lg')}>
+              {t('mentor_assignments')}
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          </div>
+        </Card>
+      )}
+
+      {course && lesson && (
         <Card className="overflow-hidden">
           <div className="grid gap-0 lg:grid-cols-[1.6fr_1fr]">
             <div className="p-5 sm:p-6">
@@ -221,7 +237,7 @@ export default function Dashboard() {
                 title={t('no_projects_yet')}
                 body={t('finish_the_task_in_your_current_lesson_and_submi')}
                 action={
-                  lesson && (
+                  course && lesson && (
                     <Link to={`/learn/${course.id}/${lesson.id}`} className={btn('primary')}>
                       {t('open_current_lesson')}
                     </Link>
