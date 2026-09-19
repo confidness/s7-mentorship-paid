@@ -118,7 +118,7 @@ export default function ProjectDetail() {
 
       {project.status === 'approved' && lesson && (
         <Card className="flex flex-wrap items-center gap-4 border-emerald-200 bg-emerald-50/60 p-5">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-success-solid text-white">
             <Zap size={19} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">

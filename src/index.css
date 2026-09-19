@@ -57,6 +57,13 @@
   --color-emerald-600: #047857;
   --color-rose-600: #be123c;
 
+  /* Those three are TEXT colours, and the dark theme lightens them so they read against a dark
+     surface. Used the other way round — as a solid fill carrying white text — that lightening
+     is exactly backwards, and a notification badge ends up at 2.7:1. These two are the fill
+     version: deliberately not re-tinted for dark, because white has to sit on them in both. */
+  --color-danger-solid: #be123c;
+  --color-success-solid: #047857;
+
   /* Deep green companion — the second stop in every accent gradient. Blue runs into it
      through teal, which is why the ramp leans slightly cool rather than grassy. */
   --color-accent-50: #eaf7f0;
@@ -117,8 +124,12 @@
   --color-ink-200: #2a3444;
   --color-ink-300: #3d4859;
   --color-ink-400: #6b7a90;
-  --color-ink-500: #94a2b8;
-  --color-ink-600: #b3c0d2;
+  /* 500 is the secondary text colour and carries 219 call sites, including 12px labels sitting
+     on three or four stacked translucent washes — which lift the backdrop to about #44474e, far
+     lighter than the canvas. At #94a2b8 those landed at 3.6:1. Raised until the deepest of them
+     clears AA, with 600 moved up in step so the ramp keeps its separation. */
+  --color-ink-500: #b9c5d6;
+  --color-ink-600: #ccd6e3;
   --color-ink-700: #cdd8e6;
   --color-ink-800: #e2e9f3;
   --color-ink-900: #f3f7fc;

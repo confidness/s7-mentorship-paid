@@ -13,6 +13,7 @@ import LocaleToggle from './LocaleToggle'
 import type { LucideIcon } from 'lucide-react'
 import { t, formatNumber, formatDate } from '../i18n'
 import { Mark } from './Mark'
+import LiquidMetalBackground from './LiquidMetalBackground'
 import { localizeLevelName } from '../i18n/content'
 
 interface NavItem {
@@ -117,7 +118,7 @@ function NotificationBell() {
       >
         <Bell size={18} aria-hidden="true" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">{unread}</span>
+          <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-danger-solid px-1 text-[10px] font-bold text-white ring-2 ring-white">{unread}</span>
         )}
       </button>
 
@@ -282,6 +283,10 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
+      {/* The metal sits under every surface here, heavily veiled: these screens are dense with
+          text on glass, and the veil is what keeps their measured contrast. */}
+      <LiquidMetalBackground depth="app" />
+
       {/* floating rail */}
       <aside className="chrome specular fixed top-4 bottom-4 left-4 z-40 hidden w-60 flex-col justify-between rounded-[26px] px-3.5 py-5 lg:flex">
         <div className="relative">

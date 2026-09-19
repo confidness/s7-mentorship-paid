@@ -32,6 +32,49 @@ export function applyTheme(choice: ThemeChoice) {
   }
 }
 
+/**
+ * Reads the theme that is currently applied, without owning the choice.
+ *
+ * `useTheme` writes `<html data-theme>` on mount, so anything that merely needs to *know* the
+ * theme must not call it — two owners would fight over the attribute. This observes instead,
+ * which also means it picks up a change made by the pre-paint script in index.html.
+ */
+export function useAppliedTheme(): 'light' | 'dark' {
+  const read = () => (typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(read)
+
+  useEffect(() => {
+    const el = document.documentElement
+    const sync = () => setTheme(el.dataset.theme === 'dark' ? 'dark' : 'light')
+    sync()
+    const observer = new MutationObserver(sync)
+    observer.observe(el, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
+
+  return theme
+}
+
+/**
+ * True when the visitor has asked for less motion.
+ *
+ * index.css collapses CSS animation and transition durations under this preference, but that
+ * rule reaches neither WebGL nor JavaScript-driven animation — both have to ask for themselves.
+ */
+export function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const sync = () => setReduced(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  return reduced
+}
+
 /** Single source of truth for the toggle; also follows the OS while set to `system`. */
 export function useTheme() {
   const [choice, setChoice] = useState<ThemeChoice>(readThemeChoice)

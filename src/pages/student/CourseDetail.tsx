@@ -170,8 +170,8 @@ export default function CourseDetail() {
                     const unlocked = enrolled && isLessonUnlocked(state, user.id, lesson.id)
                     const isNext = next?.id === lesson.id
                     const Row = (
-                      <div className={`flex items-center gap-4 px-5 py-4 ${unlocked ? 'transition hover:fill' : 'opacity-60'}`}>
-                        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${complete ? 'bg-emerald-50 text-emerald-600' : unlocked ? 'bg-brand-50 text-brand-600' : 'fill text-ink-400'}`}>
+                      <div className={`flex items-center gap-4 px-5 py-4 ${unlocked ? 'transition hover:fill' : ''}`}>
+                        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${complete ? 'bg-emerald-50 text-emerald-600' : unlocked ? 'bg-brand-50 text-brand-600' : 'fill text-ink-400 opacity-70'}`}>
                           {complete ? <CheckCircle2 size={17} aria-hidden="true" /> : unlocked ? <Circle size={17} aria-hidden="true" /> : <Lock size={15} aria-hidden="true" />}
                         </span>
                         <span className="min-w-0 flex-1">

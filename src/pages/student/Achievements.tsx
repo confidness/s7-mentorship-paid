@@ -20,7 +20,7 @@ const TIER_RING: Record<Achievement['tier'], string> = {
 export function AchievementBadge({ achievement, unlocked, compact }: { achievement: Achievement; unlocked: boolean; compact?: boolean }) {
   const Icon = ICONS[achievement.icon] ?? Trophy
   const body = (
-    <div className={`flex flex-col items-center rounded-[18px] p-3 text-center transition ${unlocked ? 'fill ring-1 rim' : 'opacity-55 grayscale'}`}>
+    <div className={`flex flex-col items-center rounded-[18px] p-3 text-center transition ${unlocked ? 'fill ring-1 rim' : 'grayscale'}`}>
       <span className={`grid place-items-center rounded-[16px] bg-gradient-to-b text-white shadow-[0_8px_18px_-10px_rgb(11_18_32/0.8)] ${TIER_RING[achievement.tier]} ${compact ? 'h-11 w-11' : 'h-14 w-14'}`}>
         {unlocked ? <Icon size={compact ? 18 : 24} aria-hidden="true" /> : <Lock size={compact ? 16 : 20} aria-hidden="true" />}
       </span>
@@ -76,7 +76,7 @@ export default function Achievements() {
           {LEVELS.map((l) => {
             const reached = profile.xp >= l.minXp
             return (
-              <li key={l.index} className={`fill-strong p-4 ${reached ? '' : 'opacity-55'}`}>
+              <li key={l.index} className={`p-4 ${reached ? 'fill-strong' : ''}`}>
                 <div className="flex items-center gap-2">
                   <span className={`grid h-7 w-7 place-items-center rounded-full text-xs font-bold ${reached ? 'bg-gradient-to-b from-brand-400 to-brand-600 text-white' : 'fill-strong text-ink-700 ring-1 rim'}`}>{l.index}</span>
                   <p className="text-sm font-bold text-ink-900">{localizeLevelName(l.name)}</p>

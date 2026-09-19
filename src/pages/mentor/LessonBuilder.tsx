@@ -316,7 +316,7 @@ export default function LessonBuilder() {
                               type="button"
                               onClick={() => patchTask(task.id, { answerIndex: oi })}
                               className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition ${
-                                task.answerIndex === oi ? 'bg-emerald-600 text-white' : 'fill text-ink-500 ring-1 rim hover:text-ink-900'
+                                task.answerIndex === oi ? 'bg-success-solid text-white' : 'fill text-ink-500 ring-1 rim hover:text-ink-900'
                               }`}
                               aria-label={t('mark_option_n_correct', { n: oi + 1 })}
                               aria-pressed={task.answerIndex === oi}

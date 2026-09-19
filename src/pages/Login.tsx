@@ -9,6 +9,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import LocaleToggle from '../components/LocaleToggle'
 import { t } from '../i18n'
 import { Mark } from '../components/Mark'
+import LiquidMetalBackground from '../components/LiquidMetalBackground'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
   const { login, register, state } = useApp()
@@ -63,6 +64,8 @@ export default function Login({ register: startOnRegister }: { register?: boolea
 
   return (
     <div className="relative min-h-screen lg:grid lg:grid-cols-[1fr_minmax(26rem,32rem)]">
+      {/* The one screen with a headline and almost no body text, so the metal runs uncovered. */}
+      <LiquidMetalBackground depth="hero" />
       {/* story side — one claim, three numbers, nothing else */}
       <section className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
         <Logo />
