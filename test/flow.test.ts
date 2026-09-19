@@ -133,7 +133,7 @@ state = logic.startReview(state, mentor.id, projectId)
 assert.equal(state.projects.find((p) => p.id === projectId)!.status, 'under_review')
 
 // --- approve: the whole chain fires ------------------------------------------------------------------
-state = logic.reviewProject(state, mentor, projectId, 'approved', 'Clean wiring and the Serial output makes the state obvious.', { wiring: 5, code: 5, documentation: 4 })
+state = logic.reviewProject(state, mentor, projectId, 'approved', 'Clean wiring and the Serial output makes the state obvious.', { completeness: 5, clarity: 4, craft: 4 })
 
 const project = state.projects.find((p) => p.id === projectId)!
 const profile = profileOf(state, STUDENT)!

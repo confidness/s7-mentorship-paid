@@ -160,3 +160,49 @@ export interface ProgressSnapshot {
 export const getProgress = () => call<ProgressSnapshot>('/api/progress')
 
 export const pushProgress = (ops: unknown[]) => call<{ ok: true; applied: number }>('/api/progress', { method: 'POST', body: JSON.stringify({ ops }) })
+
+/* -------------------------------------------------------------- projects */
+
+export interface RemoteProject {
+  id: string
+  authorId: string
+  title: string
+  description: string
+  code: string
+  notes: string
+  courseId: string
+  lessonId: string
+  attachments: { id: string; kind: 'image' | 'video'; name: string; url: string; size?: number }[]
+  tags: string[]
+  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'needs_changes'
+  createdAt: string
+  submittedAt?: string
+  reviewedAt?: string
+  reviewerId?: string
+  likes: number
+  views: number
+  feedback: { id: string; projectId: string; mentorId: string; decision: 'approved' | 'needs_changes' | 'comment'; message: string; rubric?: { completeness: number; clarity: number; craft: number }; createdAt: string }[]
+}
+
+export const listProjects = () => call<{ projects: RemoteProject[] }>('/api/projects')
+
+export interface ProjectSave {
+  id?: string
+  title: string
+  description?: string
+  code?: string
+  notes?: string
+  courseId?: string
+  lessonId?: string
+  attachments?: unknown[]
+  tags?: string[]
+  status?: 'draft' | 'submitted'
+}
+
+export const saveProject = (draft: ProjectSave) => call<{ ok: true; id: string }>('/api/projects', { method: 'POST', body: JSON.stringify(draft) })
+
+/** Claiming is what stops two mentors writing the same review; the second gets a 409. */
+export const claimProject = (id: string) => call<{ ok: true; id: string }>('/api/projects', { method: 'PATCH', body: JSON.stringify({ id, action: 'claim' }) })
+
+export const decideProject = (id: string, decision: 'approved' | 'needs_changes', message: string, rubric?: { completeness: number; clarity: number; craft: number }) =>
+  call<{ ok: true; id: string }>('/api/projects', { method: 'PATCH', body: JSON.stringify({ id, action: 'decide', decision, message, rubric }) })

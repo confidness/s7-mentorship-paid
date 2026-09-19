@@ -115,7 +115,8 @@ export interface Feedback {
   createdAt: string
   decision: 'approved' | 'needs_changes' | 'comment'
   message: string
-  rubric?: { wiring: number; code: number; documentation: number }
+  /** Does it do what was asked, can the reasoning be followed, is it well made. */
+  rubric?: { completeness: number; clarity: number; craft: number }
 }
 
 export interface Project {

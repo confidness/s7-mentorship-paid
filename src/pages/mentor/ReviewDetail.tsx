@@ -14,9 +14,9 @@ import { t, formatNumber } from '../../i18n'
 import { localizeLevelName } from '../../i18n/content'
 
 const RUBRIC = [
-  { key: 'wiring', label: 'wiring_build' },
-  { key: 'code', label: 'code_quality' },
-  { key: 'documentation', label: 'documentation' },
+  { key: 'completeness', label: 'rubric_completeness' },
+  { key: 'clarity', label: 'rubric_clarity' },
+  { key: 'craft', label: 'rubric_craft' },
 ] as const
 
 /** Dictionary keys — the phrases are translated when the chips render. */
@@ -29,7 +29,7 @@ export default function ReviewDetail() {
   const navigate = useNavigate()
 
   const [message, setMessage] = useState('')
-  const [rubric, setRubric] = useState({ wiring: 4, code: 4, documentation: 4 })
+  const [rubric, setRubric] = useState({ completeness: 4, clarity: 4, craft: 4 })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
