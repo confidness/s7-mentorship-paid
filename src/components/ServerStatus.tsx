@@ -1,0 +1,163 @@
+import { useEffect, useState } from 'react'
+import { AlertTriangle, CheckCircle2, PlugZap, RefreshCw, ServerCog } from 'lucide-react'
+import { Button, SectionHeading } from './ui'
+import { t } from '../i18n'
+
+/**
+ * Says why the AI mentor is answering offline, which is otherwise invisible from the outside.
+ *
+ * The endpoints answer a GET with their configuration state and never with a secret. Anything
+ * that is not JSON means the function is not deployed at all — usually a rewrite swallowing
+ * /api/, which returns the HTML page instead.
+ */
+type Health = 'checking' | 'ready' | 'no-key' | 'not-deployed' | 'error'
+
+async function probe(path: string): Promise<Health> {
+  try {
+    const res = await fetch(path, { method: 'GET' })
+    const body = await res.text()
+    // A serverless function answers JSON. HTML means the SPA fallback answered instead.
+    if (!body.trim().startsWith('{')) return 'not-deployed'
+    const data = JSON.parse(body) as { configured?: boolean }
+    return data.configured ? 'ready' : 'no-key'
+  } catch {
+    return 'error'
+  }
+}
+
+const TONE: Record<Health, string> = {
+  checking: 'text-ink-500',
+  ready: 'text-emerald-700',
+  'no-key': 'text-amber-800',
+  'not-deployed': 'text-rose-700',
+  error: 'text-rose-700',
+}
+
+function Row({ label, state, keyName, note }: { label: string; state: Health; keyName: string; note?: string }) {
+  const Icon = state === 'ready' ? CheckCircle2 : state === 'checking' ? RefreshCw : AlertTriangle
+  const explain =
+    state === 'ready'
+      ? t('configured_and_answering')
+      : state === 'no-key'
+        ? t('set_key_in_vercel_then_redeploy', { key: keyName })
+        : state === 'not-deployed'
+          ? t('the_function_is_not_deployed_check_api_routes')
+          : state === 'error'
+            ? t('could_not_reach_it_at_all')
+            : t('checking')
+
+  return (
+    <li className="rounded-[16px] border edge fill-soft p-4">
+      <p className={`flex items-center gap-2 text-sm font-bold ${TONE[state]}`}>
+        <Icon size={15} className={state === 'checking' ? 'animate-spin' : ''} aria-hidden="true" />
+        {label}
+      </p>
+      <p className="mt-1 text-sm text-ink-600">{explain}</p>
+      {note && <p className="mt-1 font-mono text-xs text-ink-500">{note}</p>}
+    </li>
+  )
+}
+
+/**
+ * Asks the mentor a real question and reports what came back.
+ *
+ * The health check cannot tell a good key from a bad one — a revoked or mistyped key is still a
+ * key, and reads as configured. Only a real round trip separates "the AI works" from "the AI is
+ * about to fall back silently in front of the judges", so this spends one small request to say so.
+ */
+async function liveTest(): Promise<string> {
+  try {
+    const res = await fetch('/api/mentor', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ question: 'Say OK.', locale: 'en' }),
+    })
+    const body = await res.text()
+    if (!body.trim().startsWith('{')) return t('the_function_is_not_deployed_check_api_routes')
+    const data = JSON.parse(body) as { text?: string; error?: string; status?: number; detail?: string; model?: string; tried?: string[] }
+    // Naming the model that answered matters when the list is tried in order: the one that worked
+    // is not necessarily the one the health check reported as first.
+    if (res.ok && data.text) return data.model ? t('live_ok_model', { model: data.model, text: data.text.slice(0, 70) }) : t('live_ok', { text: data.text.slice(0, 90) })
+    if (res.status === 501) return t('set_key_in_vercel_then_redeploy', { key: 'ANTHROPIC_API_KEY' })
+    // A 400 covers both an empty wallet and a malformed request, so the message decides, not the code.
+    // A retired free model id is OpenRouter's likeliest failure and no redeploy will fix it.
+    if (/no endpoints|not a valid model|model not found|unavailable for free/i.test(data.detail ?? ''))
+      return t('live_bad_model', { detail: data.detail ?? '' }) + (data.tried?.length ? ' ' + t('live_tried', { models: data.tried.join(', ') }) : '')
+    if (/free-models-per|rate limit/i.test(data.detail ?? '')) return t('live_rate_limited')
+    if (/credit balance/i.test(data.detail ?? '')) return t('live_no_credit')
+    if (/workspace/i.test(data.detail ?? '')) {
+      // Set-but-still-refused and never-set read identically from here, and the fix differs:
+      // one is a wrong id, the other a variable Vercel has not applied yet.
+      const health = await fetch('/api/mentor').then((r) => r.json() as Promise<{ workspace?: boolean }>).catch(() => ({ workspace: false }))
+      return health.workspace ? t('live_workspace_rejected') : t('live_needs_workspace')
+    }
+    if (data.status === 401 || data.status === 403) return t('live_key_rejected')
+    if (data.status === 429) return t('live_rate_limited')
+    const code = String(data.status ?? data.error ?? res.status)
+    return data.detail ? t('live_failed_detail', { code, detail: data.detail }) : t('live_failed', { code })
+  } catch {
+    return t('could_not_reach_it_at_all')
+  }
+}
+
+export default function ServerStatus() {
+  const [mentor, setMentor] = useState<Health>('checking')
+  const [who, setWho] = useState('')
+  const [payments, setPayments] = useState<Health>('checking')
+  const [round, setRound] = useState(0)
+  const [live, setLive] = useState('')
+  const [testing, setTesting] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    setMentor('checking')
+    setPayments('checking')
+    void probe('/api/mentor').then((h) => alive && setMentor(h))
+    // Which service and model are actually configured — neither is a secret, and the model id is
+    // the thing most likely to be wrong when the provider is OpenRouter.
+    void fetch('/api/mentor')
+      .then((r) => r.json() as Promise<{ provider?: string; model?: string }>)
+      .then((d) => alive && d.provider && setWho(`${d.provider} · ${d.model ?? ''}`))
+      .catch(() => {})
+    // Payments replaced the mentor PIN: what matters now is whether Stripe is wired up,
+    // since that is what decides if a paid lesson can actually be sold.
+    void probe('/api/payments-health').then((h) => alive && setPayments(h))
+    return () => {
+      alive = false
+    }
+  }, [round])
+
+  return (
+    <>
+      <SectionHeading title={t('server_features')} subtitle={t('what_needs_a_key_and_whether_it_has_one')} icon={ServerCog} />
+      <ul className="mt-4 space-y-3">
+        {/* Either key works and either is a valid answer, so the prompt names both rather than
+            steering someone to open an account they do not need. */}
+        <Row label={t('ai_robotics_mentor')} state={mentor} keyName="OPENROUTER_API_KEY / ANTHROPIC_API_KEY" note={who} />
+        <Row label={t('payments')} state={payments} keyName="STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET" />
+      </ul>
+      <p className="mt-3 text-xs text-ink-500">{t('both_fall_back_safely_the_app_works_without_them')}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => setRound((n) => n + 1)}>
+          {t('check_again')}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={PlugZap}
+          disabled={testing}
+          onClick={() => {
+            setTesting(true)
+            setLive('')
+            void liveTest()
+              .then(setLive)
+              .finally(() => setTesting(false))
+          }}
+        >
+          {testing ? t('checking') : t('send_a_test_question')}
+        </Button>
+      </div>
+      {live && <p className="mt-3 rounded-[14px] border edge fill-soft p-3 text-sm text-ink-700">{live}</p>}
+    </>
+  )
+}
