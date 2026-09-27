@@ -14,7 +14,7 @@
  * DELETE        — remove a lesson the caller wrote.
  */
 
-import { HttpError, adminClient, fail, json, readJson, requireMethod, requireSellingMentor, requireUser, type Caller } from './_lib/server'
+import { HttpError, adminClient, fail, json, readJson, requireMethod, requireSellingMentor, requireUser, type Caller } from './_lib/server.js'
 
 const MAX_TASKS_PER_LESSON = 10
 

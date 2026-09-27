@@ -9,8 +9,8 @@
 declare const process: { env: Record<string, string | undefined> }
 
 import Stripe from 'stripe'
-import { feeBpsFromEnv } from '../../src/lib/money'
-import { HttpError, requireEnv } from './server'
+import { feeBpsFromEnv } from '../../src/lib/money.js'
+import { HttpError, requireEnv } from './server.js'
 
 let client: Stripe | null = null
 

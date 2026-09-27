@@ -7,8 +7,8 @@
  * checkout path has something fast to read; this route is what keeps it honest.
  */
 
-import { adminClient, fail, json, requireMethod, requireUser } from '../_lib/server'
-import { stripe } from '../_lib/stripe'
+import { adminClient, fail, json, requireMethod, requireUser } from '../_lib/server.js'
+import { stripe } from '../_lib/stripe.js'
 
 export default async function handler(req: Request): Promise<Response> {
   try {

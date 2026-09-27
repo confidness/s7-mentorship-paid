@@ -9,8 +9,8 @@
  * so this is called again each time rather than stored.
  */
 
-import { HttpError, adminClient, fail, json, requireMethod, requireUser } from '../_lib/server'
-import { siteOrigin, stripe } from '../_lib/stripe'
+import { HttpError, adminClient, fail, json, requireMethod, requireUser } from '../_lib/server.js'
+import { siteOrigin, stripe } from '../_lib/stripe.js'
 
 export default async function handler(req: Request): Promise<Response> {
   try {

@@ -12,7 +12,7 @@
  *   - the material's storage path. A signed URL is minted per request and expires.
  */
 
-import { HttpError, adminClient, fail, json, requireMethod, requireUser } from './_lib/server'
+import { HttpError, adminClient, fail, json, requireMethod, requireUser } from './_lib/server.js'
 
 /** Long enough to open a PDF, short enough that a copied link is not a distribution channel. */
 const MATERIAL_URL_TTL_SECONDS = 900

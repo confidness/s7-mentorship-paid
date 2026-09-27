@@ -18,7 +18,7 @@
  * row was documenting a wish.
  */
 
-import { HttpError, adminClient, fail, json, readJson, requireMentor, requireMethod, requireUser, type Caller } from './_lib/server'
+import { HttpError, adminClient, fail, json, readJson, requireMentor, requireMethod, requireUser, type Caller } from './_lib/server.js'
 
 /** What a student may put a project into. Deciding is somebody else's verb. */
 const AUTHOR_STATES = new Set(['draft', 'submitted'])

@@ -11,7 +11,7 @@
  * refuses the two XP kinds that are somebody else's decision about them.
  */
 
-import { HttpError, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server'
+import { HttpError, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server.js'
 import type { ProgressOp } from '../src/lib/progress'
 
 /** A batch bound, so one bad client cannot post a million rows in a single request. */

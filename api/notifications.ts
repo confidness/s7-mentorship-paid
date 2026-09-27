@@ -10,7 +10,7 @@
  * is a notification that can be written about an event that never occurred.
  */
 
-import { HttpError, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server'
+import { HttpError, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server.js'
 
 const SELECT = 'id, user_id, title, body, vars, kind, href, created_at, read_at'
 

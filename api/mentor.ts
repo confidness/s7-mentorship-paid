@@ -13,7 +13,7 @@
    Declaring just the one thing it reads keeps the dependency list unchanged. */
 declare const process: { env: Record<string, string | undefined> }
 
-import { fail, requireUser } from './_lib/server'
+import { fail, requireUser } from './_lib/server.js'
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001'
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'

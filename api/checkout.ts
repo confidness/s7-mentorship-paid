@@ -10,9 +10,9 @@
  * entitlement is the webhook's job, after Stripe confirms the money actually arrived.
  */
 
-import { HttpError, adminClient, fail, json, readJson, requireMethod, requireUser } from './_lib/server'
-import { platformFeeBps, siteOrigin, stripe } from './_lib/stripe'
-import { platformFee } from '../src/lib/money'
+import { HttpError, adminClient, fail, json, readJson, requireMethod, requireUser } from './_lib/server.js'
+import { platformFeeBps, siteOrigin, stripe } from './_lib/stripe.js'
+import { platformFee } from '../src/lib/money.js'
 
 interface CheckoutBody {
   lessonId?: unknown

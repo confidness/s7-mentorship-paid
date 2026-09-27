@@ -19,7 +19,7 @@
  * have no delete policy by design, so there is no taking one back.
  */
 
-import { HttpError, adminClient, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server'
+import { HttpError, adminClient, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server.js'
 
 /** Enough to fill a board. Beyond this nobody scrolls, and the votes have said what matters. */
 const PAGE = 100
