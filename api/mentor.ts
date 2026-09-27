@@ -182,7 +182,7 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ error: 'bad_request' }, 400)
   }
 
-  const question = (body.question ?? '').trim()
+  const question = typeof body.question === 'string' ? body.question.trim() : ''
   if (!question) return json({ error: 'bad_request' }, 400)
   if (question.length > 2000) return json({ error: 'too_long' }, 413)
 
@@ -190,7 +190,9 @@ export default async function handler(req: Request): Promise<Response> {
 
   // Capped, because the prompt is paid for by the token and the client already ranked them.
   const catalogue = Array.isArray(body.catalogue) ? body.catalogue.filter((line) => typeof line === 'string').slice(0, 20).map((line) => line.slice(0, 300)) : undefined
-  const system = systemPrompt(locale, body.lessonTitle, body.courseTitle, body.code, catalogue)
+  // Untrusted JSON: a non-string `code` would throw on .slice, and every character is paid for.
+  const text = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : undefined)
+  const system = systemPrompt(locale, text(body.lessonTitle, 200), text(body.courseTitle, 200), text(body.code, 2000), catalogue)
   const openrouter = provider.name === 'openrouter'
 
   let status = 0

@@ -187,11 +187,32 @@ async function review(req: Request, caller: Caller): Promise<Response> {
   if (!body.id) throw new HttpError(400, 'invalid_input', 'Which project?')
   const db = adminClient()
 
+  /**
+   * Is this still open, and is it yours to decide?
+   *
+   * Feedback is append-only and cannot be taken back, so nothing may be written about a
+   * project somebody has already decided. Without this, a second mentor opening a finished
+   * review would append a contradictory verdict the student can never be rid of — and, since
+   * the conditional update below simply matches no rows, would be told it worked.
+   *
+   * Since 0006 anyone can make themselves a mentor with one click, so `requireMentor` alone
+   * would let a student approve their own work into the gallery. Authors never review
+   * themselves, and a project another mentor has claimed stays theirs.
+   *
+   * This read is not the guarantee; the filters on each update are, and they are what settle
+   * two mentors pressing at the same instant. This is what keeps the common case — a stale
+   * tab, a back button — from writing anything at all.
+   */
+  const { data: open } = await db.from('projects').select('status, author_id, reviewer_id').eq('id', body.id).maybeSingle()
+  if (!open) throw new HttpError(404, 'not_found', 'No such project.')
+  if (open.author_id === caller.id) throw new HttpError(403, 'forbidden', 'You cannot review your own project.')
+
   if (body.action === 'claim') {
     const { data, error } = await db
       .from('projects')
       .update({ status: 'under_review', reviewer_id: caller.id })
       .eq('id', body.id)
+      .neq('author_id', caller.id)
       .eq('status', 'submitted')
       .select('id')
       .maybeSingle()
@@ -205,21 +226,8 @@ async function review(req: Request, caller: Caller): Promise<Response> {
   const message = (body.message ?? '').trim()
   if (!message) throw new HttpError(400, 'invalid_input', 'Feedback is required for both decisions.')
 
-  /**
-   * Is this still open?
-   *
-   * Feedback is append-only and cannot be taken back, so nothing may be written about a
-   * project somebody has already decided. Without this, a second mentor opening a finished
-   * review would append a contradictory verdict the student can never be rid of — and, since
-   * the conditional update below simply matches no rows, would be told it worked.
-   *
-   * This read is not the guarantee; the `.in(...)` on the update is, and it is what settles
-   * two mentors pressing at the same instant. This is what keeps the common case — a stale
-   * tab, a back button — from writing anything at all.
-   */
-  const { data: open } = await db.from('projects').select('status').eq('id', body.id).maybeSingle()
-  if (!open) throw new HttpError(404, 'not_found', 'No such project.')
   if (open.status !== 'submitted' && open.status !== 'under_review') throw new HttpError(409, 'already_reviewed', 'That project has already been decided.')
+  if (open.reviewer_id && open.reviewer_id !== caller.id) throw new HttpError(409, 'already_claimed', 'Somebody else is reviewing this.')
 
   // The record of what was said goes in first. If the status update then fails, the student
   // has the feedback and the project stays in the queue — the opposite order would close the
@@ -241,6 +249,9 @@ async function review(req: Request, caller: Caller): Promise<Response> {
     // Still open, checked inside the write itself. Two mentors deciding in the same second
     // resolve to one decision here rather than the later one quietly overwriting the earlier.
     .in('status', ['submitted', 'under_review'])
+    .neq('author_id', caller.id)
+    // caller.id comes from the verified token, so interpolating it into the filter is safe.
+    .or(`reviewer_id.is.null,reviewer_id.eq.${caller.id}`)
     .select('author_id, title')
     .maybeSingle()
   if (error) throw new HttpError(500, 'write_failed', error.message)

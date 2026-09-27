@@ -221,8 +221,10 @@ async function announce(requestId: string, lessonId: string, requestTitle: strin
   if (!claimed) return 0
 
   // Already announced for this request by an earlier answer? Then this one stays quiet.
-  const { count } = await db.from('request_fulfilments').select('request_id', { count: 'exact', head: true }).eq('request_id', requestId).not('announced_at', 'is', null)
-  if ((count ?? 0) > 1) return 0
+  // "Earliest wins" rather than "only one exists": two answers claiming in the same second
+  // would each count two and both stay silent, and nobody would be told.
+  const { data: first } = await db.from('request_fulfilments').select('lesson_id').eq('request_id', requestId).not('announced_at', 'is', null).order('announced_at', { ascending: true }).order('lesson_id', { ascending: true }).limit(1).maybeSingle()
+  if (first?.lesson_id !== lessonId) return 0
 
   const { data: voters } = await db.from('course_request_votes').select('user_id').eq('request_id', requestId).limit(MAX_ANNOUNCE)
   const audience = (voters ?? []).map((v) => v.user_id as string).filter((userId) => userId !== mentorId)

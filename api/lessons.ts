@@ -204,9 +204,12 @@ async function save(req: Request, caller: Caller): Promise<Response> {
 
   let lessonId: string
   if (id) {
-    const { data: existing } = await db.from('custom_lessons').select('author_id').eq('id', id).maybeSingle()
+    const { data: existing } = await db.from('custom_lessons').select('author_id, published').eq('id', id).maybeSingle()
     if (!existing) throw new HttpError(404, 'not_found', 'No such lesson.')
     if (existing.author_id !== caller.id) throw new HttpError(403, 'forbidden', 'That is not your lesson.')
+    // Publish free, then save with a price: the same gate as setPublished, or a priced lesson
+    // sits in the storefront with nowhere for the money to land.
+    if (existing.published && priceCents > 0) await requireSellingMentor(caller)
 
     const { error } = await db.from('custom_lessons').update(row).eq('id', id)
     if (error) throw new HttpError(500, 'write_failed', error.message)
