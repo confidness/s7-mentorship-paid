@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, BookOpen, CalendarClock, Flag, LogOut, MapPin, Medal, Pencil, Plus, RefreshCw, Shield, Target, Trash2, Trophy, Users, Zap } from 'lucide-react'
+import { AlertTriangle, BookOpen, CalendarClock, Flag, LogOut, MapPin, Medal, Palette, Pencil, Plus, RefreshCw, Shield, Target, Trash2, Trophy, Users, Zap } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { courseProgress, leaderboard, profileOf, students } from '../../lib/selectors'
 import { lessonsForCourse, modulesForCourse } from '../../lib/curriculum'
 import { Avatar, Badge, Button, Card, EmptyState, Modal, ProgressBar, SectionHeading } from '../../components/ui'
+import SkinPicker from '../../components/SkinPicker'
 import { formatDate } from '../../lib/hooks'
 import { NoEvents } from './EventBuilder'
 import ServerStatus from '../../components/ServerStatus'
@@ -371,6 +372,14 @@ export function MentorSettings() {
             </div>
           ))}
         </dl>
+      </Card>
+
+      {/* The same card as the learner's settings, because appearance belongs to the person
+          rather than to the role they happen to be in. Somebody who picked a skin as a
+          student should not have to find it again after switching teaching on. */}
+      <Card className="p-5 sm:p-6">
+        <SectionHeading title={t('appearance')} subtitle={t('appearance_note')} icon={Palette} />
+        <SkinPicker />
       </Card>
 
       <Card className="p-5 sm:p-6">

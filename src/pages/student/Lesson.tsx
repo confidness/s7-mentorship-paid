@@ -5,7 +5,7 @@ import {
   RotateCcw, Send, Sparkles, Target, Trophy, Wand2, Zap,
 } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
-import { isLessonUnlocked, nextLessonAfter, profileOf } from '../../lib/selectors'
+import { assignedLessons, isLessonUnlocked, nextLessonAfter, profileOf } from '../../lib/selectors'
 import { lessonsForCourse, modulesForCourse } from '../../lib/curriculum'
 import { runChecks, type CheckReport } from '../../lib/codecheck'
 import { Badge, Button, Card, EmptyState, Modal, ProgressBar, SectionHeading, Tabs, btn, STATUS_LABEL, STATUS_TONE } from '../../components/ui'
@@ -542,7 +542,7 @@ function LessonPage() {
       {submitOpen && <ProjectSubmitModal open onClose={() => setSubmitOpen(false)} lesson={lesson} existing={project} initialCode={code} onSubmitted={() => setSection('task')} />}
 
       <Modal open={aiOpen} onClose={() => setAiOpen(false)} wide title={t('ai_mentor_title')} subtitle={t('context_lesson', { title: lesson.title })}>
-        <AiMentorPanel context={{ lessonTitle: lesson.title, courseTitle: course.title, studentName: user.name, code }} height="h-[24rem]" />
+        <AiMentorPanel context={{ lessonTitle: lesson.title, courseTitle: course.title, studentName: user.name, code, catalogue: assignedLessons(state) }} height="h-[24rem]" />
       </Modal>
     </div>
   )

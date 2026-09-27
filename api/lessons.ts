@@ -1,10 +1,11 @@
 /**
  * Authoring and publishing lessons, and the catalogue students browse.
  *
- * The rule enforced here and nowhere else that counts: a lesson may only be published with a
- * price once its author is approved AND Stripe will accept charges for them. The builder
- * disables the button too, but a disabled button is a courtesy, not a control — this is the
- * check that holds when someone posts to the endpoint directly.
+ * Writing and publishing are open to anyone signed in: the platform carries other people's
+ * courses rather than vetting them first. The one rule enforced here is about money — a
+ * lesson may only be published with a price once Stripe will accept charges for its author.
+ * The builder disables the button too, but a disabled button is a courtesy, not a control;
+ * this is the check that holds when someone posts to the endpoint directly.
  *
  * GET           — the catalogue: published lessons as teasers, plus what the caller owns.
  * GET  ?mine=1  — the caller's own lessons, drafts included.
@@ -82,14 +83,39 @@ async function list(req: Request, caller: Caller): Promise<Response> {
   if (error) throw new HttpError(500, 'read_failed', error.message)
 
   const entitlements = (owned ?? []).map((row) => row.lesson_id as string)
+
+  /**
+   * The numbers nobody can write about themselves.
+   *
+   * Two aggregate views, read in one round trip each and joined here by id, rather than a
+   * per-lesson query. `mentor_reputation` returns no row at all for anyone below its
+   * five-review floor, so a missing entry is the honest "not known yet" and the interface
+   * renders it as such — see `0009_reputation.sql` for why that floor exists.
+   */
+  const [{ data: lessonStats }, { data: reputation }] = await Promise.all([
+    db.from('lesson_stats').select('lesson_id, buyers, starters'),
+    db.from('mentor_reputation').select('mentor_id, reviews, median_review_hours'),
+  ])
+  const statsById = new Map((lessonStats ?? []).map((row) => [row.lesson_id as string, row]))
+  const repByMentor = new Map((reputation ?? []).map((row) => [row.mentor_id as string, row]))
+
   return json({
-    lessons: (lessons ?? []).map((row) => ({
-      ...toTeaser(row),
-      authorId: row.author_id,
-      authorName: (row.profiles as { name?: string } | null)?.name ?? '',
-      // Free, bought, or written by you — the three ways a lesson is already open.
-      owned: entitlements.includes(row.id as string) || row.price_cents <= 0 || row.author_id === caller.id,
-    })),
+    lessons: (lessons ?? []).map((row) => {
+      const stat = statsById.get(row.id as string)
+      const rep = repByMentor.get(row.author_id as string)
+      return {
+        ...toTeaser(row),
+        authorId: row.author_id,
+        authorName: (row.profiles as { name?: string } | null)?.name ?? '',
+        // Free, bought, or written by you — the three ways a lesson is already open.
+        owned: entitlements.includes(row.id as string) || row.price_cents <= 0 || row.author_id === caller.id,
+        stats: {
+          buyers: Number(stat?.buyers ?? 0),
+          starters: Number(stat?.starters ?? 0),
+          medianReviewHours: rep?.median_review_hours === undefined || rep?.median_review_hours === null ? undefined : Number(rep.median_review_hours),
+        },
+      }
+    }),
     entitlements,
   })
 }
@@ -139,6 +165,8 @@ function cleanTasks(raw: unknown): Array<Record<string, unknown>> {
 }
 
 async function save(req: Request, caller: Caller): Promise<Response> {
+  // No gate. Anyone signed in may write and publish a course — that is the platform's whole
+  // proposition now. What is still checked is money: see setPublished.
   const body = await readJson<LessonInput>(req)
   const db = adminClient()
 
@@ -212,8 +240,9 @@ async function setPublished(req: Request, caller: Caller): Promise<Response> {
   if (!lesson) throw new HttpError(404, 'not_found', 'No such lesson.')
   if (lesson.author_id !== caller.id) throw new HttpError(403, 'forbidden', 'That is not your lesson.')
 
-  // The gate. Unpublishing is always allowed — withdrawing a lesson must never be blocked
-  // by a payout problem — and a free lesson needs no Stripe account at all.
+  // The one remaining gate, and it is about money rather than merit: a priced lesson needs
+  // somewhere for the money to land. Unpublishing is always allowed — withdrawing a lesson
+  // must never be blocked by a payout problem — and a free lesson needs nothing at all.
   if (published && lesson.price_cents > 0) await requireSellingMentor(caller)
 
   const { error } = await db.from('custom_lessons').update({ published, updated_at: new Date().toISOString() }).eq('id', id)

@@ -11,6 +11,55 @@ import { AchievementBadge } from './Achievements'
 import { t, formatNumber, formatDate } from '../../i18n'
 import { localizeDifficulty, localizeLevelBlurb, localizeLevelName } from '../../i18n/content'
 
+/**
+ * The advisor's suggestion, once it has been kept.
+ *
+ * It sits above everything because it answers the question the page is otherwise silent on
+ * for a new account: not "how are you doing" but "what next". Progress is read from the
+ * profile rather than stored with the path — a second copy of a number that is already
+ * recorded is a number that will disagree with itself.
+ */
+function LearningPath() {
+  const { state, user, setLearningPath } = useApp()
+  if (!user) return null
+  const profile = profileOf(state, user.id)
+  const path = (profile?.learningPath ?? []).map((id) => state.customLessons.find((l) => l.id === id)).filter((l): l is NonNullable<typeof l> => Boolean(l))
+  if (path.length < 2) return null
+
+  const done = new Set(state.lessonSubmissions.filter((sub) => sub.studentId === user.id).map((sub) => sub.lessonId))
+
+  return (
+    <Card className="p-5">
+      <SectionHeading
+        title={t('my_learning_path')}
+        subtitle={t('n_of_total_done', { done: path.filter((l) => done.has(l.id)).length, total: path.length })}
+        icon={Target}
+        action={
+          <button onClick={() => setLearningPath([])} className="text-sm font-semibold text-ink-500 transition hover:text-ink-900">
+            {t('clear_path')}
+          </button>
+        }
+      />
+      <ol className="space-y-2">
+        {path.map((lesson, index) => {
+          const finished = done.has(lesson.id)
+          return (
+            <li key={lesson.id}>
+              <Link to={`/assigned/${lesson.id}`} className="group flex items-center gap-3 border-2 border-ink-900 fill-strong px-3.5 py-2.5 transition hover:shadow-[4px_4px_0_0_var(--color-ink-900)]">
+                <span className={`grid h-7 w-7 shrink-0 place-items-center border-2 border-ink-900 text-xs font-bold ${finished ? 'bg-accent-400 text-on-accent' : 'text-ink-900'}`}>
+                  {finished ? <CheckCircle2 size={14} aria-hidden="true" /> : index + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">{lesson.title}</span>
+                <ArrowRight size={15} className="shrink-0 text-ink-400 transition group-hover:text-ink-900" aria-hidden="true" />
+              </Link>
+            </li>
+          )
+        })}
+      </ol>
+    </Card>
+  )
+}
+
 export default function Dashboard() {
   const { state, user } = useApp()
   const ready = useLoaded()
@@ -54,6 +103,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <LearningPath />
+
       {/* hero */}
       <section className="card specular tint-blue relative overflow-hidden p-6 sm:p-8">
         <div className="relative flex flex-wrap items-start justify-between gap-6">
@@ -187,7 +238,7 @@ export default function Dashboard() {
               subtitle={t('every_track_in_the_academy')}
               icon={TrendingUp}
               action={
-                <Link to="/learning" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
+                <Link to="/learning/courses" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
                   {t('my_learning')}
                 </Link>
               }

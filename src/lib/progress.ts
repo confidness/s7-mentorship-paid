@@ -22,7 +22,7 @@ import type { AppState, StudentProfile, TextVars, XPTransaction } from './types'
  */
 
 /** The scalars a learner may move about themselves. Their score is not among them. */
-export type ProfilePatch = Partial<Pick<StudentProfile, 'currentCourseId' | 'goal' | 'enrolledCourseIds' | 'streak' | 'lastActiveDate'>>
+export type ProfilePatch = Partial<Pick<StudentProfile, 'currentCourseId' | 'goal' | 'enrolledCourseIds' | 'learningPath' | 'streak' | 'lastActiveDate'>>
 
 export type ProgressOp =
   | { id: string; t: 'lesson'; lessonId: string; courseId: string; at: string }
@@ -74,6 +74,9 @@ export function opsFor(prev: AppState, next: AppState, userId: string): Progress
   if (before?.currentCourseId !== after.currentCourseId) patch.currentCourseId = after.currentCourseId
   if (before?.goal !== after.goal) patch.goal = after.goal
   if ((before?.enrolledCourseIds ?? []).join() !== after.enrolledCourseIds.join()) patch.enrolledCourseIds = after.enrolledCourseIds
+  // Joined, like the enrolment list above. Order is part of a path, so this is the one
+  // profile field where a reorder is a real change and has to be sent.
+  if ((before?.learningPath ?? []).join() !== (after.learningPath ?? []).join()) patch.learningPath = after.learningPath ?? []
   if (before?.streak !== after.streak || before?.lastActiveDate !== after.lastActiveDate) {
     patch.streak = after.streak
     patch.lastActiveDate = after.lastActiveDate
@@ -162,6 +165,7 @@ const BLANK: StudentProfile = {
   completedChallengeIds: [],
   passedCheckLessonIds: [],
   unlockedAchievementIds: [],
+  learningPath: [],
   goal: '',
 }
 

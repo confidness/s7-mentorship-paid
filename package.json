@@ -7,22 +7,26 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "check": "esbuild test/flow.test.ts test/mentor.test.ts test/monetization.test.ts test/progress.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/flow.test.mjs && node node_modules/.cache/mentor.test.mjs && node node_modules/.cache/monetization.test.mjs && node node_modules/.cache/progress.test.mjs"
+    "check": "esbuild test/flow.test.ts test/mentor.test.ts test/monetization.test.ts test/progress.test.ts test/discovery.test.ts test/demand.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/flow.test.mjs && node node_modules/.cache/mentor.test.mjs && node node_modules/.cache/monetization.test.mjs && node node_modules/.cache/progress.test.mjs && node node_modules/.cache/discovery.test.mjs && node node_modules/.cache/demand.test.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.81",
+    "@react-three/drei": "^9.114.3",
+    "@react-three/fiber": "^8.17.10",
     "@supabase/supabase-js": "^2.116.0",
     "lucide-react": "^0.454.0",
     "motion": "^13.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
-    "stripe": "^22.6.2"
+    "stripe": "^22.6.2",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.169.0",
     "@vitejs/plugin-react": "^4.3.3",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.3",

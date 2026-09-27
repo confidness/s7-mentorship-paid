@@ -68,7 +68,7 @@ export default function ReviewDetail() {
 
   async function decide(decision: 'approved' | 'needs_changes') {
     if (message.trim().length < 20) {
-      setError('Write at least a sentence of feedback — this is the part the student actually reads.')
+      setError(t('feedback_needs_a_sentence'))
       return
     }
     setBusy(true)

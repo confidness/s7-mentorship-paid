@@ -99,18 +99,28 @@ export async function requireAdmin(req: Request): Promise<Caller> {
 }
 
 /**
- * Confirms the caller may sell: application approved and Stripe willing to accept charges.
+ * Confirms the caller is a mentor, for the routes that then act with the service role.
  *
- * Both halves matter. Approval without a connected account means money with nowhere to go;
- * a connected account without approval means an unreviewed adult publishing to children.
+ * Reading the role from `profiles` rather than from the token: `user_metadata` is written
+ * once at signup, so an approved mentor's token still says student until they sign in again.
+ */
+export async function requireMentor(req: Request): Promise<Caller> {
+  const caller = await requireUser(req)
+  const { data } = await adminClient().from('profiles').select('role, is_admin').eq('id', caller.id).single()
+  if (data?.role !== 'mentor' && !data?.is_admin) throw new HttpError(403, 'forbidden', 'Mentors only.')
+  return caller
+}
+
+/**
+ * Confirms the caller may sell: a Stripe account willing to accept charges.
+ *
+ * This used to also require an approved mentor application. That half is gone with the
+ * application desk — publishing is open to anyone, and the remaining condition is not a
+ * judgement about a person but a fact about money: an account Stripe has not verified has
+ * nowhere to receive it. Free lessons never reach this check at all.
  */
 export async function requireSellingMentor(caller: Caller): Promise<{ stripeAccountId: string }> {
-  const db = adminClient()
-  const [{ data: application }, { data: account }] = await Promise.all([
-    db.from('mentor_applications').select('status').eq('user_id', caller.id).eq('status', 'approved').maybeSingle(),
-    db.from('mentor_accounts').select('stripe_account_id, charges_enabled').eq('user_id', caller.id).maybeSingle(),
-  ])
-  if (!application) throw new HttpError(403, 'not_approved', 'Your mentor application has not been approved yet.')
+  const { data: account } = await adminClient().from('mentor_accounts').select('stripe_account_id, charges_enabled').eq('user_id', caller.id).maybeSingle()
   if (!account?.stripe_account_id || !account.charges_enabled) {
     throw new HttpError(409, 'payouts_not_ready', 'Connect a payout account before selling lessons.')
   }

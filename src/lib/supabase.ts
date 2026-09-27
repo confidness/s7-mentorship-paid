@@ -12,8 +12,15 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+/**
+ * `import.meta.env` is Vite's, and this module is also pulled into the node test bundle by
+ * whatever imports it. There it is undefined, and reading a property off it at module scope
+ * throws before a single check has run — a test suite failing on an import rather than on
+ * anything it meant to assert.
+ */
+const env: Record<string, string | undefined> = import.meta.env ?? {}
+const url = env.VITE_SUPABASE_URL
+const anonKey = env.VITE_SUPABASE_ANON_KEY
 
 /** False in a local checkout with no environment at all, exactly as the AI mentor degrades. */
 export const backendConfigured = Boolean(url && anonKey)

@@ -316,3 +316,57 @@ console.log('✓ empty install, registration, progress chain, code check, levels
   const again = logic.submitLessonAnswers(s2, studentId, clash, [{ taskId: 't1', value: '1' }])
   assert.equal(again.profiles.find((p) => p.userId === studentId)!.xp, afterAssignment, 'resubmitting the assignment pays nothing')
 }
+
+// ---------------------------------------------------------------------------------------
+// Signing in swaps the local id for the one Supabase issued, and everything has to follow.
+//
+// The failure this pins down was a white screen on every sign-in: `user.id` was rewritten and
+// the StudentProfile keyed by the old id was not, so `profileOf` returned undefined and the
+// first page to read `profile.xp` threw before anything rendered.
+// ---------------------------------------------------------------------------------------
+{
+  const fresh = createInitialState()
+  const made = logic.registerUser(fresh, { name: 'Aisha', email: 'aisha@example.test', role: 'student' })
+  const localId = made.user!.id
+  const AUTH_ID = '97b51933-357e-4f54-826f-566686e78f3c'
+
+  let s3 = logic.awardXp(made.state, localId, 40, 'xp_lesson_completed', 'lesson', 'demo-lesson')
+  s3 = logic.adoptAccountId(s3, localId, AUTH_ID)
+
+  assert.ok(profileOf(s3, AUTH_ID) !== undefined, 'the profile moves to the new id')
+  assert.equal(profileOf(s3, AUTH_ID)!.xp, 40, 'and keeps the XP that was already banked')
+  assert.equal(profileOf(s3, localId), undefined, 'nothing is left behind under the old id')
+  assert.equal(s3.users.filter((u) => u.id === AUTH_ID).length, 1, 'exactly one account, not two')
+  assert.ok(s3.xp.every((x) => x.userId === AUTH_ID), 'every XP row is re-keyed')
+  assert.ok(s3.notifications.every((n) => n.userId === AUTH_ID), 'so is the welcome notification')
+
+  // Idempotent: the session-restore effect runs on every boot, after sign-in already ran.
+  const twice = logic.adoptAccountId(s3, localId, AUTH_ID)
+  assert.equal(twice.profiles.length, s3.profiles.length, 'adopting an id that already moved changes nothing')
+  assert.equal(logic.adoptAccountId(s3, AUTH_ID, AUTH_ID), s3, 'adopting onto itself is a no-op')
+
+  console.log('✓ signing in re-keys the whole local account onto the id Supabase issued')
+}
+
+// ---------------------------------------------------------------------------------------
+// A browser that signed in before the fix is holding a split account. Boot repairs it.
+// ---------------------------------------------------------------------------------------
+{
+  const fresh = createInitialState()
+  const made = logic.registerUser(fresh, { name: 'Bek', email: 'bek@example.test', role: 'student' })
+  const localId = made.user!.id
+  const AUTH_ID = '11111111-2222-3333-4444-555555555555'
+
+  // Exactly what the old sign-in left behind: the user re-keyed, the profile not.
+  const banked = logic.awardXp(made.state, localId, 60, 'xp_lesson_completed', 'lesson', 'demo')
+  const split: AppState = { ...banked, users: banked.users.map((u) => (u.id === localId ? { ...u, id: AUTH_ID } : u)), sessionUserId: AUTH_ID }
+  assert.equal(profileOf(split, AUTH_ID), undefined, 'the saved state really is broken')
+
+  const repaired = logic.ensureProfiles(split)
+  assert.ok(profileOf(repaired, AUTH_ID) !== undefined, 'boot gives the account its profile back')
+  assert.equal(profileOf(repaired, AUTH_ID)!.xp, 60, 'and it is the original profile, not a blank one')
+  assert.equal(repaired.profiles.length, 1, 'no duplicate profile is left behind')
+  assert.equal(logic.ensureProfiles(repaired), repaired, 'a healthy state is returned untouched')
+
+  console.log('✓ a split account left by an earlier sign-in is repaired on load')
+}

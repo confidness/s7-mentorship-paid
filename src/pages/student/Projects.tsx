@@ -6,6 +6,7 @@ import { currentLesson, profileOf, projectsOf } from '../../lib/selectors'
 import type { ProjectStatus } from '../../lib/types'
 import { Badge, Card, EmptyState, SkeletonCard, Tabs, btn, STATUS_LABEL } from '../../components/ui'
 import { ProjectCard } from '../../components/cards'
+import ProjectSubmitModal from '../../components/ProjectSubmitModal'
 import { useLoaded } from '../../lib/hooks'
 import { t } from '../../i18n'
 
@@ -15,6 +16,7 @@ export default function Projects() {
   const { state, user, toggleLike } = useApp()
   const ready = useLoaded()
   const [filter, setFilter] = useState<Filter>('all')
+  const [creating, setCreating] = useState(false)
   if (!user) return null
 
   const profile = profileOf(state, user.id)!
@@ -31,11 +33,18 @@ export default function Projects() {
           <h1 className="text-[28px] font-bold tracking-[-0.03em] text-ink-900">{t('my_projects')}</h1>
           <p className="mt-1 text-sm text-ink-500">{t('everything_you_have_built_and_where_each_one_sta')}</p>
         </div>
-        {lesson && (
+        {/* The lesson route when a lesson is open, and otherwise a project of one's own —
+            which, with no built-in curriculum, is the only way in that always exists. */}
+        {lesson ? (
           <Link to={`/learn/${lesson.courseId}/${lesson.id}`} className={btn('primary')}>
             <Plus size={17} aria-hidden="true" />
             {t('new_project_from_current_lesson')}
           </Link>
+        ) : (
+          <button className={btn('primary')} onClick={() => setCreating(true)}>
+            <Plus size={17} aria-hidden="true" />
+            {t('new_project')}
+          </button>
         )}
       </header>
 
@@ -63,15 +72,21 @@ export default function Projects() {
           icon={FolderKanban}
           title={filter === 'all' ? t('no_projects_yet') : t('nothing_with_status', { status: t(STATUS_LABEL[filter as ProjectStatus]).toLowerCase() })}
           body={
-            filter === 'all'
-              ? t('open_your_current_lesson_finish_the_task_and_sub')
-              : t('projects_with_this_status_will_appear_here')
+            filter !== 'all'
+              ? t('projects_with_this_status_will_appear_here')
+              : lesson
+                ? t('open_your_current_lesson_finish_the_task_and_sub')
+                : t('start_a_project_and_a_mentor_will_review_it')
           }
           action={
-            lesson && (
+            lesson ? (
               <Link to={`/learn/${lesson.courseId}/${lesson.id}`} className={btn('primary')}>
                 {t('open_current_lesson')}
               </Link>
+            ) : (
+              <button className={btn('primary')} onClick={() => setCreating(true)}>
+                {t('new_project')}
+              </button>
             )
           }
         />
@@ -94,6 +109,8 @@ export default function Projects() {
           </Card>
         </>
       )}
+
+      {creating && <ProjectSubmitModal open onClose={() => setCreating(false)} />}
     </div>
   )
 }

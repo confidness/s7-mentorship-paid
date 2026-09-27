@@ -1,16 +1,44 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, BookOpen, GraduationCap, LogOut, RefreshCw, Shield, User as UserIcon } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, BookOpen, GraduationCap, LogOut, Palette, RefreshCw, Shield, User as UserIcon } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { profileOf } from '../../lib/selectors'
-import { Button, Card, Field, Modal, SectionHeading, btn, inputClass } from '../../components/ui'
+import { Button, Card, Field, Modal, SectionHeading, inputClass } from '../../components/ui'
+import SkinPicker from '../../components/SkinPicker'
+import { ApiError, setTeaching } from '../../lib/api'
 import { t, formatNumber } from '../../i18n'
 
 export default function Settings() {
-  const { state, user, standing, setCurrentCourse, resetDemo, logout } = useApp()
+  const { state, user, standing, refreshStanding, setCurrentCourse, resetDemo, logout } = useApp()
   const toast = useToast()
   const navigate = useNavigate()
   const [confirmReset, setConfirmReset] = useState(false)
+  const [switching, setSwitching] = useState(false)
+
+  /**
+   * Flip the role, then re-read standing rather than assuming it worked.
+   *
+   * `refreshStanding` is what brings the navigation and the authoring tools with it — it
+   * already reconciles the local mirror against the server's role in both directions, so
+   * turning teaching on or off takes effect without a reload or a sign-out.
+   */
+  async function toggleTeaching(on: boolean) {
+    setSwitching(true)
+    try {
+      await setTeaching(on)
+      await refreshStanding()
+      navigate(on ? '/m' : '/')
+    } catch (error) {
+      // Two failures worth naming, because each has a different thing to do about it: the
+      // migration that has not run yet, and a build served without its serverless functions.
+      const code = error instanceof ApiError ? error.code : ''
+      const body = code === 'role_change_refused' ? t('role_change_refused') : code === 'api_unavailable' || code === 'not_configured' ? t('server_functions_not_running') : error instanceof Error ? error.message : ''
+      toast({ title: t('something_went_wrong_try_again'), body, tone: 'error' })
+    } finally {
+      setSwitching(false)
+    }
+  }
+
   if (!user) return null
 
   const profile = profileOf(state, user.id)!
@@ -42,26 +70,36 @@ export default function Settings() {
         </Button>
       </Card>
 
+      {/* No application, no review, no waiting. The switch is the whole of it: publishing
+          under your own name is what makes someone a mentor here, and the only thing still
+          gated is taking money, which Stripe decides. */}
       <Card className="p-5 sm:p-6">
-        <SectionHeading title={t('teach_on_s7')} subtitle={t('mentors_are_verified_before_they_can_publish')} icon={GraduationCap} />
-        <div className="mt-4">
-          {standing.mentorStatus === 'pending' ? (
-            <p className="border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
-              {t('your_application_is_being_reviewed')}
-            </p>
-          ) : standing.mentorStatus === 'approved' ? (
-            <p className="border border-emerald-300/60 bg-emerald-100/50 px-3.5 py-3 text-sm font-medium text-emerald-800">
-              {t('you_are_approved_to_teach')}
-            </p>
+        <SectionHeading title={t('teach_on_s7')} subtitle={t('anyone_can_publish_here')} icon={GraduationCap} />
+        <div className="mt-4 space-y-3">
+          {standing.isMentor ? (
+            <>
+              <p className="border-2 border-ink-900 bg-emerald-100/60 px-3.5 py-3 text-sm font-medium text-ink-900">{t('you_are_teaching')}</p>
+              <p className="text-sm text-ink-600">{t('stopping_hides_authoring_not_your_work')}</p>
+              <Button variant="secondary" loading={switching} onClick={() => void toggleTeaching(false)}>
+                {t('stop_teaching')}
+              </Button>
+            </>
           ) : (
             <>
-              <p className="text-sm text-ink-600">{t('everyone_starts_as_a_student_teaching_is_applied_for')}</p>
-              <Link to="/m/apply" className={`${btn('secondary', 'md')} mt-4`}>
-                {t('send_application')}
-              </Link>
+              <p className="text-sm text-ink-600">{t('paid_lessons_need_a_payout_account')}</p>
+              <Button loading={switching} onClick={() => void toggleTeaching(true)}>
+                {t('start_teaching')}
+              </Button>
             </>
           )}
         </div>
+      </Card>
+
+      <Card className="p-5 sm:p-6">
+        <SectionHeading title={t('appearance')} subtitle={t('appearance_note')} icon={Palette} />
+        <SkinPicker />
+        {/* Light and dark stays where it has always been, in the header — this card is the
+            other axis. Putting both here would suggest they are one list of ten. */}
       </Card>
 
       <Card className="p-5 sm:p-6">

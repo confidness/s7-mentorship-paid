@@ -1,5 +1,5 @@
 /**
- * The AI mentor, answered by a model instead of the local knowledge base.
+ * The course advisor, answered by a model instead of the local search engine.
  *
  * This runs on Vercel, not in the browser, for one reason: the API key. Anything the client
  * bundle can read, a student can read in devtools, so the key lives in the server's environment
@@ -12,6 +12,8 @@
 /* This file runs on the server, not in the browser, and the project has no Node types.
    Declaring just the one thing it reads keeps the dependency list unchanged. */
 declare const process: { env: Record<string, string | undefined> }
+
+import { fail, requireUser } from './_lib/server'
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001'
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
@@ -74,33 +76,44 @@ function pickProvider() {
  * exists to get a student unstuck, and handing over the finished project would defeat the
  * lesson it is attached to.
  */
-function systemPrompt(locale: Locale, lessonTitle?: string, courseTitle?: string, code?: string) {
+function systemPrompt(locale: Locale, lessonTitle?: string, courseTitle?: string, code?: string, catalogue?: string[]) {
   return [
-    'You are the study assistant inside S7 Mentorship, a platform where verified mentors set lessons, students hand work in, and those mentors review it themselves.',
-    `Answer entirely in ${LANGUAGE[locale]}. Keep code listings, file names and technical identifiers in whatever language they are written in — do not translate them.`,
+    'You are the course advisor inside S7 Mentorship, an open marketplace where anyone can publish a course and mentors review the work students hand in.',
+    `Answer entirely in ${LANGUAGE[locale]}. Keep course titles exactly as they are written — do not translate them.`,
     '',
-    'HOW YOU TEACH — this is the rule, not a preference:',
-    '- Hint, explain, and ask a question back. Never hand over the finished project or a complete solution to the task the student was set.',
-    '- If asked to "write the whole thing", "do my homework" or "just give me the answer", refuse plainly and offer to take the problem apart instead. There are only three ways to be stuck — the task is not understood, it is too big to start, or it was started and went wrong. Ask which one it is.',
-    '- A short fragment that demonstrates a technique is fine. A working version of their assignment is not.',
-    '- Prefer naming the cause over listing possibilities. If several causes are plausible, order them by how often they are the real one.',
+    'WHAT YOU ARE FOR:',
+    '- Helping someone work out what field to learn, and then which specific published course to start with.',
+    '- Two questions, and the first one is usually the real one. Somebody who says "I want to earn more" has not chosen a field yet; recommending a course before that is answering a question they did not ask.',
+    '- When the field is already clear, go straight to the courses.',
+    '',
+    'THE CATALOGUE IS THE ONLY THING THAT EXISTS:',
+    '- Recommend ONLY from the list below. Never invent a course, a title, a price or a teacher, and never describe a course that "would be good" if it existed.',
+    '- If nothing in the list fits, say so plainly and say what the catalogue does cover. An honest gap is useful; a fabricated match is not.',
+    '- Put the ids of the courses you actually recommend in "recommendations", most suitable first, at most three. Ids only, copied exactly.',
+    '- Weigh what they told you: a beginner needs the shorter one, somebody with no money needs the free one, somebody with an evening needs the one that fits an evening. Say which of those you weighed.',
     '',
     'STYLE:',
-    '- Two or three short paragraphs at most. No headings, no bullet lists unless you are genuinely enumerating causes.',
-    '- Talk to a student mid-task and slightly frustrated. Concrete, calm, no cheerleading. Their mentor is a real person who will read what they hand in.',
+    '- Two or three short paragraphs at most. No headings, no bullet lists unless you are genuinely enumerating options.',
+    '- Concrete and calm. No cheerleading, no "exciting journey". Name the trade-off between the options rather than praising all of them.',
     '- Use **bold** for the one thing that matters most. Nothing else is formatted.',
     '',
     'CONTEXT:',
-    lessonTitle ? `- The student is on the lesson "${lessonTitle}"${courseTitle ? ` in the course "${courseTitle}"` : ''}.` : '- The student is not inside a lesson right now.',
-    code && code.trim() ? `- This is the code currently in their editor:\n\`\`\`\n${code.slice(0, 4000)}\n\`\`\`` : '- Their editor is empty or they have not shared code.',
+    catalogue && catalogue.length
+      ? `- Published courses, as "id | title | field | format | length | price | summary":\n${catalogue.map((line) => `  ${line}`).join('\n')}`
+      : '- The catalogue is empty. Say so, and that anyone can publish here, including them.',
+    lessonTitle ? `- They are currently looking at "${lessonTitle}"${courseTitle ? ` in "${courseTitle}"` : ''}.` : '',
+    code && code.trim() ? `- They also shared this:\n\`\`\`\n${code.slice(0, 2000)}\n\`\`\`` : '',
     '',
     'OUTPUT — reply with JSON only, no prose around it, matching exactly:',
-    '{"text": string, "question": string, "followUps": string[], "code": {"language": string, "source": string, "caption": string} | null}',
-    '- "text": the answer itself. Use \\n\\n between paragraphs.',
-    '- "question": one question back to the student that moves them forward. Never empty.',
+    '{"text": string, "question": string, "followUps": string[], "recommendations": string[], "code": null}',
+    '- "text": the advice itself. Use \\n\\n between paragraphs.',
+    '- "question": one question back that narrows the choice — budget, time, what they want to be able to do. Never empty.',
     '- "followUps": two or three things they might ask next, each under 45 characters.',
-    '- "code": a short illustrative fragment, or null when none is warranted. Never their finished task.',
-  ].join('\n')
+    '- "recommendations": ids from the catalogue above, at most three, most suitable first. Empty array when nothing fits.',
+    '- "code": always null. This assistant recommends courses; it does not write code.',
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 interface Body {
@@ -109,6 +122,8 @@ interface Body {
   lessonTitle?: string
   courseTitle?: string
   code?: string
+  /** Pre-ranked catalogue lines from src/lib/discovery.ts. The model chooses among these. */
+  catalogue?: string[]
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -133,6 +148,24 @@ export default async function handler(req: Request): Promise<Response> {
   }
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
+  /**
+   * Signed in, or no answer.
+   *
+   * This was the one route in api/ that asked nobody who they were. The header above is
+   * careful that the key never reaches the browser, and that is still true — but a POST here
+   * spends it, and an endpoint that spends a key for any caller on the internet is the same
+   * bill by a slower route. A scraper finding this path could run an account to zero
+   * overnight, and OpenRouter's free tier only caps the damage until the model is paid.
+   *
+   * The failure is deliberately the same 401 every other route gives, and the client already
+   * treats any failure here as a reason to fall back to the local knowledge base.
+   */
+  try {
+    await requireUser(req)
+  } catch (error) {
+    return fail(error)
+  }
+
   // Keys are trimmed inside pickProvider: a value pasted into a dashboard field routinely carries
   // a trailing newline, and a header holding one is rejected before the request is ever sent.
   const provider = pickProvider()
@@ -155,7 +188,9 @@ export default async function handler(req: Request): Promise<Response> {
 
   const locale: Locale = body.locale === 'kk' || body.locale === 'ru' ? body.locale : 'en'
 
-  const system = systemPrompt(locale, body.lessonTitle, body.courseTitle, body.code)
+  // Capped, because the prompt is paid for by the token and the client already ranked them.
+  const catalogue = Array.isArray(body.catalogue) ? body.catalogue.filter((line) => typeof line === 'string').slice(0, 20).map((line) => line.slice(0, 300)) : undefined
+  const system = systemPrompt(locale, body.lessonTitle, body.courseTitle, body.code, catalogue)
   const openrouter = provider.name === 'openrouter'
 
   let status = 0
@@ -176,8 +211,8 @@ export default async function handler(req: Request): Promise<Response> {
               authorization: `Bearer ${provider.key}`,
               // Optional on OpenRouter and used only for its public rankings. The deployment's own
               // origin is the honest value, and there is nothing private in it.
-              'HTTP-Referer': req.headers.get('origin') ?? 'https://s7-robotics-platform.vercel.app',
-              'X-Title': 'S7 Robotics Platform',
+              'HTTP-Referer': req.headers.get('origin') ?? 'https://s7-mentorship.vercel.app',
+              'X-Title': 'S7 Mentorship',
             }
           : {
               'content-type': 'application/json',
@@ -300,6 +335,7 @@ export function parseReply(raw: string) {
       text?: unknown
       question?: unknown
       followUps?: unknown
+      recommendations?: unknown
       code?: { language?: unknown; source?: unknown; caption?: unknown } | null
     }
     if (typeof obj.text !== 'string' || !obj.text.trim()) return null
@@ -307,10 +343,13 @@ export function parseReply(raw: string) {
       text: obj.text,
       question: typeof obj.question === 'string' ? obj.question : '',
       followUps: Array.isArray(obj.followUps) ? obj.followUps.filter((f): f is string => typeof f === 'string').slice(0, 3) : [],
+      // Ids only, and the client checks them against its own catalogue before rendering any
+      // of them — an id this parser passes through is not yet a course that exists.
+      recommendations: Array.isArray(obj.recommendations) ? obj.recommendations.filter((id): id is string => typeof id === 'string').slice(0, 3) : [],
       code:
         obj.code && typeof obj.code.source === 'string' && obj.code.source.trim()
           ? {
-              language: typeof obj.code.language === 'string' ? obj.code.language : 'cpp',
+              language: typeof obj.code.language === 'string' ? obj.code.language : 'text',
               source: obj.code.source,
               caption: typeof obj.code.caption === 'string' ? obj.code.caption : '',
             }

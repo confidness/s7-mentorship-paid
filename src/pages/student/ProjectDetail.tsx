@@ -211,7 +211,7 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      {lesson && editing && <ProjectSubmitModal open onClose={() => setEditing(false)} lesson={lesson} existing={project} />}
+      {editing && <ProjectSubmitModal open onClose={() => setEditing(false)} lesson={lesson} existing={project} />}
     </div>
   )
 }

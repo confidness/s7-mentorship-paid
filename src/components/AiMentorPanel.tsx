@@ -1,9 +1,40 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bot, HelpCircle, Send, Sparkles, User as UserIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Bot, Clock, HelpCircle, Megaphone, Route, Send, Sparkles, User as UserIcon } from 'lucide-react'
+import { useApp, useToast } from '../lib/store'
 import { askMentor, STARTER_PROMPTS, type AiReply, type AskContext } from '../lib/ai'
+import { directionOf, minutesOf } from '../lib/discovery'
+import { formatMoney } from '../lib/money'
+import type { CustomLesson } from '../lib/types'
 import { CodeBlock } from './code'
 import { Button, inputClass } from './ui'
-import { t } from '../i18n'
+import { t, getLocale } from '../i18n'
+
+/**
+ * A recommendation, as something you can open.
+ *
+ * Advice that names a course and leaves you to find it is half an answer. The ids come back
+ * with the reply; the course itself is looked up in the catalogue that was sent, so nothing
+ * renders here that the platform does not actually hold.
+ */
+function Recommendation({ lesson }: { lesson: CustomLesson }) {
+  return (
+    <Link to={`/assigned/${lesson.id}`} className="group flex items-center gap-3 border-2 border-ink-900 fill-strong px-3.5 py-2.5 transition hover:shadow-[4px_4px_0_0_var(--color-ink-900)]">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold text-ink-900">{lesson.title}</span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-ink-500">
+          <span>{t(`dir_${directionOf(lesson)}`)}</span>
+          <span className="inline-flex items-center gap-1">
+            <Clock size={11} aria-hidden="true" />
+            {t('about_n_minutes', { n: minutesOf(lesson) })}
+          </span>
+          <span className="font-semibold text-ink-700">{lesson.priceCents > 0 ? formatMoney(lesson.priceCents, lesson.currency, getLocale()) : t('free')}</span>
+        </span>
+      </span>
+      <ArrowRight size={15} className="shrink-0 text-ink-400 transition group-hover:text-ink-900" aria-hidden="true" />
+    </Link>
+  )
+}
 
 interface Message {
   id: string
@@ -38,6 +69,8 @@ function RichText({ text }: { text: string }) {
 }
 
 export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { context: AskContext; height?: string }) {
+  const { setLearningPath } = useApp()
+  const toast = useToast()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [pending, setPending] = useState(false)
@@ -110,6 +143,40 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
                     {m.reply?.fromModel ? t('answered_by_the_model') : t('answered_offline')}
                   </p>
                 </div>
+                {m.reply?.askFor && (
+                  <Link
+                    to={`/requests?ask=${encodeURIComponent(m.reply.askFor)}`}
+                    className="inline-flex items-center gap-2 border-2 border-ink-900 bg-accent-400 px-4 py-2 text-sm font-semibold text-on-accent shadow-[3px_3px_0_0_var(--color-ink-900)]"
+                  >
+                    <Megaphone size={15} aria-hidden="true" />
+                    {t('ask_for_it_instead')}
+                  </Link>
+                )}
+                {m.reply?.recommendations && m.reply.recommendations.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold tracking-wide text-ink-500">{t('recommended_for_you')}</p>
+                    {m.reply.recommendations
+                      .map((id) => (context.catalogue ?? []).find((l) => l.id === id))
+                      .filter((lesson): lesson is CustomLesson => Boolean(lesson))
+                      .map((lesson) => (
+                        <Recommendation key={lesson.id} lesson={lesson} />
+                      ))}
+                    {/* Advice you have to remember is advice you lose. Keeping it turns three
+                        suggestions into something with a position and a next step. */}
+                    {m.reply.recommendations.length > 1 && (
+                      <button
+                        onClick={() => {
+                          setLearningPath(m.reply!.recommendations!)
+                          toast({ title: t('my_learning_path'), body: t('path_kept'), tone: 'success' })
+                        }}
+                        className="mt-1 inline-flex items-center gap-2 border-2 border-ink-900 fill-strong px-3.5 py-2 text-xs font-bold text-ink-900 transition hover:shadow-[3px_3px_0_0_var(--color-ink-900)]"
+                      >
+                        <Route size={14} aria-hidden="true" />
+                        {t('save_as_my_path')}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {m.reply?.code && (
                   <div>
                     <p className="mb-1.5 text-xs font-semibold text-ink-500">{m.reply.code.caption}</p>

@@ -1,4 +1,4 @@
-/** Domain model for S7 Robotics Platform. UI never mutates these directly — see store.tsx. */
+/** Domain model for S7 Mentorship. UI never mutates these directly — see store.tsx. */
 
 export type Role = 'student' | 'mentor'
 
@@ -42,6 +42,14 @@ export interface StudentProfile {
   passedCheckLessonIds: string[]
   unlockedAchievementIds: string[]
   goal: string
+  /**
+   * The advisor's suggestion, kept: lesson ids in the order to take them.
+   *
+   * An array rather than a document, because `progress.ts` diffs states and compares arrays
+   * by joining them — an object literal is never equal to its predecessor, so a jsonb field
+   * would emit a sync operation on every single pass, forever.
+   */
+  learningPath: string[]
 }
 
 export interface TheoryBlock {
@@ -281,6 +289,16 @@ export interface CustomTask {
   starter?: string
 }
 
+/** See `supabase/migrations/0009_reputation.sql` for what each of these can and cannot mean. */
+export interface LessonStats {
+  /** Entitlements. Only the Stripe webhook writes them, so this one cannot be forged. */
+  buyers: number
+  /** Accounts that banked XP for it. Client-minted, so an upper bound — never an achievement. */
+  starters: number
+  /** The author's median hours to review a project. Absent below five reviews in 90 days. */
+  medianReviewHours?: number
+}
+
 export interface CustomLesson {
   id: string
   authorId: string
@@ -296,20 +314,17 @@ export interface CustomLesson {
   currency: string
   /** Free, already bought, or written by the viewer. Server-decided; the client caches it. */
   owned?: boolean
+  /**
+   * Numbers about this course that its author did not write.
+   *
+   * Absent until the server supplies them, and absent is the normal case: a course with too
+   * few reviews behind it has no `medianReviewHours`, by design, because a median of two is
+   * not a median. Everything that reads this must treat missing as "not known yet" and
+   * never as zero.
+   */
+  stats?: LessonStats
   createdAt: string
   updatedAt: string
-}
-
-/** Where a mentor application stands. 'none' means it was never filed. */
-export type MentorStatus = 'none' | 'pending' | 'approved' | 'rejected'
-
-export interface MentorApplication {
-  id: string
-  status: Exclude<MentorStatus, 'none'>
-  legalName: string
-  submittedAt: string
-  reviewedAt?: string
-  rejectionReason?: string
 }
 
 /**
@@ -319,7 +334,11 @@ export interface MentorApplication {
  * the server, because a value in the browser is a value the browser can edit.
  */
 export interface Standing {
-  mentorStatus: MentorStatus
+  /**
+   * Whether this account is teaching. Chosen, not granted — there is no application desk
+   * any more, and the only thing still gated is taking money, which Stripe decides.
+   */
+  isMentor: boolean
   chargesEnabled: boolean
   payoutsEnabled: boolean
   isAdmin: boolean

@@ -34,7 +34,7 @@ export default async function handler(req: Request): Promise<Response> {
 /** Everything the client needs to merge on sign-in, in one round trip. */
 async function snapshot(caller: Caller): Promise<Response> {
   const [profile, lessons, ledger] = await Promise.all([
-    caller.db.from('student_profiles').select('xp, streak, last_active_date, current_course_id, enrolled_course_ids, goal').eq('user_id', caller.id).maybeSingle(),
+    caller.db.from('student_profiles').select('xp, streak, last_active_date, current_course_id, enrolled_course_ids, learning_path, goal').eq('user_id', caller.id).maybeSingle(),
     caller.db.from('lesson_progress').select('lesson_id, course_id, check_passed_at, completed_at, challenge_completed_at').eq('user_id', caller.id),
     caller.db.from('xp_ledger').select('id, amount, reason, vars, kind, ref_id, created_at').eq('user_id', caller.id).order('created_at', { ascending: false }).limit(500),
   ])
@@ -48,6 +48,7 @@ async function snapshot(caller: Caller): Promise<Response> {
           currentCourseId: profile.data.current_course_id as string,
           enrolledCourseIds: (profile.data.enrolled_course_ids ?? []) as string[],
           goal: profile.data.goal as string,
+          learningPath: (profile.data.learning_path as string[] | null) ?? [],
         }
       : null,
     lessons: (lessons.data ?? []).map((row) => ({
@@ -166,6 +167,7 @@ function toColumns(op: Extract<ProgressOp, { t: 'profile' }>): Record<string, un
   if (op.patch.currentCourseId !== undefined) out.current_course_id = op.patch.currentCourseId
   if (op.patch.goal !== undefined) out.goal = op.patch.goal
   if (op.patch.enrolledCourseIds !== undefined) out.enrolled_course_ids = op.patch.enrolledCourseIds
+  if (op.patch.learningPath !== undefined) out.learning_path = op.patch.learningPath
   if (op.patch.streak !== undefined) out.streak = op.patch.streak
   if (op.patch.lastActiveDate !== undefined) out.last_active_date = op.patch.lastActiveDate
   return out

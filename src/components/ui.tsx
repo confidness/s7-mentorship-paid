@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useEffect, useRef, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { t } from '../i18n'
 
@@ -8,20 +8,28 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'dark'
 type Size = 'sm' | 'md' | 'lg'
 
 /**
- * Blocks, not gradients. Each one is a filled rectangle with a black rule and a hard offset,
- * and pressing it moves the block into its own shadow — the shadow is the affordance, so the
- * button looks like something that can physically go down.
+ * Colour only. Shape is the skin's.
  *
- * Only `primary` is allowed to be loud, and it is the signal yellow with black on it. White
- * on yellow is unreadable, which is the whole reason this ramp carries black.
+ * These strings used to carry `border-2 border-ink-900 shadow-[4px_4px_0_0_…]`, which pinned
+ * every button on the platform to one visual language — square, ruled, offset. The border,
+ * the radius, the shadow and what pressing one does now live in `.btn-shell` in index.css,
+ * where a skin can answer them differently. What stays here is the one thing a variant is
+ * actually about: which role this button plays and therefore what colour it is.
+ *
+ * Only `primary` is allowed to be loud. `text-on-accent` rather than a literal: the token
+ * does not invert with the theme, and white on some skins' accent is unreadable.
+ *
+ * `--btn-lip` is the one exception to "colour only", and it is still colour: the skin that
+ * gives buttons a physical lip needs each variant's *own* darker shade, and only the variant
+ * knows which ramp it is on. Skins without a lip never read it.
  */
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-accent-400 text-on-accent border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:bg-accent-300',
-  secondary: 'fill-strong text-ink-900 border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:fill',
-  ghost: 'text-ink-700 border-2 border-transparent hover:border-ink-900 hover:fill',
-  danger: 'bg-danger-solid text-white border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:bg-brand-500',
-  success: 'bg-success-solid text-white border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-900)] hover:bg-slate-cool',
-  dark: 'bg-ink-900 text-ink-50 border-2 border-ink-900 shadow-[4px_4px_0_0_var(--color-ink-500)] hover:bg-ink-800',
+  primary: 'btn-shell bg-accent-400 text-on-accent hover:bg-accent-300 [--btn-lip:var(--color-accent-600)]',
+  secondary: 'btn-shell fill-strong text-ink-900 hover:fill [--btn-lip:var(--color-ink-200)]',
+  ghost: 'text-ink-700 rounded-[var(--ui-radius-sm)] border border-transparent hover:fill hover:border-[var(--edge)]',
+  danger: 'btn-shell bg-danger-solid text-white hover:bg-rose-500 [--btn-lip:var(--color-rose-600)]',
+  success: 'btn-shell bg-success-solid text-white hover:bg-emerald-500 [--btn-lip:var(--color-emerald-700)]',
+  dark: 'btn-shell bg-ink-900 text-ink-50 hover:bg-ink-800 [--btn-lip:var(--color-ink-700)]',
 }
 const SIZES: Record<Size, string> = {
   sm: 'h-9 px-4 text-sm gap-1.5',
@@ -30,7 +38,7 @@ const SIZES: Record<Size, string> = {
 }
 
 export const btn = (variant: Variant = 'primary', size: Size = 'md', extra = '') =>
-  `inline-flex items-center justify-center font-semibold tracking-[-0.01em] transition duration-150 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 select-none ${VARIANTS[variant]} ${SIZES[size]} ${extra}`
+  `inline-flex items-center justify-center font-semibold tracking-[-0.01em] disabled:opacity-40 disabled:pointer-events-none select-none ${VARIANTS[variant]} ${SIZES[size]} ${extra}`
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -104,7 +112,7 @@ const TONES: Record<Tone, string> = {
 
 export function Badge({ tone = 'neutral', icon: Icon, children, className = '' }: { tone?: Tone; icon?: LucideIcon; children: ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${TONES[tone]} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-[var(--ui-radius-sm)] px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${TONES[tone]} ${className}`}>
       {Icon && <Icon size={12} aria-hidden="true" />}
       {children}
     </span>
@@ -141,7 +149,7 @@ export function ProgressBar({ value, tone = 'brand', size = 'md', label }: { val
   const clamped = Math.max(0, Math.min(100, Math.round(value)))
   return (
     <div
-      className={`w-full overflow-hidden bg-ink-400/25 shadow-[0_1px_2px_rgb(11_18_32/0.06)_inset] ${heights[size]}`}
+      className={`w-full overflow-hidden rounded-[var(--ui-radius-sm)] bg-ink-400/25 ${heights[size]}`}
       role="progressbar"
       aria-valuenow={clamped}
       aria-valuemin={0}
@@ -300,10 +308,38 @@ export function Modal({ open, onClose, title, subtitle, children, footer, wide }
 
 /* ------------------------------------------------------------------ tabs */
 
+/**
+ * `role="tablist"` is a promise about the keyboard, not just a name for the thing.
+ *
+ * Announcing these buttons as tabs tells a screen reader user to expect one tab stop for the
+ * whole set and the arrow keys to move between them — so that has to be true. Roving tabIndex
+ * keeps Tab moving past the strip to the content, and the arrows select as they move, which is
+ * the pattern for tabs whose panels are already rendered.
+ */
 export function Tabs<T extends string>({ tabs, value, onChange, className = '' }: { tabs: { id: T; label: string; icon?: LucideIcon; count?: number }[]; value: T; onChange: (id: T) => void; className?: string }) {
+  const strip = useRef<HTMLDivElement>(null)
+
+  /** Move selection, and take focus with it — otherwise the arrows move nothing visible. */
+  const step = (to: number) => {
+    const next = tabs[(to + tabs.length) % tabs.length]
+    if (!next) return
+    onChange(next.id)
+    strip.current?.querySelectorAll('button')[(to + tabs.length) % tabs.length]?.focus()
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const at = tabs.findIndex((t) => t.id === value)
+    if (e.key === 'ArrowRight') step(at + 1)
+    else if (e.key === 'ArrowLeft') step(at - 1)
+    else if (e.key === 'Home') step(0)
+    else if (e.key === 'End') step(tabs.length - 1)
+    else return
+    e.preventDefault()
+  }
+
   return (
     <div className={`-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 ${className}`}>
-      <div role="tablist" className="chrome inline-flex min-w-full gap-1 p-1 sm:min-w-0">
+      <div ref={strip} role="tablist" onKeyDown={onKeyDown} className="chrome inline-flex min-w-full gap-1 p-1 sm:min-w-0">
         {tabs.map((t) => {
           const active = t.id === value
           return (
@@ -311,6 +347,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className = '' }
               key={t.id}
               role="tab"
               aria-selected={active}
+              tabIndex={active ? 0 : -1}
               onClick={() => onChange(t.id)}
               className={`inline-flex flex-1 items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition ${
                 active ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12),0_4px_10px_-4px_rgb(11_18_32/0.25)]' : 'text-ink-600 hover:text-ink-900'
@@ -331,7 +368,17 @@ export function Tabs<T extends string>({ tabs, value, onChange, className = '' }
 
 /* ------------------------------------------------------------------ inputs */
 
+/**
+ * The control is wrapped by the label, so the label, the hint and the error are already the
+ * control's accessible name — no `aria-describedby` to wire, and no id to invent.
+ *
+ * What that does not carry is the *state*: a red message reads as red text, not as an error,
+ * unless the control says it is invalid. `aria-invalid` is set on the child rather than on the
+ * label because that is what gets announced on focus, and it is what a browser's own error
+ * styling and `:invalid` hook onto.
+ */
 export function Field({ label, hint, error, children, required }: { label: string; hint?: string; error?: string; children: ReactNode; required?: boolean }) {
+  const control = error && isValidElement(children) ? cloneElement(children as ReactElement<{ 'aria-invalid'?: boolean }>, { 'aria-invalid': true }) : children
   return (
     <label className="block">
       <span className="mb-2 flex items-center gap-1 text-sm font-semibold text-ink-800">
@@ -342,7 +389,7 @@ export function Field({ label, hint, error, children, required }: { label: strin
           </span>
         )}
       </span>
-      {children}
+      {control}
       {error ? <span className="mt-1.5 block text-xs font-medium text-rose-600">{error}</span> : hint ? <span className="mt-1.5 block text-xs text-ink-500">{hint}</span> : null}
     </label>
   )
@@ -350,7 +397,7 @@ export function Field({ label, hint, error, children, required }: { label: strin
 
 /** Same visual control without a width, for selects that should size to their content. */
 export const controlClass =
-  'border edge fill px-4 py-2.5 text-sm text-ink-900 backdrop-blur-sm placeholder:text-ink-500 transition focus:border-brand-400 focus:fill-raised focus:ring-4 focus:ring-brand-500/15 focus:outline-none'
+  'rounded-[var(--ui-radius-sm)] border edge fill px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-500 transition focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15 focus:outline-none'
 
 export const inputClass = `w-full ${controlClass}`
 

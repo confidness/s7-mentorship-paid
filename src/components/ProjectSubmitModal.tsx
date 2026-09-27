@@ -19,7 +19,15 @@ export default function ProjectSubmitModal({
 }: {
   open: boolean
   onClose: () => void
-  lesson: Lesson
+  /**
+   * The lesson this is work for, when there is one.
+   *
+   * Optional since the pivot, and that is the entire point: the built-in curriculum is gone,
+   * so a modal that insisted on a `Lesson` could not be opened at all — which left the review
+   * loop, the thing the product is for, with no way in. A project is now allowed to be work
+   * of somebody's own.
+   */
+  lesson?: Lesson
   existing?: Project
   /** Whatever the student currently has in the lesson editor — carried straight into the form. */
   initialCode?: string
@@ -28,7 +36,7 @@ export default function ProjectSubmitModal({
   const { saveProject } = useApp()
   const toast = useToast()
 
-  const [title, setTitle] = useState(existing?.title ?? `${lesson.task.title} — ${lesson.title}`)
+  const [title, setTitle] = useState(existing?.title ?? (lesson ? `${lesson.task.title} — ${lesson.title}` : ''))
   const [description, setDescription] = useState(existing?.description ?? '')
   const [code, setCode] = useState(existing?.code ?? initialCode ?? '')
   const [notes, setNotes] = useState(existing?.notes ?? '')
@@ -42,12 +50,12 @@ export default function ProjectSubmitModal({
     if (!files) return
     for (const file of Array.from(files)) {
       if (file.size > MAX_BYTES) {
-        setErrors((e) => ({ ...e, upload: `${file.name} is larger than 3 MB. Compress it and try again.` }))
+        setErrors((e) => ({ ...e, upload: t('attachment_too_large', { name: file.name }) }))
         continue
       }
       const reader = new FileReader()
       reader.onload = () => setAttachments((all) => [...all, { id: uid('a'), kind, name: file.name, url: String(reader.result), size: file.size }])
-      reader.onerror = () => setErrors((e) => ({ ...e, upload: `${file.name} could not be read. Try a different file.` }))
+      reader.onerror = () => setErrors((e) => ({ ...e, upload: t('attachment_unreadable', { name: file.name }) }))
       reader.readAsDataURL(file)
     }
     setErrors((e) => ({ ...e, upload: '' }))
@@ -58,7 +66,9 @@ export default function ProjectSubmitModal({
     if (title.trim().length < 4) next.title = t('give_the_project_a_title_of_at_least_4_character')
     if (status === 'submitted') {
       if (description.trim().length < 30) next.description = t('describe_what_you_built_in_at_least_30_character')
-      if (code.trim().length < 20) next.code = t('paste_the_code_you_actually_uploaded_to_the_boar')
+      // Code is required only when the lesson asked for code. A mentor teaching drawing or
+      // finance sets work that has none, and the description is the submission.
+      if (lesson && code.trim().length < 20) next.code = t('paste_the_code_you_actually_uploaded_to_the_boar')
     }
     setErrors(next)
     if (Object.keys(next).length) return
@@ -66,7 +76,7 @@ export default function ProjectSubmitModal({
     setBusy(true)
     let project
     try {
-      project = await saveProject({ id: existing?.id, title: title.trim(), description: description.trim(), code, notes: notes.trim(), attachments, courseId: lesson.courseId, lessonId: lesson.id }, status)
+      project = await saveProject({ id: existing?.id, title: title.trim(), description: description.trim(), code, notes: notes.trim(), attachments, courseId: lesson?.courseId ?? '', lessonId: lesson?.id ?? '' }, status)
     } catch (error) {
       // A project that failed to reach the server is not submitted, whatever the modal says.
       setBusy(false)
@@ -90,7 +100,7 @@ export default function ProjectSubmitModal({
       onClose={onClose}
       wide
       title={existing ? t('update_project') : t('submit_project')}
-      subtitle={t('lesson_and_task', { lesson: lesson.title, task: lesson.task.title })}
+      subtitle={lesson ? t('lesson_and_task', { lesson: lesson.title, task: lesson.task.title }) : t('work_of_your_own_for_review')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
@@ -106,14 +116,16 @@ export default function ProjectSubmitModal({
       }
     >
       <div className="space-y-4">
-        <div className="border border-brand-200/70 bg-brand-100/50 p-3.5 text-sm text-brand-800">
-          <p className="font-semibold">{t('what_the_mentor_checks')}</p>
-          <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-brand-800">
-            {lesson.task.requirements.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </div>
+        {lesson && lesson.task.requirements.length > 0 && (
+          <div className="border border-brand-200/70 bg-brand-100/50 p-3.5 text-sm text-brand-800">
+            <p className="font-semibold">{t('what_the_mentor_checks')}</p>
+            <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-brand-800">
+              {lesson.task.requirements.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <Field label={t('project_name')} required error={errors.title}>
           <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('worked_example')} />
@@ -125,9 +137,10 @@ export default function ProjectSubmitModal({
 
         <div>
           <span className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-ink-800">
-            {t('code')} <span className="text-rose-500">*</span>
+            {t('code')}
+            {lesson && <span className="text-rose-500" aria-hidden="true">*</span>}
           </span>
-          <CodeEditor value={code} onChange={setCode} filename={lesson.code.filename} minRows={10} />
+          <CodeEditor value={code} onChange={setCode} filename={lesson?.code.filename ?? 'submission.txt'} minRows={10} />
           {errors.code && <span className="mt-1.5 block text-xs font-medium text-rose-600">{errors.code}</span>}
         </div>
 

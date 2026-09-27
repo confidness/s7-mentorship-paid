@@ -7,8 +7,8 @@
  * really the server's and this is the cached copy.
  */
 
-import type { CustomLesson, CustomTask, MentorApplication, MentorStatus } from './types'
-import { accessToken, backendConfigured } from './supabase'
+import type { CustomLesson, CustomTask, LessonStats, Notification } from './types'
+import { accessToken, backendConfigured, supabase } from './supabase'
 
 export class ApiError extends Error {
   constructor(
@@ -30,7 +30,28 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const res = await fetch(path, { ...init, headers })
   const text = await res.text()
-  const body = text ? (JSON.parse(text) as Record<string, unknown>) : {}
+
+  /**
+   * A reply that is not JSON is not a reply from this API.
+   *
+   * `JSON.parse` on an HTML error page throws a SyntaxError from inside the data layer,
+   * which surfaces as "Unexpected token '<'" somewhere in the interface — a message that
+   * describes the parser rather than the problem. The common causes are a platform error
+   * page, a proxy, and the one that bit here: a static preview server, where `/api/*` is
+   * simply not running and every route 404s with two words of plain text.
+   */
+  let body: Record<string, unknown> = {}
+  if (text) {
+    try {
+      body = JSON.parse(text) as Record<string, unknown>
+    } catch {
+      throw new ApiError(res.status === 200 ? 502 : res.status, 'api_unavailable', text.slice(0, 200))
+    }
+  }
+
+  // 404 on our own path means the function is not deployed, not that a record is missing —
+  // routes here answer 404 with a JSON body and a code of their own.
+  if (res.status === 404 && !body.error) throw new ApiError(404, 'api_unavailable', res.statusText)
 
   if (!res.ok) throw new ApiError(res.status, String(body.error ?? 'error'), String(body.message ?? body.error ?? res.statusText))
   return body as T
@@ -39,35 +60,66 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 /* ---------------------------------------------------------------- mentors */
 
 export interface StandingResponse {
-  application: MentorApplication | null
-  status: MentorStatus
+  role: 'student' | 'mentor'
+  isAdmin: boolean
   chargesEnabled: boolean
   payoutsEnabled: boolean
 }
 
-export const getMentorStanding = () => call<StandingResponse>('/api/mentor-application')
+/**
+ * What this account may do, read straight from Postgres.
+ *
+ * This was a serverless function that did exactly these two selects as the caller. Both
+ * tables are readable by their owner under RLS — `profiles_read` and `accounts_read_own` —
+ * so the function was a round trip that added nothing but a dependency on being deployed.
+ *
+ * Removing it buys two things. Standing now works wherever the app runs, including a static
+ * preview with no functions at all, which is where the teaching switch was failing. And it
+ * frees one of the twelve serverless functions a Vercel Hobby project is allowed, which the
+ * demand board needed.
+ */
+export async function getMentorStanding(): Promise<StandingResponse> {
+  if (!backendConfigured) throw new ApiError(501, 'not_configured', 'The server is not configured.')
 
-export const applyToTeach = (input: { legalName: string; bio: string; credentialDocPath: string | null; idDocPath: string | null }) =>
-  call<{ ok: true; application: MentorApplication }>('/api/mentor-application', { method: 'POST', body: JSON.stringify(input) })
+  const { data: auth } = await supabase().auth.getUser()
+  if (!auth.user) throw new ApiError(401, 'unauthenticated', 'Sign in to continue.')
 
-export interface PendingApplication {
-  id: string
-  user_id: string
-  status: MentorStatus
-  legal_name: string
-  bio: string
-  submitted_at: string
-  rejection_reason?: string
-  profiles?: { name?: string; city?: string } | null
-  credentialUrl: string | null
-  idUrl: string | null
+  const [{ data: profile }, { data: account }] = await Promise.all([
+    supabase().from('profiles').select('role, is_admin').eq('id', auth.user.id).maybeSingle(),
+    supabase().from('mentor_accounts').select('charges_enabled, payouts_enabled').eq('user_id', auth.user.id).maybeSingle(),
+  ])
+
+  return {
+    role: profile?.role === 'mentor' ? 'mentor' : 'student',
+    isAdmin: Boolean(profile?.is_admin),
+    chargesEnabled: Boolean(account?.charges_enabled),
+    payoutsEnabled: Boolean(account?.payouts_enabled),
+  }
 }
 
-export const listApplications = (status: 'pending' | 'approved' | 'rejected' = 'pending') =>
-  call<{ applications: PendingApplication[] }>(`/api/admin/mentor-applications?status=${status}`)
+/**
+ * Start teaching, or stop.
+ *
+ * Written straight to `profiles` rather than through a route, because there is nothing for a
+ * route to add: policy `profiles_update_self` from 0006 already permits exactly this change
+ * and still refuses `is_admin`, so the boundary is the database either way. Going direct
+ * also means the switch works without the serverless functions running — which is the
+ * difference between the preview build being a demo and being a dead button.
+ */
+export async function setTeaching(teaching: boolean): Promise<'student' | 'mentor'> {
+  if (!backendConfigured) throw new ApiError(501, 'not_configured', 'The server is not configured.')
+  const role = teaching ? 'mentor' : 'student'
 
-export const decideApplication = (id: string, decision: 'approved' | 'rejected', reason?: string) =>
-  call<{ ok: true }>('/api/admin/mentor-applications', { method: 'POST', body: JSON.stringify({ id, decision, reason }) })
+  const { data } = await supabase().auth.getUser()
+  if (!data.user) throw new ApiError(401, 'unauthenticated', 'Sign in to continue.')
+
+  const { error } = await supabase().from('profiles').update({ role }).eq('id', data.user.id)
+  // A policy refusal arrives as 42501. It means migration 0006 has not been applied — the
+  // old policy pinned `role` to its current value — and that is worth saying out loud
+  // rather than reporting as a generic failure.
+  if (error) throw new ApiError(error.code === '42501' ? 403 : 500, error.code === '42501' ? 'role_change_refused' : 'write_failed', error.message)
+  return role
+}
 
 /* ---------------------------------------------------------------- payouts */
 
@@ -89,6 +141,7 @@ export interface LessonTeaser {
   authorId?: string
   authorName?: string
   owned?: boolean
+  stats?: LessonStats
   createdAt: string
   updatedAt: string
 }
@@ -206,3 +259,50 @@ export const claimProject = (id: string) => call<{ ok: true; id: string }>('/api
 
 export const decideProject = (id: string, decision: 'approved' | 'needs_changes', message: string, rubric?: { completeness: number; clarity: number; craft: number }) =>
   call<{ ok: true; id: string }>('/api/projects', { method: 'PATCH', body: JSON.stringify({ id, action: 'decide', decision, message, rubric }) })
+
+/* --------------------------------------------------------- notifications */
+
+/**
+ * Only the ones that crossed from another account.
+ *
+ * A notification about your own action was written by the reducer that performed it, in this
+ * browser, and is already in local state. What the server holds is the rest: the review
+ * decision, the answer to a mentor application — the things somebody else did to you, which
+ * no reducer of yours ever ran to hear about.
+ */
+export const listNotifications = () => call<{ notifications: Notification[] }>('/api/notifications')
+
+/** No ids means the whole inbox, which is what opening the panel means. */
+export const markNotificationsRead = (ids?: string[]) =>
+  call<{ ok: true }>('/api/notifications', { method: 'PATCH', body: JSON.stringify({ ids: ids ?? [] }) })
+
+/* ------------------------------------------------------------- demand board */
+
+export interface CourseRequest {
+  id: string
+  authorId: string
+  title: string
+  body: string
+  budgetCents: number
+  currency: string
+  deadline?: string
+  status: 'open' | 'fulfilled' | 'withdrawn'
+  votes: number
+  createdAt: string
+  answers: { lessonId: string; mentorId: string }[]
+}
+
+export const listRequests = () => call<{ requests: CourseRequest[]; voted: string[] }>('/api/requests')
+
+export const askForCourse = (input: { title: string; body?: string; budgetCents?: number; currency?: string; deadline?: string | null }) =>
+  call<{ ok: true; id: string }>('/api/requests', { method: 'POST', body: JSON.stringify(input) })
+
+/** Voting twice is not an error — the primary key settles it and the server says ok. */
+export const voteForRequest = (id: string, wanted: boolean) =>
+  call<{ ok: true }>('/api/requests', { method: 'PATCH', body: JSON.stringify({ id, action: wanted ? 'vote' : 'unvote' }) })
+
+export const withdrawRequest = (id: string) => call<{ ok: true }>('/api/requests', { method: 'PATCH', body: JSON.stringify({ id, action: 'withdraw' }) })
+
+/** Answering announces to everyone who voted — once per request, ever. See api/requests.ts. */
+export const answerRequest = (id: string, lessonId: string) =>
+  call<{ ok: true; announced: number }>('/api/requests', { method: 'PATCH', body: JSON.stringify({ id, action: 'fulfil', lessonId }) })

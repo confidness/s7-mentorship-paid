@@ -13,7 +13,10 @@ import * as api from './api'
  * needs no special handling. It is the same code path as being offline forever.
  */
 
-const KEY = 's7.outbox.v1'
+// v2: rows now carry the account they were queued under. A v1 row cannot say whose it is, so
+// the key is bumped rather than adopted — an unstamped row is exactly the ambiguity the stamp
+// exists to remove, and guessing would recreate the bug it fixes on the one queue that has it.
+const KEY = 's7.outbox.v2'
 
 /**
  * A cap, because an unbounded queue is a silent failure.
@@ -33,6 +36,16 @@ const DEBOUNCE_MS = 2000
 interface Queued {
   op: ProgressOp
   attempts: number
+  /**
+   * Who queued it.
+   *
+   * The operation itself carries no user id — the server takes that from the verified JWT,
+   * which is the whole reason a forged one is impossible. But that also means a queued
+   * operation is applied to whoever happens to be signed in when it finally goes out, and
+   * this queue outlives a sign-out. Without the stamp, work left unsent by one account lands
+   * in the next account to sign in on the same browser: their XP, their lesson history.
+   */
+  uid: string
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -61,7 +74,10 @@ export const pending = () => read().length
 /** Queues operations and schedules a flush. Safe to call with an empty array. */
 export function push(ops: ProgressOp[]) {
   if (!ops.length) return
-  write([...read(), ...ops.map((op) => ({ op, attempts: 0 }))])
+  // Stamped now, while it is knowable. By flush time somebody else may be signed in.
+  const uid = currentUser?.()
+  if (!uid) return
+  write([...read(), ...ops.map((op) => ({ op, attempts: 0, uid }))])
   schedule()
 }
 
@@ -81,33 +97,46 @@ function schedule() {
  */
 export async function flush(): Promise<void> {
   if (flushing) return
+  const uid = currentUser?.()
+  if (!uid) return
+  // Only this account's work. Anything queued by somebody else stays queued for them — the
+  // JWT decides who these operations land on, so sending them now would file one person's
+  // lessons and XP under another's name, with nothing in either account to show it happened.
   const rows = read()
-  if (!rows.length) return
-  if (!currentUser?.()) return
+  const batch = rows.filter((r) => r.uid === uid).slice(0, 500)
+  if (!batch.length) return
 
   flushing = true
+  // The queue is re-read after the await rather than sliced from the snapshot above. A lesson
+  // completed during the round trip appends to storage while this request is in flight, and
+  // writing back the old array minus the batch would erase it — work that exists nowhere else.
+  const sent = new Set(batch.map((r) => r.op.id))
   try {
-    const batch = rows.slice(0, 500)
     try {
       await api.pushProgress(batch.map((r) => r.op))
-      write(rows.slice(batch.length))
+      write(read().filter((r) => !sent.has(r.op.id)))
     } catch (error) {
       const status = (error as { status?: number }).status
       // 4xx is the server refusing this content and it will refuse it again; 5xx and a dead
       // network are worth retrying without spending an attempt.
       const permanent = typeof status === 'number' && status >= 400 && status < 500 && status !== 429
       if (!permanent) return
-      const bumped = batch.map((r) => ({ ...r, attempts: r.attempts + 1 }))
-      const kept = bumped.filter((r) => r.attempts < MAX_ATTEMPTS)
-      const dropped = bumped.length - kept.length
+      let dropped = 0
+      const next = read().flatMap((r) => {
+        if (!sent.has(r.op.id)) return [r]
+        const bumped = { ...r, attempts: r.attempts + 1 }
+        if (bumped.attempts < MAX_ATTEMPTS) return [bumped]
+        dropped++
+        return []
+      })
       if (dropped) console.warn(`outbox: dropped ${dropped} operation(s) the server kept refusing`)
-      write([...kept, ...rows.slice(batch.length)])
+      write(next)
     }
   } finally {
     flushing = false
   }
   // More waiting behind this batch.
-  if (read().length) schedule()
+  if (read().some((r) => r.uid === uid)) schedule()
 }
 
 /**

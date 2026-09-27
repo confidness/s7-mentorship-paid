@@ -1,5 +1,5 @@
 /**
- * Stripe Connect onboarding for an approved mentor.
+ * Stripe Connect onboarding for a mentor who wants to be paid.
  *
  * Express accounts, so Stripe collects the tax and identity details and carries the KYC
  * obligation. We never see a bank number; we hold an account id and whether Stripe is
@@ -18,11 +18,19 @@ export default async function handler(req: Request): Promise<Response> {
     const caller = await requireUser(req)
     const db = adminClient()
 
-    // Approval first. Onboarding an unreviewed account would put a payout destination
-    // behind someone no one has checked.
-    const { data: application } = await db.from('mentor_applications').select('status').eq('user_id', caller.id).eq('status', 'approved').maybeSingle()
-    if (!application) throw new HttpError(403, 'not_approved', 'Your mentor application has not been approved yet.')
-
+    /**
+     * No approval check. There is nothing left to approve.
+     *
+     * This required an approved `mentor_applications` row, which made sense while a reviewer
+     * decided who could teach. Migration 0006 removed the application desk and nothing
+     * writes such a row any more, so the check could never pass: no application, no Connect
+     * account, `charges_enabled` never true, and `requireSellingMentor` therefore refused
+     * every paid publish. The gate outlived the thing it was gating and quietly closed the
+     * whole marketplace.
+     *
+     * Identity is still checked, just not by us: an Express account cannot take money until
+     * Stripe has completed its own KYC on the person behind it.
+     */
     const { data: existing } = await db.from('mentor_accounts').select('stripe_account_id').eq('user_id', caller.id).maybeSingle()
 
     let accountId = existing?.stripe_account_id
@@ -31,7 +39,7 @@ export default async function handler(req: Request): Promise<Response> {
         type: 'express',
         email: caller.email,
         capabilities: { transfers: { requested: true } },
-        business_profile: { product_description: 'Robotics lessons on the S7 Robotics Platform' },
+        business_profile: { product_description: 'Mentorship and lessons on S7 Mentorship' },
         metadata: { userId: caller.id },
       })
       accountId = account.id

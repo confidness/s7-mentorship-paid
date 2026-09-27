@@ -133,7 +133,10 @@ export function upsertProject(s: AppState, userId: string, draft: ProjectDraft, 
     lessonId: draft.lessonId,
     status,
     submittedAt: status === 'submitted' ? now() : existing?.submittedAt,
-    tags: existing?.tags?.length ? existing.tags : [s.courses.find((c) => c.id === draft.courseId)?.platform ?? 'arduino'],
+    // No course, no tag. The fallback used to be 'arduino', from when every project on the
+    // platform was one; a mentorship project about anything at all would now be filed under
+    // a microcontroller it has nothing to do with.
+    tags: existing?.tags?.length ? existing.tags : [s.courses.find((c) => c.id === draft.courseId)?.platform].filter((tag) => tag !== undefined),
   }
 
   let next: AppState = { ...s, projects: existing ? s.projects.map((p) => (p.id === project.id ? project : p)) : [project, ...s.projects] }
@@ -234,7 +237,9 @@ export function toggleLike(s: AppState, projectId: string): AppState {
  */
 export function registerUser(s: AppState, input: { name: string; email: string; password?: string; role: User['role'] }): { state: AppState; user?: User; error?: string } {
   if (s.users.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
-    return { state: s, error: 'An account with that email already exists.' }
+    // A dictionary key, like every other stored string here. This one was a finished English
+    // sentence and went straight to the sign-up form, in whatever language the reader chose.
+    return { state: s, error: 'an_account_with_that_email_already_exists' }
   }
   const user: User = {
     id: uid('u'),
@@ -269,13 +274,98 @@ export function registerUser(s: AppState, input: { name: string; email: string; 
       completedChallengeIds: [],
       passedCheckLessonIds: [],
       unlockedAchievementIds: [],
+      learningPath: [],
       goal: 'goal_complete_first_lesson',
     }
     next = { ...next, profiles: [...next.profiles, profile] }
-    next = notify(next, { userId: user.id, title: 'notif_welcome', body: 'notif_welcome_body', kind: 'system', href: '/courses/arduino' })
+    // The catalogue, not a course. There is no built-in curriculum any more, so the old
+    // '/courses/arduino' was a link to a 404 in the first thing a new account ever reads.
+    next = notify(next, { userId: user.id, title: 'notif_welcome', body: 'notif_welcome_body', kind: 'system', href: '/courses' })
   }
 
   return { state: next, user }
+}
+
+/**
+ * Re-keys everything belonging to one account onto another id.
+ *
+ * Signing in mints a local `User` with an id like `u-k3f8a2`, then Supabase answers with the
+ * real uuid and the two have to become one account. Rewriting `user.id` alone is not that: a
+ * `StudentProfile`, every XP row, every project and every notification carry the *old* id in
+ * their own `userId`/`authorId` field, and none of them follow. `profileOf` then finds
+ * nothing, and the first page to read `profile.xp` takes the whole app down with it — which
+ * is exactly what a white screen after sign-in was.
+ *
+ * Every id-bearing field in `types.ts` is listed here on purpose. A new one that is added and
+ * not added here fails the same way, silently, months later.
+ */
+/**
+ * Guarantees every student has a profile, and rescues one that was orphaned.
+ *
+ * `adoptAccountId` stops new accounts from being split in two, but a browser that already
+ * signed in before it existed is still holding the wreckage: a user under the Supabase uuid
+ * and a `StudentProfile` under the local id nothing references any more. On boot that reads
+ * as a signed-in account with no profile, which is a white screen on the first page that
+ * trusts `profileOf` — including the one reached immediately after signing in.
+ *
+ * So the repair runs where the saved blob is read. One orphan and one user missing a profile
+ * is not a guess: it is the two halves of the same account, and re-keying keeps the XP and
+ * the streak that were banked before the split. Anything left over gets an empty profile,
+ * because a missing one is a crash and a blank one is a Tuesday.
+ */
+export function ensureProfiles(s: AppState): AppState {
+  const userIds = new Set(s.users.map((u) => u.id))
+  const withProfile = new Set(s.profiles.map((p) => p.userId))
+  const orphans = s.profiles.filter((p) => !userIds.has(p.userId))
+  const missing = s.users.filter((u) => u.role === 'student' && !withProfile.has(u.id))
+  if (!orphans.length && !missing.length) return s
+
+  let next = s
+  if (orphans.length === 1 && missing.length === 1) {
+    next = { ...next, profiles: next.profiles.map((p) => (p === orphans[0] ? { ...p, userId: missing[0].id } : p)) }
+    return next
+  }
+
+  const blank = (userId: string): StudentProfile => ({
+    userId,
+    xp: 0,
+    streak: 1,
+    lastActiveDate: now(),
+    enrolledCourseIds: [],
+    currentCourseId: '',
+    completedLessonIds: [],
+    completedChallengeIds: [],
+    passedCheckLessonIds: [],
+    unlockedAchievementIds: [],
+    learningPath: [],
+    goal: 'goal_complete_first_lesson',
+  })
+  return { ...next, profiles: [...next.profiles, ...missing.map((u) => blank(u.id))] }
+}
+
+export function adoptAccountId(s: AppState, fromId: string, toId: string): AppState {
+  if (fromId === toId) return s
+  const swap = (id: string) => (id === fromId ? toId : id)
+  const swapMaybe = (id?: string) => (id === undefined ? id : swap(id))
+
+  return {
+    ...s,
+    users: s.users.map((u) => (u.id === fromId ? { ...u, id: toId } : u)),
+    profiles: s.profiles.map((p) => ({ ...p, userId: swap(p.userId) })),
+    xp: s.xp.map((x) => ({ ...x, userId: swap(x.userId) })),
+    projects: s.projects.map((p) => ({
+      ...p,
+      authorId: swap(p.authorId),
+      reviewerId: swapMaybe(p.reviewerId),
+      feedback: p.feedback.map((f) => ({ ...f, mentorId: swap(f.mentorId) })),
+    })),
+    notifications: s.notifications.map((n) => ({ ...n, userId: swap(n.userId) })),
+    groups: s.groups.map((g) => ({ ...g, mentorId: swap(g.mentorId), studentIds: g.studentIds.map(swap) })),
+    teams: s.teams.map((t) => ({ ...t, coachId: swap(t.coachId), memberIds: t.memberIds.map(swap) })),
+    competitions: s.competitions.map((c) => ({ ...c, authorId: swap(c.authorId) })),
+    customLessons: s.customLessons.map((l) => ({ ...l, authorId: swap(l.authorId) })),
+    lessonSubmissions: s.lessonSubmissions.map((sub) => ({ ...sub, studentId: swap(sub.studentId), reviewerId: swapMaybe(sub.reviewerId) })),
+  }
 }
 
 export function updateUser(s: AppState, userId: string, patch: Partial<Pick<User, 'name' | 'bio' | 'city'>> & { goal?: string }): AppState {
@@ -289,6 +379,17 @@ export function enroll(s: AppState, userId: string, courseId: string): AppState 
   let next = patchProfile(s, userId, (p) => ({ ...p, enrolledCourseIds: [...p.enrolledCourseIds, courseId] }))
   next = notify(next, { userId, title: 'notif_enrolled', body: 'notif_enrolled_body', vars: { courseId }, kind: 'system', href: `/courses/${courseId}` })
   return next
+}
+
+/**
+ * Keep an ordered list of courses to take, as suggested by the advisor.
+ *
+ * Order is the whole content of a path, so this replaces rather than merges. It is the one
+ * profile field where last-writer-wins is the intended behaviour: a path is a suggestion a
+ * person regenerates in one click, not a record of anything that happened.
+ */
+export function setLearningPath(s: AppState, userId: string, lessonIds: string[]): AppState {
+  return patchProfile(s, userId, (p) => ({ ...p, learningPath: [...new Set(lessonIds)] }))
 }
 
 export function setCurrentCourse(s: AppState, userId: string, courseId: string): AppState {

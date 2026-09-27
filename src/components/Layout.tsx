@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, Bell, BookOpen, Bot, CalendarClock, ChevronRight, ClipboardCheck, ClipboardList, FilePlus2, FolderKanban, GraduationCap, Images, LayoutDashboard, LogOut, Menu,
-  Settings, ShieldCheck, Sparkles, Trophy, User as UserIcon, Users, X, Zap,
+  Bell, BookOpen, CalendarClock, ChevronRight, Compass, ClipboardCheck, FilePlus2, FolderKanban, GraduationCap, LayoutDashboard, LogOut, Menu,
+  Settings, Sparkles, User as UserIcon, Users, X, Zap,
 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { notificationsFor, profileOf, resolveVars } from '../lib/selectors'
@@ -15,6 +15,7 @@ import { t, formatDate } from '../i18n'
 import { Mark } from './Mark'
 import LiquidMetalBackground from './LiquidMetalBackground'
 import { AnimatedNumber, PageTransition } from './motion'
+import { SectionTabs, tabsForPath } from './sections'
 import { localizeLevelName } from '../i18n/content'
 
 interface NavItem {
@@ -25,41 +26,44 @@ interface NavItem {
   primary?: boolean
   /** Label for the mobile bottom bar, where there is room for one short word. */
   short?: string
+  /**
+   * The other paths this entry covers.
+   *
+   * A section is one sidebar entry over several pages — "Work" is projects, the gallery and
+   * competitions — so the link has to stay lit while the reader moves between them with the
+   * tabs. Without this the sidebar would go dark the moment they did, and look like they had
+   * left the section they are plainly still in.
+   */
+  covers?: string[]
 }
 
+/**
+ * Five entries, not eleven.
+ *
+ * The catalogue is the home page: what a person can learn here is the first thing the
+ * platform has to show, and the old dashboard opened on a progress summary that a new
+ * account had nothing to put in. Progress moved one level down, into the section it belongs
+ * to, where it is the first tab.
+ *
+ * Everything else is grouped by what someone is trying to do rather than by which screen it
+ * happens to live on: Learning is the track, the assignments and the badges; Work is
+ * projects, the gallery they end up in and the competitions they are entered into.
+ */
 const STUDENT_NAV: NavItem[] = [
-  { to: '/', label: 'dashboard', icon: LayoutDashboard, end: true, primary: true },
-  { to: '/courses', label: 'courses', icon: BookOpen, primary: true },
-  { to: '/learning', label: 'my_learning', icon: GraduationCap, primary: true, short: 'learning_short' },
-  { to: '/assigned', label: 'mentor_assignments', icon: ClipboardList },
-  { to: '/projects', label: 'projects', icon: FolderKanban, primary: true },
-  { to: '/achievements', label: 'achievements', icon: Award },
-  { to: '/gallery', label: 'gallery', icon: Images },
-  { to: '/competition', label: 'competition', icon: Trophy },
-  { to: '/ai', label: 'ai_mentor', icon: Bot, primary: true },
-  { to: '/profile', label: 'profile', icon: UserIcon },
-  { to: '/settings', label: 'settings', icon: Settings },
+  { to: '/', label: 'courses', icon: BookOpen, end: true, primary: true, short: 'courses', covers: ['/requests'] },
+  { to: '/learning', label: 'section_learning', icon: GraduationCap, primary: true, short: 'learning_short', covers: ['/assigned', '/achievements'] },
+  { to: '/projects', label: 'section_work', icon: FolderKanban, primary: true, covers: ['/gallery', '/competition'] },
+  { to: '/ai', label: 'ai_advisor', icon: Compass, primary: true, short: 'ai_mentor' },
+  { to: '/profile', label: 'section_account', icon: UserIcon, covers: ['/settings'] },
 ]
 
 const MENTOR_NAV: NavItem[] = [
-  { to: '/m', label: 'dashboard', icon: LayoutDashboard, end: true, primary: true },
-  { to: '/m/groups', label: 'groups', icon: Users, primary: true },
-  { to: '/m/students', label: 'students', icon: GraduationCap, primary: true, short: 'students' },
-  { to: '/m/reviews', label: 'reviews', icon: ClipboardCheck, primary: true },
-  { to: '/m/lessons', label: 'my_lessons', icon: FilePlus2 },
-  { to: '/m/projects', label: 'projects', icon: FolderKanban },
-  { to: '/m/courses', label: 'courses', icon: BookOpen },
-  { to: '/m/competition', label: 'competition', icon: Trophy },
-  { to: '/m/analytics', label: 'analytics', icon: BarChart3 },
-  { to: '/m/settings', label: 'settings', icon: Settings },
+  { to: '/m', label: 'section_overview', icon: LayoutDashboard, end: true, primary: true, short: 'dashboard', covers: ['/m/analytics'] },
+  { to: '/m/lessons', label: 'section_materials', icon: FilePlus2, primary: true, short: 'my_lessons', covers: ['/m/requests', '/m/courses', '/m/competition'] },
+  { to: '/m/reviews', label: 'section_review', icon: ClipboardCheck, primary: true, short: 'reviews', covers: ['/m/projects'] },
+  { to: '/m/students', label: 'section_people', icon: Users, primary: true, short: 'students', covers: ['/m/groups'] },
+  { to: '/m/settings', label: 'section_account', icon: Settings, covers: ['/m/payouts'] },
 ]
-
-/**
- * Shown only to admins. The review queue decides who may teach and sell, so it is not
- * something every mentor should be looking at — and the route refuses non-admins anyway,
- * which would otherwise mean a visible link leading to a wall.
- */
-const ADMIN_NAV: NavItem[] = [{ to: '/m/applications', label: 'mentor_applications', icon: ShieldCheck }]
 
 export function Logo({ compact }: { compact?: boolean }) {
   return (
@@ -75,7 +79,13 @@ export function Logo({ compact }: { compact?: boolean }) {
   )
 }
 
+/** True when the reader is anywhere inside this entry's section, not only on its own page. */
+function covers(item: NavItem, pathname: string) {
+  return (item.covers ?? []).some((path) => pathname === path || pathname.startsWith(path + '/'))
+}
+
 function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
+  const { pathname } = useLocation()
   return (
     <nav className="flex flex-col gap-0.5" aria-label={t('main')}>
       {items.map((item) => (
@@ -86,13 +96,13 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => v
           onClick={onNavigate}
           className={({ isActive }) =>
             `group flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition ${
-              isActive ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.1),0_8px_18px_-10px_rgb(11_18_32/0.4)]' : 'text-ink-600 hover:fill-soft hover:text-ink-900'
+              isActive || covers(item, pathname) ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.1),0_8px_18px_-10px_rgb(11_18_32/0.4)]' : 'text-ink-600 hover:fill-soft hover:text-ink-900'
             }`
           }
         >
           {({ isActive }) => (
             <>
-              <item.icon size={18} className={isActive ? 'text-brand-500' : 'text-ink-400 group-hover:text-ink-600'} aria-hidden="true" />
+              <item.icon size={18} className={isActive || covers(item, pathname) ? 'text-brand-500' : 'text-ink-400 group-hover:text-ink-600'} aria-hidden="true" />
               {t(item.label)}
             </>
           )}
@@ -102,12 +112,31 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => v
   )
 }
 
+/**
+ * Escape closes it.
+ *
+ * All three overlays here — the bell, the account menu and the mobile drawer — dismiss by
+ * clicking a transparent full-screen button behind them. That works with a mouse and is
+ * invisible to a keyboard, which leaves anyone not using one with no way out except tabbing
+ * through the whole panel. One listener on the window is cheaper than a focus trap and covers
+ * the case a focus trap exists to make survivable.
+ */
+function useEscape(open: boolean, close: () => void) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, close])
+}
+
 function NotificationBell() {
   const { state, user, readNotifications } = useApp()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const items = useMemo(() => (user ? notificationsFor(state, user.id) : []), [state, user])
   const unread = items.filter((n) => !n.read).length
+  useEscape(open, () => setOpen(false))
 
   return (
     <div className="relative">
@@ -116,6 +145,7 @@ function NotificationBell() {
         className="relative grid h-10 w-10 place-items-center fill text-ink-600 ring-1 rim transition hover:fill-raised hover:text-ink-900"
         aria-label={unread ? t('notifications_n_unread', { n: unread }) : t('notifications')}
         aria-expanded={open}
+        aria-haspopup="menu"
       >
         <Bell size={18} aria-hidden="true" />
         {unread > 0 && (
@@ -165,14 +195,15 @@ function NotificationBell() {
 }
 
 function UserMenu() {
-  const { user, logout } = useApp()
+  const { user, standing, logout } = useApp()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  useEscape(open, () => setOpen(false))
   if (!user) return null
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 fill py-1.5 pr-3 pl-1.5 ring-1 rim transition hover:fill-raised" aria-expanded={open} aria-label={t('account_menu')}>
+      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 fill py-1.5 pr-3 pl-1.5 ring-1 rim transition hover:fill-raised" aria-expanded={open} aria-haspopup="menu" aria-label={t('account_menu')}>
         <Avatar name={user.name} initials={user.avatar} size={30} />
         <span className="hidden text-left sm:block">
           <span className="block text-xs font-bold text-ink-900">{user.name.split(' ')[0]}</span>
@@ -191,6 +222,17 @@ function UserMenu() {
             <div className="relative p-2">
               <Link to={user.role === 'mentor' ? '/m/settings' : '/profile'} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
                 <UserIcon size={16} aria-hidden="true" />{t('profile')}</Link>
+              {/* Teaching is a thing someone does, not a kind of person they are. A mentor is
+                  still learning something, so both halves of the app stay reachable from here
+                  rather than one of them replacing the other. */}
+              {user.role === 'mentor' && (
+                <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
+                  <BookOpen size={16} aria-hidden="true" />{t('switch_to_learning')}</Link>
+              )}
+              {user.role === 'student' && standing.isMentor && (
+                <Link to="/m" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
+                  <FilePlus2 size={16} aria-hidden="true" />{t('switch_to_teaching')}</Link>
+              )}
               <div className="flex items-center justify-between gap-2 px-3 py-2 md:hidden">
                 <span className="text-sm font-medium text-ink-700">{t('language')}</span>
                 <LocaleToggle compact />
@@ -270,11 +312,14 @@ function SidebarFooter() {
 }
 
 export default function Layout() {
-  const { user, standing } = useApp()
+  const { user } = useApp()
   const location = useLocation()
   const [drawer, setDrawer] = useState(false)
-  const nav =
-    user?.role === 'mentor' ? (standing.isAdmin ? [...MENTOR_NAV, ...ADMIN_NAV] : MENTOR_NAV) : STUDENT_NAV
+  const sectionTabs = tabsForPath(location.pathname)
+  useEscape(drawer, () => setDrawer(false))
+  // The area decides the sidebar, not the role. A mentor browsing the catalogue is on the
+  // learner side and should be given the learner's navigation while they are there.
+  const nav = location.pathname.startsWith('/m') ? MENTOR_NAV : STUDENT_NAV
   const mobilePrimary = nav.filter((n) => n.primary).slice(0, 4)
 
   useEffect(() => {
@@ -329,6 +374,10 @@ export default function Layout() {
         </header>
 
         <main className="mx-auto max-w-7xl px-4 pt-6 pb-32 sm:px-6 lg:pb-12">
+          {/* The section strip sits outside the transition on purpose: it belongs to the
+              section rather than to the page, so it should stay put while the page under it
+              changes. Animating it would make moving between two tabs look like leaving. */}
+          {sectionTabs && <SectionTabs tabs={sectionTabs} />}
           {/* Replaces `.animate-rise` on every page root: the same movement in one place, and
               the outgoing screen can leave rather than vanish. */}
           <PageTransition routeKey={location.pathname}>

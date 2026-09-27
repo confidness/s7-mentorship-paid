@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { AlertTriangle, BadgeCheck, Banknote, ExternalLink, RefreshCw } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { AlertTriangle, BadgeCheck, ExternalLink, RefreshCw } from 'lucide-react'
 import { useApp } from '../../lib/store'
 import { Button, Card, SectionHeading } from '../../components/ui'
 import { ApiError, payoutStatus, startOnboarding } from '../../lib/api'
@@ -27,7 +27,7 @@ interface Status {
 }
 
 export default function Payouts() {
-  const { standing, refreshStanding } = useApp()
+  const { refreshStanding } = useApp()
   const [params] = useSearchParams()
 
   const [status, setStatus] = useState<Status | null>(null)
@@ -60,20 +60,6 @@ export default function Payouts() {
       setError(err instanceof ApiError ? err.message : t('something_went_wrong_try_again'))
       setBusy(false)
     }
-  }
-
-  if (standing.mentorStatus !== 'approved') {
-    return (
-      <div className="mx-auto max-w-2xl">
-        <Card className="space-y-3 p-6">
-          <SectionHeading title={t('payouts')} subtitle={t('selling_needs_an_approved_mentor_account')} icon={Banknote} />
-          <p className="text-sm text-ink-600">{t('paid_lessons_need_an_approved_mentor_account')}</p>
-          <Link to="/m/apply" className="inline-flex text-sm font-semibold text-brand-600 underline underline-offset-2">
-            {t('teach_on_s7')}
-          </Link>
-        </Card>
-      </div>
-    )
   }
 
   const ready = Boolean(status?.chargesEnabled)

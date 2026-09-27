@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AppState, Feedback, Project, User, XPTransaction } from './types'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { AppState, Feedback, Notification, Project, TextVars, User, XPTransaction } from './types'
 import { createInitialState } from './seed'
 import { COURSES, LESSONS, MODULES } from './curriculum'
 import { ACHIEVEMENTS } from './gamification'
@@ -8,14 +8,19 @@ import { applyOps, opsFor, snapshotOps, type ProgressOp } from './progress'
 import * as outbox from './outbox'
 import type { ProjectDraft } from './logic'
 import type { Competition, CompetitionTask, CustomLesson, Group, TaskAnswer, Team } from './types'
-import { profileOf } from './selectors'
+import { profileOf, resolveVars } from './selectors'
 import type { Standing } from './types'
 import { backendConfigured, supabase } from './supabase'
 import * as api from './api'
 import { t as translate, useLocale } from '../i18n'
 import { localizeAchievement, localizeCourse, localizeLesson, localizeModule } from '../i18n/content'
 
+// Still the old name, deliberately. It is a localStorage key, not a label: renaming it to
+// match the pivot would orphan every browser's saved state to make a string read better.
 const STORAGE_KEY = 's7-robotics-platform.v1'
+
+/** Tells a server-issued notification id from a locally minted `n_…` one. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Clears state left by a build that stored passwords in the browser.
@@ -60,7 +65,9 @@ function loadState(): AppState {
     // Content (courses/lessons/achievements) always comes from code, never from storage,
     // so editing the curriculum never strands a returning user on stale data.
     const fresh = createInitialState()
-    return {
+    // ensureProfiles, not a plain spread: a blob written by a build that split an account
+    // across two ids comes back with a profile nothing points at. See its note.
+    return logic.ensureProfiles({
       ...fresh,
       users: saved.users ?? fresh.users,
       profiles: saved.profiles ?? fresh.profiles,
@@ -76,7 +83,7 @@ function loadState(): AppState {
       customLessons: saved.customLessons ?? fresh.customLessons,
       lessonSubmissions: saved.lessonSubmissions ?? fresh.lessonSubmissions,
       sessionUserId: saved.sessionUserId ?? null,
-    }
+    })
   } catch {
     return createInitialState()
   }
@@ -116,6 +123,8 @@ interface Ctx {
   enroll: (courseId: string) => void
   updateProfile: (patch: { name?: string; bio?: string; city?: string; goal?: string }) => void
   setCurrentCourse: (courseId: string) => void
+  /** The advisor's suggestion, kept. Syncs with progress, so it follows the account. */
+  setLearningPath: (lessonIds: string[]) => void
   codeCheckPassed: (lessonId?: string) => void
   joinTeam: (teamId: string) => void
   setTaskStatus: (taskId: string, status: AppState['competitionTasks'][number]['status'], teamId?: string) => void
@@ -147,7 +156,7 @@ interface Ctx {
 }
 
 /** Nothing granted. What a signed-out viewer has, and the safe default on any failure. */
-const EMPTY_STANDING: Standing = { mentorStatus: 'none', chargesEnabled: false, payoutsEnabled: false, isAdmin: false, entitlements: [] }
+const EMPTY_STANDING: Standing = { isMentor: false, chargesEnabled: false, payoutsEnabled: false, isAdmin: false, entitlements: [] }
 
 const AppCtx = createContext<Ctx | null>(null)
 const ToastCtx = createContext<(t: Omit<Toast, 'id'>) => void>(() => {})
@@ -212,8 +221,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
    */
   const refreshStanding = useCallback(async () => {
     if (!backendConfigured) return setStanding(EMPTY_STANDING)
+
     try {
-      const [mentor, catalogue] = await Promise.all([api.getMentorStanding(), api.listCatalogue().catch(() => ({ lessons: [] as api.LessonTeaser[], entitlements: [] as string[] }))])
+      // `getMentorStanding` reads Postgres directly now, so it no longer needs a fallback
+      // for the case where the serverless functions are not deployed. The catalogue still
+      // does — that one is a real route.
+      const [mentor, catalogue] = await Promise.all([
+        api.getMentorStanding(),
+        api.listCatalogue().catch(() => ({ lessons: [] as api.LessonTeaser[], entitlements: [] as string[] })),
+      ])
 
       /**
        * Bring the catalogue into state, so a lesson written on one device is visible on the
@@ -221,7 +237,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
        * no material link; those come from `api/lesson-content.ts`, which checks entitlement
        * per request. Merging rather than replacing keeps anything written while offline.
        */
-      const teasers = [...(catalogue.lessons ?? []), ...(mentor.status === 'approved' ? await api.listMyLessons().then((r) => r.lessons).catch(() => []) : [])]
+      const teasers = [...(catalogue.lessons ?? []), ...(mentor.role === 'mentor' ? await api.listMyLessons().then((r) => r.lessons).catch(() => []) : [])]
       if (teasers.length) {
         setState((prev) => {
           const byId = new Map(prev.customLessons.map((l) => [l.id, l]))
@@ -239,6 +255,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               priceCents: teaser.priceCents,
               currency: teaser.currency,
               owned: teaser.owned,
+              stats: teaser.stats ?? local?.stats,
               createdAt: teaser.createdAt,
               updatedAt: teaser.updatedAt,
             })
@@ -247,29 +264,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
       }
       setStanding({
-        mentorStatus: mentor.status,
+        isMentor: mentor.role === 'mentor',
         chargesEnabled: mentor.chargesEnabled,
         payoutsEnabled: mentor.payoutsEnabled,
-        // Admin is whatever the admin route is willing to answer; it is never inferred here.
-        isAdmin: await api
-          .listApplications('pending')
-          .then(() => true)
-          .catch(() => false),
+        // Read from profiles by the standing route, never inferred here from what a request
+        // happened to allow.
+        isAdmin: mentor.isAdmin,
         entitlements: catalogue.entitlements ?? [],
       })
 
       /**
-       * Approval has to take effect without signing out.
+       * The server's role wins over the local mirror, in both directions.
        *
-       * An admin approves someone while they are sitting on the page. Without this, the
-       * mentor keeps student navigation until they happen to sign out and back in, which
-       * reads as "the approval did nothing". The server has already changed profiles.role;
-       * this only catches the local mirror up.
-       *
-       * It promotes and demotes: a revoked approval must take the tools away just as
-       * readily as granting one hands them over.
+       * Someone starts teaching on their phone and the laptop still shows student navigation
+       * until it happens to be reloaded, which reads as the switch having done nothing. It
+       * demotes just as readily, so stopping teaching takes the authoring tools away.
        */
-      const shouldBeMentor = mentor.status === 'approved'
+      const shouldBeMentor = mentor.role === 'mentor'
       setState((current) => {
         const me = current.users.find((u) => u.id === current.sessionUserId)
         if (!me) return current
@@ -295,6 +306,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
       achievements: ACHIEVEMENTS.map(localizeAchievement),
     }))
   }, [locale])
+
+  /**
+   * Picks the session back up on load.
+   *
+   * Supabase is already told to persist the session and refresh it — `persistSession: true`
+   * in supabase.ts — so the token survives a reload perfectly well. Nothing ever asked for
+   * it. The app decided who was signed in from its own localStorage blob alone, so clearing
+   * site data, or simply opening the deployment in a second browser, looked like being
+   * signed out while the session was sitting there valid.
+   *
+   * The role is read from `profiles` rather than from the token, for the reason sign-in
+   * already documents: user_metadata is written once at signup, so an approved mentor would
+   * come back as a student and the approval would look like it had done nothing.
+   */
+  useEffect(() => {
+    if (!backendConfigured) return
+    let alive = true
+    void (async () => {
+      const { data } = await supabase().auth.getSession()
+      const authUser = data.session?.user
+      if (!alive) return
+
+      /**
+       * No session means signed out, and the app has to agree.
+       *
+       * `sessionUserId` is restored from localStorage on boot, and until now nothing ever
+       * cleared it: a refresh token that expired, a sign-out in another tab, or auth storage
+       * cleared while the app blob survived all left the interface fully signed in — mentor
+       * navigation and all — while every request came back 401. The outbox kept queueing
+       * against that identity and eventually dropped the work as permanently refused, which
+       * is the same as losing it silently.
+       */
+      if (!authUser) {
+        setState((s) => (s.sessionUserId ? { ...s, sessionUserId: null } : s))
+        return
+      }
+
+      const { data: row } = await supabase().from('profiles').select('name, role, avatar, bio, city, title').eq('id', authUser.id).maybeSingle()
+      if (!alive) return
+      const role: User['role'] = row?.role === 'mentor' ? 'mentor' : 'student'
+      const email = authUser.email ?? ''
+      const name = row?.name ?? email.split('@')[0]
+
+      setState((s) => {
+        if (s.sessionUserId === authUser.id) return s
+        const known = s.users.find((u) => u.id === authUser.id || u.email.toLowerCase() === email.toLowerCase())
+        if (known) {
+          const refreshed = { ...known, id: authUser.id, role, name }
+          const adopted = logic.adoptAccountId(s, known.id, authUser.id)
+          return logic.touchStreak(
+            { ...adopted, users: adopted.users.map((u) => (u.id === authUser.id ? refreshed : u)), sessionUserId: authUser.id },
+            authUser.id,
+          )
+        }
+        // Signed in on the server but unknown here — a second browser, or cleared site data.
+        const created = logic.registerUser(s, { name, email, role })
+        if (!created.user) return s
+        const adopted = logic.adoptAccountId(created.state, created.user.id, authUser.id)
+        return {
+          ...adopted,
+          users: adopted.users.map((u) => (u.id === authUser.id ? { ...u, role } : u)),
+          sessionUserId: authUser.id,
+        }
+      })
+    })()
+    return () => {
+      alive = false
+    }
+  }, [])
 
   /**
    * Keeps progress with the account rather than with the browser.
@@ -347,6 +427,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
       }
 
+      /**
+       * Pull the notifications this account was sent by somebody else.
+       *
+       * These two sets do not overlap, which is what lets them merge by id with no rule.
+       * The local ones were written by a reducer running here, about something done here;
+       * the server ones exist precisely because the reducer that wrote them ran in another
+       * person's browser — a mentor's decision, an admin's answer to an application.
+       *
+       * The server copy wins on id for the read flag, which is the only field that changes
+       * after a notification is created, and the only one two devices can disagree about.
+       */
+      const remoteNotifications = await api.listNotifications().then((r) => r.notifications).catch(() => null)
+      if (alive && remoteNotifications?.length) {
+        setState((s) => {
+          const byId = new Map(s.notifications.map((n) => [n.id, n]))
+          for (const n of remoteNotifications) byId.set(n.id, n)
+          return { ...s, notifications: [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }
+        })
+      }
+
       const remote = await api.getProgress().catch(() => null)
       if (!alive || !remote) return
       setState((s) => applyOps(s, uid, fromSnapshot(remote)))
@@ -370,6 +470,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToasts((all) => [...all, toast])
     setTimeout(() => setToasts((all) => all.filter((x) => x.id !== toast.id)), 4200)
   }, [])
+
+  /**
+   * Makes the bell ring while the page is open.
+   *
+   * The pull on sign-in is enough to be correct and not enough to be useful: a student
+   * waiting on a review would find out by reloading. Realtime hands the row over the socket
+   * the Supabase client already holds, so this is a subscription and not a poll — nothing is
+   * asked for on a quiet day.
+   *
+   * The filter is stated twice on purpose. `user_id=eq` keeps other people's rows off this
+   * socket; the policy keeps them off it whether or not the filter is right. The filter is
+   * an optimisation, the policy is the boundary.
+   *
+   * It also raises a toast, because a notification that only lands in a bell nobody is
+   * looking at has not actually told anyone anything.
+   */
+  const announced = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const uid = state.sessionUserId
+    if (!backendConfigured || !uid) return
+    const channel = supabase()
+      .channel(`notifications:${uid}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, (payload) => {
+        const row = payload.new as { id: string; title: string; body: string; vars?: TextVars; kind: string; href?: string | null; created_at: string; read_at?: string | null }
+
+        // The guard is a ref rather than a look at state inside the updater, because the
+        // toast is a side effect and an updater has to stay pure — React may run it twice.
+        // The pull on sign-in can deliver the same row a moment before the socket does.
+        if (announced.current.has(row.id)) return
+        announced.current.add(row.id)
+
+        const entry: Notification = {
+          id: row.id,
+          userId: uid,
+          title: row.title,
+          body: row.body,
+          vars: row.vars,
+          kind: row.kind as Notification['kind'],
+          href: row.href ?? undefined,
+          createdAt: row.created_at,
+          read: Boolean(row.read_at),
+        }
+        setState((s) => (s.notifications.some((n) => n.id === entry.id) ? s : { ...s, notifications: [entry, ...s.notifications] }))
+        pushToast({ title: translate(entry.title), body: translate(entry.body, resolveVars(state, entry.vars)), tone: entry.kind === 'approval' ? 'success' : 'info' })
+      })
+      .subscribe()
+    return () => void supabase().removeChannel(channel)
+  }, [state.sessionUserId, pushToast])
 
   const user = useMemo(() => state.users.find((u) => u.id === state.sessionUserId) ?? null, [state.users, state.sessionUserId])
 
@@ -425,26 +573,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const known = state.users.find((u) => u.id === data.user.id || u.email.toLowerCase() === address)
         if (known) {
           const refreshed = { ...known, id: data.user.id, role, name }
-          setState((s) =>
-            logic.touchStreak(
-              { ...s, users: s.users.map((u) => (u.id === known.id ? refreshed : u)), sessionUserId: data.user.id },
+          setState((s) => {
+            // adoptAccountId, not a map over users: the profile, the XP rows and the projects
+            // are all keyed by the old local id and have to move with it.
+            const adopted = logic.adoptAccountId(s, known.id, data.user.id)
+            return logic.touchStreak(
+              { ...adopted, users: adopted.users.map((u) => (u.id === data.user.id ? refreshed : u)), sessionUserId: data.user.id },
               data.user.id,
-            ),
-          )
+            )
+          })
           return { ok: true, user: refreshed }
         }
 
         const created = logic.registerUser(state, { name, email: address, role })
         if (!created.user) return { ok: false, error: created.error }
         const mirrored = { ...created.user, id: data.user.id, role }
-        setState({ ...created.state, users: created.state.users.map((u) => (u.id === created.user!.id ? mirrored : u)), sessionUserId: data.user.id })
+        const adopted = logic.adoptAccountId(created.state, created.user.id, data.user.id)
+        setState({ ...adopted, users: adopted.users.map((u) => (u.id === data.user.id ? mirrored : u)), sessionUserId: data.user.id })
         return { ok: true, user: mirrored }
       },
 
       async register(input) {
         if (!backendConfigured) {
           const result = logic.registerUser(state, input)
-          if (result.error || !result.user) return { ok: false, error: result.error }
+          // The reducer returns a dictionary key, not a sentence — see registerUser.
+          if (result.error || !result.user) return { ok: false, error: result.error && translate(result.error) }
           setState({ ...result.state, sessionUserId: result.user.id })
           return { ok: true, user: result.user }
         }
@@ -456,12 +609,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         if (error || !data.user) return { ok: false, error: error?.message ?? translate('something_went_wrong_try_again') }
 
+        // Supabase only issues a session at signup when email confirmation is turned off. With it
+        // on, signUp succeeds and returns a user with no token. Carrying on here would mark the
+        // person signed in locally while every api/ call answers 401 — which reads as a broken
+        // site rather than as an unread email.
+        if (!data.session) return { ok: false, error: translate('confirm_email_then_sign_in') }
+
         // Everyone starts as a student regardless of what was asked for; teaching is applied
         // for and reviewed. The role in input is not honoured here on purpose.
         const result = logic.registerUser(state, { ...input, role: 'student' })
-        if (!result.user) return { ok: false, error: result.error }
-        const mirrored = { ...result.user, id: data.user.id }
-        setState({ ...result.state, users: result.state.users.map((u) => (u.id === result.user!.id ? mirrored : u)), sessionUserId: data.user.id })
+        if (!result.user) return { ok: false, error: result.error && translate(result.error) }
+        const authId = data.user.id
+        const mirrored = { ...result.user, id: authId }
+        const adopted = logic.adoptAccountId(result.state, result.user.id, authId)
+        setState({ ...adopted, users: adopted.users.map((u) => (u.id === authId ? mirrored : u)), sessionUserId: authId })
         return { ok: true, user: mirrored }
       },
 
@@ -512,10 +673,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       enroll: (courseId) => user && commit((s) => logic.enroll(s, user.id, courseId)),
       updateProfile: (patch) => user && setState((s) => logic.updateUser(s, user.id, patch)),
       setCurrentCourse: (courseId) => user && commit((s) => logic.setCurrentCourse(s, user.id, courseId)),
+      setLearningPath: (lessonIds) => user && commit((s) => logic.setLearningPath(s, user.id, lessonIds)),
       codeCheckPassed: (lessonId) => user && commit((s) => logic.markCodeCheckPassed(s, user.id, lessonId)),
       joinTeam: (teamId) => user && setState((s) => logic.joinTeam(s, user.id, teamId)),
       setTaskStatus: (taskId, status, teamId) => setState((s) => logic.setTaskStatus(s, taskId, status, teamId)),
-      readNotifications: (id) => user && setState((s) => logic.readNotifications(s, user.id, id)),
+      /**
+       * Read locally either way, and tell the server about the rows it owns.
+       *
+       * A local notification has an id like `n_k3f…` and the server's is a uuid, so the
+       * filter is the shape of the id. Sending a local one would not just miss — the column
+       * is `uuid`, and Postgres rejects the whole statement, taking the real ids with it.
+       *
+       * Nothing awaits this. Read is not a state a person waits on, and a failed call means
+       * the badge comes back on the next device, which is the mild end of wrong.
+       */
+      readNotifications: (id) => {
+        if (!user) return
+        setState((s) => logic.readNotifications(s, user.id, id))
+        if (!backendConfigured) return
+        if (!id) void api.markNotificationsRead().catch(() => {})
+        else if (UUID.test(id)) void api.markNotificationsRead([id]).catch(() => {})
+      },
       // Server first, then state. The other order would leave the interface claiming a lesson
       // was published after the server refused, which is the failure a mentor would act on.
       saveCustomLesson: async (lesson) => {

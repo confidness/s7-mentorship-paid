@@ -16,6 +16,7 @@ import CourseDetail from './pages/student/CourseDetail'
 import LessonPage from './pages/student/Lesson'
 import MyLearning from './pages/student/MyLearning'
 import Projects from './pages/student/Projects'
+import Requests from './pages/student/Requests'
 import ProjectDetail from './pages/student/ProjectDetail'
 import Achievements from './pages/student/Achievements'
 import Gallery from './pages/student/Gallery'
@@ -32,15 +33,21 @@ import ReviewDetail from './pages/mentor/ReviewDetail'
 import MentorProjects from './pages/mentor/Projects'
 import MentorAnalytics from './pages/mentor/Analytics'
 import { MentorCourses, MentorCompetition, MentorSettings } from './pages/mentor/Misc'
-import MentorApply from './pages/mentor/Apply'
 import Payouts from './pages/mentor/Payouts'
-import MentorApplications from './pages/admin/MentorApplications'
 
-function Protected({ role, children }: { role: 'student' | 'mentor'; children: ReactNode }) {
+/**
+ * Signed in, and for `/m` also teaching.
+ *
+ * The learner side is open to everybody. It used to bounce a mentor back to `/m`, which made
+ * sense when teaching was a status granted after review — now that anyone can switch it on,
+ * a mentor is simply somebody who also publishes, and locking them out of the catalogue
+ * would mean they could not take a course on the platform they teach on.
+ */
+function Protected({ mentor, children }: { mentor?: boolean; children: ReactNode }) {
   const { user } = useApp()
   const location = useLocation()
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
-  if (user.role !== role) return <Navigate to={user.role === 'mentor' ? '/m' : '/'} replace />
+  if (mentor && user.role !== 'mentor') return <Navigate to="/" replace />
   return <>{children}</>
 }
 
@@ -54,16 +61,24 @@ export default function App() {
 
       <Route
         element={
-          <Protected role="student">
+          <Protected>
             <Layout />
           </Protected>
         }
       >
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/courses" element={<Courses />} />
+        {/* The catalogue is the front door: what there is to learn here, before anything
+            about one account's progress. `/courses` still resolves to the same page so old
+            links keep working. */}
+        <Route path="/" element={<Courses />} />
+        <Route path="/courses" element={<Navigate to="/" replace />} />
+        {/* The demand board sits beside the catalogue: what there is to learn, and what
+            there is not yet. Both sides of the marketplace read the same page. */}
+        <Route path="/requests" element={<Requests />} />
         <Route path="/courses/:courseId" element={<CourseDetail />} />
         <Route path="/learn/:courseId/:lessonId" element={<LessonPage />} />
-        <Route path="/learning" element={<MyLearning />} />
+        {/* Progress used to be the home page. It is the first tab of Learning now. */}
+        <Route path="/learning" element={<Dashboard />} />
+        <Route path="/learning/courses" element={<MyLearning />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:projectId" element={<ProjectDetail />} />
         <Route path="/achievements" element={<Achievements />} />
@@ -74,15 +89,12 @@ export default function App() {
         <Route path="/assigned" element={<Assigned />} />
         <Route path="/assigned/:lessonId" element={<AssignedLesson />} />
         <Route path="/settings" element={<StudentSettings />} />
-        {/* Applying to teach is done by someone who is still a student, so it lives here
-            rather than behind the mentor guard. */}
-        <Route path="/m/apply" element={<MentorApply />} />
       </Route>
 
       <Route
         path="/m"
         element={
-          <Protected role="mentor">
+          <Protected mentor>
             <Layout />
           </Protected>
         }
@@ -99,14 +111,13 @@ export default function App() {
         <Route path="competition/new" element={<EventBuilder />} />
         <Route path="competition/:competitionId/edit" element={<EventBuilder />} />
         <Route path="analytics" element={<MentorAnalytics />} />
+        <Route path="requests" element={<Requests />} />
         <Route path="lessons" element={<MentorLessons />} />
         <Route path="lessons/new" element={<LessonBuilder />} />
         <Route path="lessons/:lessonId" element={<LessonSubmissions />} />
         <Route path="lessons/:lessonId/edit" element={<LessonBuilder />} />
         <Route path="settings" element={<MentorSettings />} />
         <Route path="payouts" element={<Payouts />} />
-        {/* The review queue refuses non-admins server-side; the route itself only needs a mentor. */}
-        <Route path="applications" element={<MentorApplications />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

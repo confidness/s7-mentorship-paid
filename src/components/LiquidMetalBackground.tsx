@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LiquidMetal } from '@paper-design/shaders-react'
-import { useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
+import { useAppliedSkin, useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
 
 /**
  * The liquid-metal field the interface sits on.
@@ -72,6 +72,7 @@ const VEIL: Record<Depth, { light: number; dark: number }> = {
 
 export default function LiquidMetalBackground({ depth = 'app', className = '' }: { depth?: Depth; className?: string }) {
   const theme = useAppliedTheme()
+  const skin = useAppliedSkin()
   const reduced = usePrefersReducedMotion()
   const [hidden, setHidden] = useState(false)
 
@@ -81,6 +82,17 @@ export default function LiquidMetalBackground({ depth = 'app', className = '' }:
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
+
+  /**
+   * Only under the skin whose palette came out of it.
+   *
+   * These colours were read off this shader — the near-black at the centre of a metaball,
+   * the cool slate of its shadow side, the yellow the aberration throws along an edge — so
+   * the field belongs to `brutal` and looks like a stray photograph behind any of the
+   * others. Skipping it also means four of the five skins never start a WebGL context at
+   * all, which the default in particular has no use for.
+   */
+  if (skin !== 'brutal') return null
 
   const colors = theme === 'dark' ? DARK : LIGHT
   const veil = VEIL[depth][theme]

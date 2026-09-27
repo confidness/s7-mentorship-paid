@@ -1,5 +1,8 @@
 import { localizeAi, type AiEntryText } from '../i18n/ai'
-import { getLocale } from '../i18n'
+import { getLocale, t } from '../i18n'
+import type { CustomLesson } from './types'
+import { accessToken } from './supabase'
+import { DIRECTIONS, describeForPrompt, directionOf, minutesOf, searchLessons, shortlistFor, type DirectionId } from './discovery'
 
 /**
  * AI Robotics Mentor — reply layer.
@@ -21,6 +24,14 @@ export interface AskContext {
   courseTitle?: string
   studentName?: string
   code?: string
+  /**
+   * The published catalogue, for the advisor to choose from.
+   *
+   * Passed in rather than imported so this module stays pure of the store, and so the model
+   * is given a shortlist somebody else assembled. A model asked to recommend a course with
+   * no catalogue in front of it will produce a confident, plausible, non-existent one.
+   */
+  catalogue?: CustomLesson[]
 }
 
 export interface AiReply {
@@ -31,6 +42,16 @@ export interface AiReply {
   followUps: string[]
   /** Whether a model answered, or the offline knowledge base did. Shown next to the reply. */
   fromModel?: boolean
+  /** Ids of courses to render as cards under the answer. Advice you can act on in one click. */
+  recommendations?: string[]
+  /**
+   * The question, offered back as something to post on the demand board.
+   *
+   * Set only when the catalogue genuinely has nothing close. "We do not teach that" was a
+   * dead end; on a platform where anyone can publish, it is the most useful thing a student
+   * can tell the mentors — so the refusal carries the next step instead of ending there.
+   */
+  askFor?: string
 }
 
 interface Entry {
@@ -221,9 +242,13 @@ async function askModel(question: string, ctx: AskContext): Promise<Omit<AiReply
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), MODEL_TIMEOUT_MS)
   try {
+    // The route spends an API key, so it asks who is calling. Without the token every
+    // question would 401 and fall silently to the offline base, which looks like the model
+    // being unavailable rather than the request being anonymous.
+    const token = await accessToken()
     const res = await fetch('/api/mentor', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: token ? { 'content-type': 'application/json', authorization: `Bearer ${token}` } : { 'content-type': 'application/json' },
       signal: abort.signal,
       body: JSON.stringify({
         question,
@@ -231,6 +256,14 @@ async function askModel(question: string, ctx: AskContext): Promise<Omit<AiReply
         lessonTitle: ctx.lessonTitle,
         courseTitle: ctx.courseTitle,
         code: ctx.code,
+        /**
+         * The shortlist, not the catalogue.
+         *
+         * Ranked here first, so the model chooses among courses that exist and the prompt
+         * stays a fixed size however large the platform grows. Two hundred courses in a
+         * prompt is money per question and a middle the model stops reading.
+         */
+        catalogue: ctx.catalogue?.length ? promptCatalogue(ctx.catalogue, question) : undefined,
       }),
     })
     if (res.status === 501) {
@@ -247,8 +280,77 @@ async function askModel(question: string, ctx: AskContext): Promise<Omit<AiReply
   }
 }
 
+
+/* ------------------------------------------------------------------ the advisor */
+
+/**
+ * Choosing a course, with no model involved.
+ *
+ * This is the fallback, and it is a real answer rather than an apology. The ranking in
+ * `discovery.ts` already knows what is published, what it costs, how long it takes and what
+ * kind of work it is; all that is missing is a sentence around it, which needs no model.
+ *
+ * The advisor never invents a course. Everything it names came out of the catalogue it was
+ * handed, which is the one guarantee the model half cannot make on its own.
+ */
+function directionFromQuestion(question: string): DirectionId | null {
+  return DIRECTIONS.find((d) => d.match.test(question))?.id ?? null
+}
+
+/** `**Title** — about 25 min · free` — one line a person can scan. */
+function lineFor(lesson: CustomLesson): string {
+  const minutes = t('about_n_minutes', { n: minutesOf(lesson) })
+  const price = lesson.priceCents > 0 ? `${(lesson.priceCents / 100).toFixed(2)} ${lesson.currency.toUpperCase()}` : t('free')
+  return `**${lesson.title}** — ${minutes} · ${price}`
+}
+
+export function adviseLocal(question: string, catalogue: CustomLesson[]): Omit<AiReply, 'id'> | null {
+  if (!catalogue.length) {
+    return { text: t('ai_catalogue_empty'), question: '', followUps: [], recommendations: [], askFor: question }
+  }
+
+  const direction = directionFromQuestion(question)
+  const matches = direction ? searchLessons(catalogue, { direction }) : shortlistFor(catalogue, question, 6)
+  const top = matches.slice(0, 3)
+
+  if (!top.length) {
+    return { text: `${t('ai_nothing_matched', { n: catalogue.length })}
+
+${t('nothing_matched_ask_instead')}`, question: '', followUps: [], recommendations: [], askFor: question }
+  }
+
+  const intro = direction ? t('ai_picked_direction', { direction: t(`dir_${direction}`) }) : t('ai_picked_general')
+  const body = top.map((m) => lineFor(m.lesson)).join('\n')
+
+  // What else the catalogue actually holds, so the next question can be a better one. Only
+  // directions with something published in them — offering an empty shelf is worse than
+  // offering none.
+  const available = [...new Set(searchLessons(catalogue).map((m) => m.direction))].filter((id) => id !== direction).slice(0, 4)
+
+  return {
+    text: `${intro}\n\n${body}`,
+    question: available.length ? t('ai_which_direction', { list: available.map((id) => t(`dir_${id}`)).join(', ') }) : '',
+    followUps: available.slice(0, 3).map((id) => t(`dir_${id}`)),
+    recommendations: top.map((m) => m.lesson.id),
+  }
+}
+
 export function askMentorLocal(question: string, ctx: AskContext = {}): Promise<AiReply> {
-  const entry = KB.find((e) => e.match.test(question))
+  /**
+   * Recommending comes first, because that is what this assistant is for now.
+   *
+   * The knowledge base below still answers the other half — how to get unstuck, how to ask a
+   * mentor, what a review looks for — and those questions have no course as an answer. So
+   * the base wins whenever it recognises the question outright, and choosing a course is
+   * what everything else is treated as.
+   */
+  const known = KB.find((e) => e.match.test(question))
+  if (!known && ctx.catalogue) {
+    const advice = adviseLocal(question, ctx.catalogue)
+    if (advice) return Promise.resolve({ ...advice, id: `ai-${++counter}-${Date.now()}` })
+  }
+
+  const entry = known
   const lesson = ctx.lessonTitle ?? ''
   const vars = { name: ctx.studentName?.split(' ')[0] ?? '', lesson }
 
@@ -278,9 +380,27 @@ export function askMentorLocal(question: string, ctx: AskContext = {}): Promise<
  */
 export async function askMentor(question: string, ctx: AskContext = {}): Promise<AiReply> {
   const fromModel = await askModel(question, ctx)
-  if (fromModel) return { ...fromModel, id: `ai-${++counter}-${Date.now()}`, fromModel: true }
+  if (fromModel) {
+    /**
+     * Keep only the ids that exist.
+     *
+     * The model is handed a shortlist and told to choose from it, and mostly it does. But an
+     * id it invented would render as a card leading nowhere, so the catalogue — not the
+     * reply — decides what is real. Dropping a bad id costs one suggestion; trusting it
+     * costs the student's confidence in every other one.
+     */
+    const known = new Set((ctx.catalogue ?? []).map((l) => l.id))
+    const recommendations = (fromModel.recommendations ?? []).filter((id) => known.has(id))
+    return { ...fromModel, recommendations, id: `ai-${++counter}-${Date.now()}`, fromModel: true }
+  }
   return askMentorLocal(question, ctx)
 }
 
 /** Keys into the UI dictionary — the prompts are translated at render time, like every other label. */
-export const STARTER_PROMPTS = ['ai_starter_stuck', 'ai_starter_begin', 'ai_starter_feedback', 'ai_starter_ask', 'ai_starter_grading']
+export const STARTER_PROMPTS = ['ai_starter_direction', 'ai_starter_cheapest', 'ai_starter_evening', 'ai_starter_career', 'ai_starter_stuck']
+
+/** Catalogue lines for the prompt. Re-exported so the request builder needs one import. */
+export const promptCatalogue = (catalogue: CustomLesson[], question: string) => shortlistFor(catalogue, question).map(describeForPrompt)
+
+/** Exposed for the catalogue UI, which labels each result with the direction it was filed under. */
+export { directionOf }

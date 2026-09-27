@@ -90,3 +90,88 @@ export function useTheme() {
 
   return { choice, resolved: resolveTheme(choice), setChoice }
 }
+
+/* ------------------------------------------------------------------ skins */
+
+/**
+ * The second axis: what the interface is made of.
+ *
+ * Deliberately separate from light/dark. Someone who wants the editorial skin at night wants
+ * the editorial skin at night, not a different one — so a skin defines both themes and the
+ * two choices never collapse into a single list of five hybrid options.
+ *
+ * `plain` is the default and is meant to be unremarkable. A product should not make a
+ * statement on somebody's first visit; the opinionated skins are a choice, taken here.
+ */
+export type SkinChoice = 'plain' | 'editorial' | 'atelier' | 'brutal' | 'terminal' | 'marketplace' | 'academy' | 'streak' | 'cinema' | 'poster'
+
+/**
+ * Two families, and the split is where they came from.
+ *
+ * The first five are design disciplines — minimalism, agency work, brutalism, terminal UI.
+ * The second five were read off the platforms this product competes with, whose visual
+ * languages are each a bet about what sells a course. Keeping the groups apart in the picker
+ * is the difference between a choice and a list of ten.
+ */
+export const HOUSE_SKINS: SkinChoice[] = ['plain', 'editorial', 'atelier', 'brutal', 'terminal']
+export const INDUSTRY_SKINS: SkinChoice[] = ['marketplace', 'academy', 'streak', 'cinema', 'poster']
+
+export const SKINS: SkinChoice[] = [...HOUSE_SKINS, ...INDUSTRY_SKINS]
+
+const SKIN_KEY = 's7-skin'
+
+export function readSkin(): SkinChoice {
+  try {
+    const saved = localStorage.getItem(SKIN_KEY)
+    if (saved && (SKINS as string[]).includes(saved)) return saved as SkinChoice
+  } catch {
+    /* storage blocked — fall through to the default */
+  }
+  return 'plain'
+}
+
+export function applySkin(skin: SkinChoice) {
+  document.documentElement.dataset.skin = skin
+  try {
+    localStorage.setItem(SKIN_KEY, skin)
+  } catch {
+    /* storage blocked — the skin still applies for this session */
+  }
+}
+
+/**
+ * Reads the skin that is currently applied, without owning the choice.
+ *
+ * The same split as `useAppliedTheme`: `useSkin` writes the attribute, so anything that
+ * merely needs to *know* which skin is on must observe instead, or two owners end up
+ * fighting over `<html data-skin>`.
+ */
+export function useAppliedSkin(): SkinChoice {
+  const read = (): SkinChoice => {
+    const value = typeof document !== 'undefined' ? document.documentElement.dataset.skin : undefined
+    return value && (SKINS as string[]).includes(value) ? (value as SkinChoice) : 'plain'
+  }
+  const [skin, setSkin] = useState<SkinChoice>(read)
+
+  useEffect(() => {
+    const el = document.documentElement
+    const sync = () => setSkin(read())
+    sync()
+    const observer = new MutationObserver(sync)
+    observer.observe(el, { attributes: true, attributeFilter: ['data-skin'] })
+    return () => observer.disconnect()
+  }, [])
+
+  return skin
+}
+
+/** Single owner of `<html data-skin>`, the same way `useTheme` owns `data-theme`. */
+export function useSkin() {
+  const [skin, setSkin] = useState<SkinChoice>(readSkin)
+
+  useEffect(() => {
+    applySkin(skin)
+  }, [skin])
+
+  return { skin, setSkin }
+}

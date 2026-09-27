@@ -220,7 +220,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   approved_xp_awarded: { en: 'Approved · XP awarded', ru: 'Принято · XP начислены', kk: 'Мақұлданды · XP қосылды' },
   ask: { en: 'Ask', ru: 'Спросить', kk: 'Сұрау' },
-  ask_about_anything_stuck: { en: 'Ask about anything you are stuck on…', ru: 'Спроси про то, на чём застрял…', kk: 'Тұрып қалған нәрсеңді сұра…' },
+  ask_about_anything_stuck: { en: 'Say what you want to be able to do…', ru: 'Напиши, что хочешь уметь…', kk: 'Не істей білгің келетінін жаз…' },
   ask_ai_mentor: { en: 'Ask AI mentor', ru: 'Спросить AI-наставника', kk: 'AI тәлімгерден сұрау' },
   ask_anything_about_your_build: { en: 'Ask anything about your build', ru: 'Спроси что угодно о своей сборке', kk: 'Құрастыруың туралы кез келген нәрсені сұра' },
   ask_for_a_hint: { en: 'Ask for a hint', ru: 'Попросить подсказку', kk: 'Кеңес сұрау' },
@@ -490,7 +490,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   mentor_feedback: { en: 'Mentor feedback', ru: 'Отзыв наставника', kk: 'Тәлімгер пікірі' },
   mentor_is_typing: { en: 'Mentor is typing', ru: 'Наставник печатает', kk: 'Тәлімгер жазып жатыр' },
   mentor_workspace: { en: 'Mentor workspace', ru: 'Кабинет наставника', kk: 'Тәлімгер кабинеті' },
-  message_the_ai_mentor: { en: 'Message the AI mentor', ru: 'Сообщение AI-наставнику', kk: 'AI тәлімгерге хабарлама' },
+  message_the_ai_mentor: { en: 'Message the course advisor', ru: 'Сообщение советнику по курсам', kk: 'Курс кеңесшісіне хабарлама' },
   module: { en: 'Module', ru: 'Модуль', kk: 'Модуль' },
   modules: { en: 'Modules', ru: 'Модули', kk: 'Модульдер' },
   more: { en: 'More', ru: 'Ещё', kk: 'Тағы' },
@@ -508,6 +508,320 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   needs_attention: { en: 'Needs attention', ru: 'Требуют внимания', kk: 'Назар керек' },
   needs_review: { en: 'Needs review', ru: 'На проверку', kk: 'Тексеру керек' },
   new_project_from_current_lesson: { en: 'New project from current lesson', ru: 'Новый проект из текущего урока', kk: 'Ағымдағы сабақтан жаңа жоба' },
+  /** The lesson-less route into the review loop, which is now the only one that always exists. */
+  new_project: { en: 'New project', ru: 'Новый проект', kk: 'Жаңа жоба' },
+
+  /* --- teaching is chosen, not granted ---------------------------------------------- */
+  anyone_can_publish_here: {
+    en: 'Anyone can publish here. Turn this on and the authoring tools appear — lessons, reviews, students.',
+    ru: 'Публиковать может каждый. Включи — и появятся инструменты: уроки, проверка работ, ученики.',
+    kk: 'Мұнда кез келген адам жариялай алады. Қосқан соң құралдар шығады: сабақтар, тексеру, оқушылар.',
+  },
+  start_teaching: { en: 'Start teaching', ru: 'Начать преподавать', kk: 'Оқытуды бастау' },
+  role_change_refused: {
+    en: 'The database refused the change. Migration 0006 has not been applied yet — run supabase/migrations/0006_open_teaching.sql.',
+    ru: 'База отклонила изменение. Миграция 0006 ещё не выполнена — запусти supabase/migrations/0006_open_teaching.sql.',
+    kk: 'Дерекқор өзгерісті қабылдамады. 0006 көшуі әлі орындалмаған — supabase/migrations/0006_open_teaching.sql іске қос.',
+  },
+  server_functions_not_running: {
+    en: 'The server functions are not running here. This page is a static preview — deploy, or run the dev server with functions.',
+    ru: 'Серверные функции здесь не запущены. Это статический просмотр сборки — нужен деплой или дев-сервер с функциями.',
+    kk: 'Мұнда сервер функциялары іске қосылмаған. Бұл — статикалық алдын ала қарау; деплой немесе функциялары бар дев-сервер керек.',
+  },
+  stop_teaching: { en: 'Stop teaching', ru: 'Перестать преподавать', kk: 'Оқытуды тоқтату' },
+  you_are_teaching: { en: 'Your courses are live on the platform.', ru: 'Твои курсы опубликованы на платформе.', kk: 'Курстарың платформада жарияланған.' },
+  stopping_hides_authoring_not_your_work: {
+    en: 'Turning it off hides the authoring tools. Published lessons and past reviews stay where they are.',
+    ru: 'Выключение прячет инструменты автора. Опубликованные уроки и прошлые проверки остаются на месте.',
+    kk: 'Өшірсең, автор құралдары жасырылады. Жарияланған сабақтар мен бұрынғы тексерулер орнында қалады.',
+  },
+  paid_lessons_need_a_payout_account: {
+    en: 'Taking money needs a payout account Stripe has verified. Free lessons need nothing.',
+    ru: 'Чтобы брать деньги, нужен счёт, подтверждённый Stripe. Бесплатным урокам не нужно ничего.',
+    kk: 'Ақша алу үшін Stripe растаған төлем шоты керек. Тегін сабақтарға ештеңе қажет емес.',
+  },
+
+  /* --- sections, each one gathering what used to be separate tabs -------------------- */
+  section_learning: { en: 'Learning', ru: 'Обучение', kk: 'Оқу' },
+  section_work: { en: 'Work', ru: 'Работы', kk: 'Жұмыстар' },
+  section_materials: { en: 'Materials', ru: 'Материалы', kk: 'Материалдар' },
+  section_review: { en: 'Review', ru: 'Проверка', kk: 'Тексеру' },
+  section_overview: { en: 'Overview', ru: 'Обзор', kk: 'Шолу' },
+  section_people: { en: 'People', ru: 'Люди', kk: 'Адамдар' },
+  section_account: { en: 'Account', ru: 'Аккаунт', kk: 'Аккаунт' },
+  tab_progress: { en: 'Progress', ru: 'Прогресс', kk: 'Прогресс' },
+  tab_queue: { en: 'Queue', ru: 'Очередь', kk: 'Кезек' },
+  tab_all_work: { en: 'All work', ru: 'Все работы', kk: 'Барлық жұмыс' },
+
+  /* --- the demand board ------------------------------------------------------------- */
+  section_demand: { en: 'Demand', ru: 'Спрос', kk: 'Сұраныс' },
+  demand_board: { en: 'What people want taught', ru: 'Чему люди хотят научиться', kk: 'Адамдар не үйренгісі келеді' },
+  demand_board_subtitle: {
+    en: 'Nobody has taught it yet. Say what you want, back what others asked for, and a mentor answers a brief that already has an audience.',
+    ru: 'Этого ещё никто не преподаёт. Скажи, что нужно тебе, поддержи чужие запросы — и наставник получит задачу, у которой уже есть аудитория.',
+    kk: 'Мұны әлі ешкім оқытпайды. Не керегін айт, басқалардың сұранысын қолда — тәлімгер аудиториясы бар тапсырма алады.',
+  },
+  demand_board_mentor_subtitle: {
+    en: 'Briefs with an audience attached. Each one is people who said they would take this course before it existed.',
+    ru: 'Задачи с готовой аудиторией. За каждой — люди, сказавшие, что пойдут на этот курс ещё до того, как он появился.',
+    kk: 'Дайын аудиториясы бар тапсырмалар. Әрқайсысының артында курс пайда болмай тұрып-ақ барамыз деген адамдар тұр.',
+  },
+  ask_for_a_course: { en: 'Ask for a course', ru: 'Попросить курс', kk: 'Курс сұрау' },
+  what_should_someone_teach: { en: 'What should somebody teach?', ru: 'Чему кто-нибудь должен научить?', kk: 'Біреу нені оқытуы керек?' },
+  request_title_hint: {
+    en: 'One line, the way you would say it out loud.',
+    ru: 'Одной строкой, как сказал бы вслух.',
+    kk: 'Бір жолмен, ауызша айтқандай.',
+  },
+  request_body_label: { en: 'What do you want to be able to do?', ru: 'Что ты хочешь научиться делать?', kk: 'Не істей білгің келеді?' },
+  request_body_hint: {
+    en: 'Where you are starting from, and what finished would look like. A mentor reads this before deciding to write it.',
+    ru: 'С чего начинаешь и как выглядит готовый результат. Наставник прочитает это, прежде чем браться.',
+    kk: 'Неден бастайсың және дайын нәтиже қандай. Тәлімгер осыны оқып барып шешеді.',
+  },
+  budget_label: { en: 'What would you pay?', ru: 'Сколько готов заплатить?', kk: 'Қанша төлей аласың?' },
+  budget_hint: {
+    en: 'A number a mentor can plan against. Nothing is charged and nothing is held — it is what you are saying, not what you are paying.',
+    ru: 'Цифра, на которую наставник может рассчитывать. Ничего не списывается и не резервируется — это заявление, а не оплата.',
+    kk: 'Тәлімгер бағдарлана алатын сан. Ештеңе алынбайды және ұсталмайды — бұл төлем емес, ниет.',
+  },
+  deadline_label: { en: 'Needed by', ru: 'Нужно к', kk: 'Қашанға керек' },
+  no_budget_stated: { en: 'No budget stated', ru: 'Бюджет не указан', kk: 'Бюджет көрсетілмеген' },
+  n_people_want_this: { en: '{n} want this', ru: 'Хотят: {n}', kk: 'Қалайды: {n}' },
+  back_this: { en: 'I want this too', ru: 'Мне тоже нужно', kk: 'Маған да керек' },
+  backed: { en: 'You want this', ru: 'Ты поддержал', kk: 'Сен қолдадың' },
+  withdraw_request: { en: 'Withdraw', ru: 'Снять', kk: 'Алып тастау' },
+  answer_with_a_course: { en: 'Answer with a course', ru: 'Ответить курсом', kk: 'Курспен жауап беру' },
+  answered_by_n_courses: { en: 'Answered by {n}', ru: 'Ответов: {n}', kk: 'Жауаптар: {n}' },
+  nothing_requested_yet: { en: 'Nobody has asked for anything yet', ru: 'Пока никто ничего не попросил', kk: 'Әзірге ешкім ештеңе сұрамаған' },
+  nothing_requested_yet_body: {
+    en: 'Be the first. A request costs nothing and tells every mentor here what is missing.',
+    ru: 'Будь первым. Запрос ничего не стоит и показывает всем наставникам, чего не хватает.',
+    kk: 'Бірінші бол. Сұраныс тегін және барлық тәлімгерге не жетіспейтінін көрсетеді.',
+  },
+  votes_are_accounts_not_people: {
+    en: 'Counts are accounts, not verified people.',
+    ru: 'Счётчик считает аккаунты, а не подтверждённых людей.',
+    kk: 'Есептегіш аккаунттарды санайды, расталған адамдарды емес.',
+  },
+  ask_for_it_instead: { en: 'Ask for it', ru: 'Попросить такой курс', kk: 'Осындай курс сұрау' },
+  nothing_matched_ask_instead: {
+    en: 'Nothing fits that yet — put it on the demand board and mentors will see it.',
+    ru: 'Под это пока ничего нет — размести на витрине спроса, и наставники увидят.',
+    kk: 'Оған сай әзірге ештеңе жоқ — сұраныс витринасына қой, тәлімгерлер көреді.',
+  },
+  save_as_my_path: { en: 'Keep this as my path', ru: 'Сохранить как мой путь', kk: 'Менің жолым ретінде сақтау' },
+  my_learning_path: { en: 'My path', ru: 'Мой путь', kk: 'Менің жолым' },
+  path_kept: { en: 'Kept. It is on your Learning page.', ru: 'Сохранено — на странице «Обучение».', kk: 'Сақталды — «Оқу» бетінде.' },
+  clear_path: { en: 'Clear', ru: 'Очистить', kk: 'Тазалау' },
+  /* --- appearance ------------------------------------------------------------------- */
+  appearance: { en: 'Appearance', ru: 'Оформление', kk: 'Безендіру' },
+  appearance_note: {
+    en: 'Light and dark is one choice; what the interface is made of is another. A skin defines both, so picking one does not lock you out of the dark.',
+    ru: 'Светлая и тёмная — одно решение, из чего сделан интерфейс — другое. Тема задаёт обе, так что выбор не отбирает у тебя тёмный режим.',
+    kk: 'Ашық пен қараңғы — бір таңдау, интерфейс неден жасалғаны — екіншісі. Тақырып екеуін де анықтайды.',
+  },
+  skin_plain: { en: 'Plain', ru: 'Обычная', kk: 'Қарапайым' },
+  skin_plain_note: {
+    en: 'The default. Neutral greys, soft corners, quiet shadows — an interface that gets out of the way.',
+    ru: 'По умолчанию. Нейтральные серые, мягкие углы, тихие тени — интерфейс, который не мешает.',
+    kk: 'Әдепкі. Бейтарап сұр түстер, жұмсақ бұрыштар, тыныш көлеңкелер — кедергі келтірмейтін интерфейс.',
+  },
+  skin_editorial: { en: 'Editorial', ru: 'Редакция', kk: 'Редакция' },
+  skin_editorial_note: {
+    en: 'Warm paper, a serif for headings, hairline rules and almost no colour. Reads like a document rather than an app.',
+    ru: 'Тёплая бумага, антиква в заголовках, волосяные линейки и почти никакого цвета. Читается как документ, а не приложение.',
+    kk: 'Жылы қағаз, тақырыптарда антиква, жіңішке сызықтар және дерлік түссіз. Қосымша емес, құжат сияқты оқылады.',
+  },
+  skin_atelier: { en: 'Atelier', ru: 'Ателье', kk: 'Ателье' },
+  skin_atelier_note: {
+    en: 'No borders at all. Large radii and wide, almost invisible shadow do the work — everything floats. Goes properly black at night.',
+    ru: 'Никаких рамок. Работают крупные скругления и широкая, почти невидимая тень — всё парит. Ночью уходит в настоящий чёрный.',
+    kk: 'Мүлдем жиексіз. Үлкен дөңгелектеу мен кең, көзге ілінбейтін көлеңке істейді — бәрі қалқиды. Түнде нағыз қараға ауысады.',
+  },
+  skin_brutal: { en: 'Brutalist', ru: 'Брутализм', kk: 'Брутализм' },
+  skin_brutal_note: {
+    en: 'Square corners, black rules, hard offset shadows and signal yellow. Depth is a sheet of paper on another, not a blur.',
+    ru: 'Прямые углы, чёрные линейки, жёсткие смещённые тени и сигнальный жёлтый. Глубина — лист на листе, а не размытие.',
+    kk: 'Тік бұрыштар, қара сызықтар, қатты ығысқан көлеңкелер және сигналдық сары. Тереңдік — бұлыңғырлау емес, қағаз үстіндегі қағаз.',
+  },
+  skin_terminal: { en: 'Terminal', ru: 'Терминал', kk: 'Терминал' },
+  skin_terminal_note: {
+    en: 'A tactical readout: monospace throughout, white phosphor on near-black, hazard red, scanlines over the whole screen. Dark by construction.',
+    ru: 'Тактический дисплей: моноширинный шрифт везде, белый фосфор на почти чёрном, аварийный красный, развёртка по всему экрану. Тёмный по устройству.',
+    kk: 'Тактикалық дисплей: бәрі бірдей енді қаріп, қараға жақын фонда ақ фосфор, апаттық қызыл, бүкіл экранда жолақтар. Құрылымы бойынша қараңғы.',
+  },
+  skins_house: { en: 'Made here', ru: 'Свои', kk: 'Өзіміздікі' },
+  skins_industry: { en: 'Read off the industry', ru: 'Считаны с индустрии', kk: 'Индустриядан алынған' },
+  skins_industry_note: {
+    en: 'Five design languages from the platforms that sell courses. Their colours, their structure — not their names, and no logo anywhere.',
+    ru: 'Пять дизайн-языков платформ, которые продают курсы. Их цвета и структура — но не их имена, и нигде ни одного логотипа.',
+    kk: 'Курс сататын платформалардың бес дизайн тілі. Олардың түстері мен құрылымы — атаулары емес, ешбір логотип жоқ.',
+  },
+  skin_marketplace: { en: 'Marketplace', ru: 'Маркетплейс', kk: 'Маркетплейс' },
+  skin_marketplace_note: {
+    en: 'Purple on near-black, four-pixel corners, one-pixel grey rules, almost no shadow. The densest of the ten: a catalogue you scan.',
+    ru: 'Фиолетовый на почти чёрном, углы в четыре пикселя, серые линейки в один, тени почти нет. Самая плотная из десяти: каталог, который просматривают.',
+    kk: 'Қараға жақын фонда күлгін, төрт пиксель бұрыштар, бір пиксель сұр сызықтар, көлеңке жоқтың қасы. Ондықтың ең тығызы.',
+  },
+  skin_academy: { en: 'Academy', ru: 'Академия', kk: 'Академия' },
+  skin_academy_note: {
+    en: 'One saturated blue doing every job and no second accent at all. Restraint is how an interface says institution.',
+    ru: 'Один насыщенный синий на все роли и ни одного второго акцента. Сдержанность — то, чем интерфейс говорит «институт».',
+    kk: 'Барлық рөлге бір қанық көк және екінші акцент мүлдем жоқ. Ұстамдылық — интерфейстің «институт» деуі.',
+  },
+  skin_streak: { en: 'Streak', ru: 'Стрик', kk: 'Стрик' },
+  skin_streak_note: {
+    en: 'Bright green, big radii, thick pale borders — and every button has a four-pixel lip it drops into when pressed.',
+    ru: 'Яркий зелёный, крупные скругления, толстые светлые рамки — и у каждой кнопки губа в четыре пикселя, в которую она проваливается при нажатии.',
+    kk: 'Ашық жасыл, үлкен дөңгелектеу, қалың ашық жиектер — әр түйменің төрт пиксель ерні бар, басқанда соған түседі.',
+  },
+  skin_cinema: { en: 'Cinema', ru: 'Кино', kk: 'Кино' },
+  skin_cinema_note: {
+    en: 'Black and smoky black, one red on the thing to click. Dark by intent — the light theme is a dimmed house, not a bright page.',
+    ru: 'Чёрный и дымчато-чёрный, один красный на том, что нажимают. Тёмная по замыслу: светлый режим — приглушённый зал, а не светлая страница.',
+    kk: 'Қара мен түтінді қара, басатын нәрседе бір қызыл. Қараңғы — әдейі: ашық режим жарық бет емес, көмескі зал.',
+  },
+  skin_poster: { en: 'Poster', ru: 'Плакат', kk: 'Плакат' },
+  skin_poster_note: {
+    en: 'Acid green and deep blue straight onto black and white, no shadow between them. The loudest of the ten.',
+    ru: 'Кислотный зелёный и густой синий прямо по чёрному и белому, без теней между ними. Самая громкая из десяти.',
+    kk: 'Қышқыл жасыл мен қою көк тікелей ақ пен қараның үстінде, аралықта көлеңке жоқ. Ондықтың ең қаттысы.',
+  },
+  n_people_took_this: { en: '{n} took this', ru: 'Прошли: {n}', kk: 'Өтті: {n}' },
+  n_people_started_this: { en: '{n} started', ru: 'Начали: {n}', kk: 'Бастады: {n}' },
+  replies_in_about_n_hours: { en: 'replies in ~{n}h', ru: 'отвечает за ~{n} ч', kk: '~{n} сағатта жауап береді' },
+  no_record_yet: { en: 'New', ru: 'Новый', kk: 'Жаңа' },
+  numbers_written_by_others: {
+    en: 'Every number here was left by somebody else — buyers, learners, and how long the mentor took to reply. None of it is written by the author.',
+    ru: 'Все цифры здесь оставили другие люди — покупатели, ученики и время ответа наставника. Ничего из этого автор о себе не пишет.',
+    kk: 'Мұндағы барлық сан басқалардан қалған — сатып алушылар, оқушылар және тәлімгердің жауап беру уақыты. Ештеңесін автор өзі жазбайды.',
+  },
+
+  notif_request_answered: { en: 'Somebody taught what you asked for', ru: 'То, что ты просил, теперь преподают', kk: 'Сұрағаныңды енді оқытады' },
+  notif_request_answered_body: {
+    en: '“{title}” answers your request “{request}”.',
+    ru: '«{title}» отвечает на твой запрос «{request}».',
+    kk: '«{title}» сенің «{request}» сұранысыңа жауап береді.',
+  },
+
+  /* --- the catalogue, and the words the search engine filters by -------------------- */
+  dir_programming: { en: 'Programming', ru: 'Программирование', kk: 'Бағдарламалау' },
+  dir_design: { en: 'Design', ru: 'Дизайн', kk: 'Дизайн' },
+  dir_data: { en: 'Data & AI', ru: 'Данные и ИИ', kk: 'Деректер және ЖИ' },
+  dir_languages: { en: 'Languages', ru: 'Языки', kk: 'Тілдер' },
+  dir_business: { en: 'Business', ru: 'Бизнес', kk: 'Бизнес' },
+  dir_science: { en: 'Science & maths', ru: 'Наука и математика', kk: 'Ғылым және математика' },
+  dir_music: { en: 'Music', ru: 'Музыка', kk: 'Музыка' },
+  dir_health: { en: 'Health & sport', ru: 'Здоровье и спорт', kk: 'Денсаулық және спорт' },
+  dir_craft: { en: 'Crafts & media', ru: 'Ремёсла и медиа', kk: 'Қолөнер және медиа' },
+  dir_other: { en: 'Everything else', ru: 'Остальное', kk: 'Басқасы' },
+
+  fmt_quiz: { en: 'Questions', ru: 'Вопросы', kk: 'Сұрақтар' },
+  fmt_practice: { en: 'Practice', ru: 'Практика', kk: 'Тәжірибе' },
+  fmt_coding: { en: 'Code', ru: 'Код', kk: 'Код' },
+  fmt_reading: { en: 'Reading', ru: 'Материал', kk: 'Материал' },
+
+  len_short: { en: 'Under 30 min', ru: 'До 30 минут', kk: '30 минутқа дейін' },
+  len_medium: { en: 'An evening', ru: 'На вечер', kk: 'Бір кешке' },
+  len_long: { en: 'A project', ru: 'Проект', kk: 'Жоба' },
+
+  any_direction: { en: 'Any direction', ru: 'Любое направление', kk: 'Кез келген бағыт' },
+  any_format: { en: 'Any format', ru: 'Любой формат', kk: 'Кез келген формат' },
+  any_length: { en: 'Any length', ru: 'Любая длительность', kk: 'Кез келген ұзақтық' },
+  free_only: { en: 'Free only', ru: 'Только бесплатные', kk: 'Тек тегін' },
+  // Where a price would go. There was no key for it, so every free course was priced 'free'
+  // in English regardless of who was reading.
+  free: { en: 'Free', ru: 'Бесплатно', kk: 'Тегін' },
+  about_n_minutes: { en: 'about {n} min', ru: 'около {n} мин', kk: 'шамамен {n} мин' },
+  what_do_you_want_to_learn: { en: 'What do you want to learn?', ru: 'Чему хочешь научиться?', kk: 'Не үйренгің келеді?' },
+  courses_published_by_mentors: {
+    en: 'Everything mentors have published. Search it, or ask the advisor to narrow it down.',
+    ru: 'Всё, что опубликовали наставники. Найди поиском или спроси советника.',
+    kk: 'Тәлімгерлер жариялаған барлық курс. Іздеп тап немесе кеңесшіден сұра.',
+  },
+  n_courses_found: { en: '{n} found', ru: 'Найдено: {n}', kk: 'Табылды: {n}' },
+  catalogue_is_empty: { en: 'No courses yet', ru: 'Курсов пока нет', kk: 'Әзірге курс жоқ' },
+  catalogue_is_empty_body: {
+    en: 'Nobody has published anything yet. Anyone can — turn on teaching in settings and write the first one.',
+    ru: 'Пока никто ничего не опубликовал. Может любой: включи преподавание в настройках и напиши первый курс.',
+    kk: 'Әзірге ешкім ештеңе жарияламаған. Кез келген адам жасай алады: баптаулардан оқытуды қосып, алғашқысын жаз.',
+  },
+  widen_the_filters_or_clear_the_search: {
+    en: 'Widen the price or length, or clear the search.',
+    ru: 'Расширь цену или длительность — или очисти поиск.',
+    kk: 'Бағаны не ұзақтықты кеңейт немесе іздеуді тазала.',
+  },
+
+  /* --- the advisor ------------------------------------------------------------------ */
+  ai_advisor: { en: 'Course advisor', ru: 'Советник по курсам', kk: 'Курс кеңесшісі' },
+  ai_advisor_subtitle: {
+    en: 'Say what you want to be able to do. It reads the catalogue and suggests where to start.',
+    ru: 'Скажи, что хочешь уметь. Советник смотрит каталог и предлагает, с чего начать.',
+    kk: 'Не істей білгің келетінін айт. Кеңесші каталогты қарап, неден бастауды ұсынады.',
+  },
+  /**
+   * Built so the direction never has to be inflected.
+   *
+   * Russian and Kazakh decline, the labels are nominative, and "Похоже на Музыка" is the
+   * kind of sentence that makes a product feel machine-written. A dash after the noun takes
+   * the nominative in both languages, so one phrasing works for all ten directions.
+   */
+  ai_picked_direction: {
+    en: 'By the sound of it, the field is **{direction}**. The closest things published right now:',
+    ru: 'Судя по вопросу, направление — **{direction}**. Вот что сейчас ближе всего:',
+    kk: 'Сұрағыңа қарағанда, бағыт — **{direction}**. Қазір ең жақыны:',
+  },
+  ai_picked_general: {
+    en: 'Here is what fits best in the catalogue right now:',
+    ru: 'Вот что сейчас лучше всего подходит в каталоге:',
+    kk: 'Каталогтан ең қолайлысы:',
+  },
+  ai_which_direction: {
+    en: 'Which of these is closest to what you are after — {list}?',
+    ru: 'Что из этого ближе к тому, что ты ищешь — {list}?',
+    kk: 'Іздегеніңе қайсысы жақын — {list}?',
+  },
+  ai_catalogue_empty: {
+    en: 'There is nothing published yet, so there is nothing honest for me to recommend.\n\nThat is not a dead end: anyone can teach here. Turn it on in settings and the first course on the platform can be yours.',
+    ru: 'Пока ничего не опубликовано, так что честно советовать нечего.\n\nЭто не тупик: преподавать может любой. Включи в настройках — и первый курс на платформе будет твоим.',
+    kk: 'Әзірге ештеңе жарияланбаған, сондықтан адал ұсынатын ештеңе жоқ.\n\nБұл тығырық емес: мұнда кез келген адам оқыта алады. Баптаулардан қосып, платформадағы бірінші курсты өзің жаз.',
+  },
+  ai_nothing_matched: {
+    en: 'Nothing in the catalogue is close to that yet.\n\nThe whole of it is {n} courses, so the gap is more likely the catalogue than the question. Try a broader word, or browse everything and see what is there.',
+    ru: 'В каталоге пока нет ничего близкого.\n\nВсего курсов — {n}, так что дело скорее в каталоге, чем в вопросе. Попробуй слово пошире или посмотри весь список.',
+    kk: 'Каталогта әзірге оған жақын ештеңе жоқ.\n\nБарлығы {n} курс, сондықтан мәселе сұрақта емес, каталогта. Кеңірек сөз қолдан немесе толық тізімді қара.',
+  },
+  ai_starter_direction: { en: 'I do not know what to learn', ru: 'Не знаю, чему учиться', kk: 'Не үйренерімді білмеймін' },
+  ai_starter_cheapest: { en: 'Something free to start with', ru: 'Что-нибудь бесплатное для начала', kk: 'Бастауға тегін бірдеңе' },
+  ai_starter_evening: { en: 'Something I can finish tonight', ru: 'Что успею за вечер', kk: 'Бір кеште бітіретін нәрсе' },
+  ai_starter_career: { en: 'I want a new profession', ru: 'Хочу новую профессию', kk: 'Жаңа мамандық алғым келеді' },
+  recommended_for_you: { en: 'Suggested', ru: 'Подходит тебе', kk: 'Саған ұсынылады' },
+  offline_search_used: {
+    en: 'Matched from the catalogue, without a model.',
+    ru: 'Подобрано по каталогу, без модели.',
+    kk: 'Модельсіз, каталог бойынша таңдалды.',
+  },
+  switch_to_learning: { en: 'Browse and learn', ru: 'Учиться и смотреть курсы', kk: 'Оқу және курстарды қарау' },
+  switch_to_teaching: { en: 'Teaching tools', ru: 'Кабинет наставника', kk: 'Тәлімгер кабинеті' },
+  an_account_with_that_email_already_exists: {
+    en: 'An account with that email already exists.',
+    ru: 'Аккаунт с такой почтой уже есть.',
+    kk: 'Мұндай поштамен аккаунт бар.',
+  },
+  start_a_project_and_a_mentor_will_review_it: {
+    en: 'Start a project, describe what you made, and a mentor will read it and reply.',
+    ru: 'Начни проект, опиши, что сделал, — наставник прочитает и ответит.',
+    kk: 'Жоба баста, не істегеніңді сипатта — тәлімгер оқып, жауап береді.',
+  },
+  work_of_your_own_for_review: { en: 'Work of your own, for a mentor to review', ru: 'Своя работа — на проверку наставнику', kk: 'Тәлімгер тексеретін өз жұмысың' },
+  attachment_too_large: { en: '{name} is larger than 3 MB. Compress it and try again.', ru: '{name} больше 3 МБ. Сожми и попробуй снова.', kk: '{name} 3 МБ-тан үлкен. Қысып, қайта көр.' },
+  attachment_unreadable: { en: '{name} could not be read. Try a different file.', ru: '{name} не читается. Попробуй другой файл.', kk: '{name} оқылмады. Басқа файл таңда.' },
+  feedback_needs_a_sentence: {
+    en: 'Write at least a sentence of feedback — this is the part the student actually reads.',
+    ru: 'Напиши хотя бы одно предложение отзыва — именно это студент и прочитает.',
+    kk: 'Кемінде бір сөйлем пікір жаз — студент дәл соны оқиды.',
+  },
   next_lesson: { en: 'Next lesson', ru: 'Следующий урок', kk: 'Келесі сабақ' },
   next_section: { en: 'Next section', ru: 'Следующий раздел', kk: 'Келесі бөлім' },
   next_session: { en: 'Next session', ru: 'Ближайшее занятие', kk: 'Келесі сабақ' },
@@ -692,6 +1006,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   sign_in: { en: 'Sign in', ru: 'Войти', kk: 'Кіру' },
   sign_out: { en: 'Sign out', ru: 'Выйти', kk: 'Шығу' },
+  confirm_email_then_sign_in: { en: 'Account created. Confirm the link in your email, then sign in.', ru: 'Аккаунт создан. Подтверди ссылку в письме и войди.', kk: 'Аккаунт құрылды. Поштадағы сілтемені растап, кір.' },
   something_went_wrong_try_again: { en: 'Something went wrong. Try again.', ru: 'Что-то пошло не так. Попробуй ещё раз.', kk: 'Бірдеңе дұрыс болмады. Қайта көр.' },
   sort_projects: { en: 'Sort projects', ru: 'Сортировка проектов', kk: 'Жобаларды сұрыптау' },
   start: { en: 'Start', ru: 'Начать', kk: 'Бастау' },
@@ -1071,6 +1386,32 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     en: '{mentor} approved “{title}” and awarded {xp} XP.',
     ru: '{mentor} принял(а) «{title}» и начислил(а) {xp} XP.',
     kk: '{mentor} «{title}» жобасын мақұлдап, {xp} XP берді.',
+  },
+  /**
+   * The same message without the XP, for the copy the server sends.
+   *
+   * The reward is the lesson's XP plus a bonus, and the lesson lives in the client's content
+   * — so the route that records the decision cannot name a number, and inventing a second
+   * copy of that sum on the server to fill in a sentence would be a rule in two places.
+   * The XP still arrives; it arrives through progress sync, where it is counted once.
+   */
+  notif_project_approved_body_plain: {
+    en: '{mentor} approved “{title}”.',
+    ru: '{mentor} принял(а) «{title}».',
+    kk: '{mentor} «{title}» жобасын мақұлдады.',
+  },
+  /** The answer to a mentor application. Written by the admin route, read by the applicant. */
+  notif_mentor_approved: { en: 'You can teach on S7', ru: 'Ты можешь преподавать на S7', kk: 'S7-де оқыта аласың' },
+  notif_mentor_approved_body: {
+    en: 'Your application was approved. Connect a payout account, then publish your first lesson.',
+    ru: 'Заявка одобрена. Подключи счёт для выплат и опубликуй первый урок.',
+    kk: 'Өтінім мақұлданды. Төлем шотын қосып, алғашқы сабағыңды жарияла.',
+  },
+  notif_mentor_rejected: { en: 'Application not approved', ru: 'Заявка не одобрена', kk: 'Өтінім мақұлданбады' },
+  notif_mentor_rejected_body: {
+    en: 'Your application was not approved: {reason}',
+    ru: 'Заявка не одобрена: {reason}',
+    kk: 'Өтінім мақұлданбады: {reason}',
   },
   notif_changes_requested: { en: 'Changes requested', ru: 'Нужны правки', kk: 'Түзету қажет' },
   notif_changes_requested_body: {
@@ -1696,7 +2037,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     kk: 'Қалай жұмыс істейтіні туралы қысқа бейне',
   },
   answered_by_the_model: { en: 'Answered by the model', ru: 'Ответила модель', kk: 'Модель жауап берді' },
-  answered_offline: { en: 'From the knowledge base', ru: 'Из базы знаний', kk: 'Білім базасынан' },
+  answered_offline: { en: 'Matched without the model', ru: 'Подобрано без модели', kk: 'Модельсіз таңдалды' },
   pass_the_auto_check_on_the_code_tab_first: {
     en: 'Pass the auto check on the Code tab first — the challenge builds on a working sketch.',
     ru: 'Сначала пройди автопроверку на вкладке «Код» — испытание строится на рабочем скетче.',

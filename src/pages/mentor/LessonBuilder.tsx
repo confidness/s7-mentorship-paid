@@ -55,11 +55,12 @@ export default function LessonBuilder() {
   const priceCents = useMemo(() => (paid ? (parsePrice(priceText, currency) ?? 0) : 0), [paid, priceText, currency])
 
   /**
-   * Selling needs both halves: an approved application and a Stripe account that can take
-   * charges. The server refuses a paid publish without them regardless — this only makes the
-   * refusal visible before the click instead of after it.
+   * Publishing is free to anyone; charging for it is not. The only remaining gate is a
+   * Stripe account willing to take money, which is a fact about payments rather than a
+   * judgement about a person. The server refuses a paid publish without one regardless —
+   * this makes the refusal visible before the click instead of after it.
    */
-  const canSellPaid = standing.mentorStatus === 'approved' && standing.chargesEnabled
+  const canSellPaid = standing.chargesEnabled
   const blockedPaidPublish = paid && priceCents > 0 && !canSellPaid
 
   if (!user) return null
@@ -272,7 +273,7 @@ export default function LessonBuilder() {
 
             {!canSellPaid && (
               <p role="status" className="border border-amber-300/60 bg-amber-100/60 px-3.5 py-3 text-sm font-medium text-amber-800">
-                {standing.mentorStatus !== 'approved' ? t('paid_lessons_need_an_approved_mentor_account') : t('connect_a_payout_account_before_selling')}{' '}
+                {t('connect_a_payout_account_before_selling')}{' '}
                 <Link to="/m/payouts" className="underline underline-offset-2">
                   {t('set_up_payouts')}
                 </Link>

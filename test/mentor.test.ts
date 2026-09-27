@@ -33,12 +33,33 @@ let captured: Captured | null = null
 let calls: Captured[] = []
 
 /**
+ * The route now refuses an anonymous POST, so every stub has to be able to answer Supabase too.
+ *
+ * `/api/mentor` spends an API key, and until it asked who was calling, anyone who found the
+ * path could spend it. Identifying the caller means one round trip to Supabase before the
+ * model is ever reached — which shows up here as a second fetch these stubs have to expect,
+ * and as the reason the checks below send a bearer token at all.
+ */
+process.env.SUPABASE_URL = 'https://stub.supabase.test'
+process.env.SUPABASE_ANON_KEY = 'anon-not-a-real-key'
+
+const isAuthCall = (url: string) => url.includes('/auth/v1/user')
+
+/** A real Response, because the Supabase SDK reads more of one than the stubs below fake. */
+const authOk = () =>
+  new Response(JSON.stringify({ id: 'stub-user-id', aud: 'authenticated', role: 'authenticated', email: 'student@example.test' }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })
+
+/**
  * Replies differently to each successive call, which is how a model fallthrough becomes visible.
  * Each entry is one upstream attempt, in order; the last one repeats if the code asks again.
  */
 function stubSequence(replies: { status?: number; text?: string; raw?: unknown }[]) {
   calls = []
   globalThis.fetch = (async (url: string, init: RequestInit) => {
+    if (isAuthCall(String(url))) return authOk()
     const body = JSON.parse(String(init.body)) as Record<string, unknown>
     calls.push({ url: String(url), method: init.method, headers: init.headers as Record<string, string>, body })
     const reply = replies[Math.min(calls.length - 1, replies.length - 1)]
@@ -55,6 +76,7 @@ function stubSequence(replies: { status?: number; text?: string; raw?: unknown }
 function stubAnthropic(reply: { status?: number; text?: string; raw?: unknown }) {
   captured = null
   globalThis.fetch = (async (url: string, init: RequestInit) => {
+    if (isAuthCall(String(url))) return authOk()
     captured = {
       url: String(url),
       method: init.method,
@@ -72,9 +94,26 @@ function stubAnthropic(reply: { status?: number; text?: string; raw?: unknown })
 }
 
 const post = (body: unknown) =>
+  handler(
+    new Request('https://example.test/api/mentor', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer stub-token' },
+      body: JSON.stringify(body),
+    }),
+  )
+
+/** The same call with nobody behind it. */
+const postAnonymous = (body: unknown) =>
   handler(new Request('https://example.test/api/mentor', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }))
 
-const ASK = { question: 'My HC-SR04 reads 0 every time', locale: 'ru', lessonTitle: 'Ultrasonic distance', courseTitle: 'Arduino', code: 'int t = 9;' }
+const ASK = {
+  question: 'I want to change career, where do I start',
+  locale: 'ru',
+  lessonTitle: 'Ultrasonic distance',
+  courseTitle: 'Arduino',
+  code: 'int t = 9;',
+  catalogue: ['abc-1 | Figma from zero | design | practice | ~40 min | free | Build a first screen.', 'abc-2 | Python basics | programming | coding | ~90 min | 12.00 USD | Loops and functions.'],
+}
 
 const GOOD = JSON.stringify({
   text: `Сначала проверь питание.${NL}${NL}Потом TRIG.`,
@@ -86,8 +125,16 @@ const GOOD = JSON.stringify({
 async function run() {
   console.log('AI mentor delivery')
 
-  // --- the request actually leaves, addressed correctly -------------------------------------
+  // --- nobody signed in, nobody's key spent -------------------------------------------------
+  // The failure this guards is a bill rather than a leak: the key stays on the server either
+  // way, but an endpoint that spends it for any caller on the internet is the same money.
   process.env.ANTHROPIC_API_KEY = 'test-key-not-a-real-one'
+  stubAnthropic({ text: GOOD })
+  const refused = await postAnonymous(ASK)
+  check('an anonymous question is refused', refused.status === 401, refused.status)
+  check('and never reaches the model', captured === null)
+
+  // --- the request actually leaves, addressed correctly -------------------------------------
   stubAnthropic({ text: GOOD })
   let res = await post(ASK)
   let out = (await res.json()) as Record<string, unknown>
@@ -110,7 +157,9 @@ async function run() {
   check('lesson reaches the prompt', system.includes('Ultrasonic distance'))
   check('course reaches the prompt', system.includes('Arduino'))
   check('editor code reaches the prompt', system.includes('int t = 9;'))
-  check('teaching rule is in the prompt', system.includes('Never hand over the finished project'))
+  check('the no-invention rule is in the prompt', system.includes('Never invent a course'))
+  check('the catalogue reaches the prompt', system.includes('abc-1 | Figma from zero'), system.slice(-400))
+  check('and its prices come with it', system.includes('12.00 USD'))
 
   // --- and the answer arrives back intact ----------------------------------------------------
   check('status is 200', res.status === 200, res.status)
@@ -173,7 +222,10 @@ async function run() {
   stubAnthropic({ raw: { content: [] } })
   check('empty content is 502', (await post(ASK)).status === 502)
 
-  globalThis.fetch = (async () => {
+  // The model is unreachable; Supabase still is, or the reply would be 401 and this would be
+  // checking the wrong thing.
+  globalThis.fetch = (async (url: string) => {
+    if (isAuthCall(String(url))) return authOk()
     throw new Error('network down')
   }) as unknown as typeof fetch
   check('network failure is 502', (await post(ASK)).status === 502)
@@ -182,6 +234,7 @@ async function run() {
   delete process.env.ANTHROPIC_API_KEY
   delete process.env.OPENROUTER_API_KEY
   captured = null
+  stubAnthropic({ text: GOOD })
   res = await post(ASK)
   check('no key is 501', res.status === 501, res.status)
   check('no key spends no upstream call', captured === null)
@@ -219,7 +272,7 @@ async function run() {
   check('a free model is the default', isFree(o?.body.model), o?.body.model)
 
   const orMessages = o?.body.messages as { role: string; content: string }[]
-  check('the prompt is a system turn', orMessages?.[0]?.role === 'system' && orMessages[0].content.includes('Never hand over the finished project'), orMessages?.[0]?.role)
+  check('the prompt is a system turn', orMessages?.[0]?.role === 'system' && orMessages[0].content.includes('Never invent a course'), orMessages?.[0]?.role)
   check('the question is the user turn', orMessages?.[1]?.role === 'user' && orMessages[1].content === ASK.question, orMessages?.[1])
   check('no assistant prefill is sent to openrouter', orMessages?.length === 2, orMessages?.length)
   check('the answer comes back through choices', out.text === `Сначала проверь питание.${NL}${NL}Потом TRIG.`, out.text)

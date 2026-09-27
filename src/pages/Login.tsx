@@ -9,6 +9,7 @@ import LocaleToggle from '../components/LocaleToggle'
 import { t } from '../i18n'
 import { Mark } from '../components/Mark'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
+import AtelierSceneGate from '../components/AtelierSceneGate'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
   const { login, register, state } = useApp()
@@ -77,6 +78,8 @@ export default function Login({ register: startOnRegister }: { register?: boolea
       <LiquidMetalBackground depth="hero" />
       {/* story side — one claim, three numbers, nothing else */}
       <section className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
+        {/* atelier-only: floats behind the copy, not in front of it */}
+        <AtelierSceneGate />
         <Logo />
         <h1 className="mt-14 flex min-h-[19rem] max-w-xl flex-col justify-start text-[46px] leading-[1.05] font-bold tracking-[-0.035em] text-ink-900 xl:text-[58px]">{t('one_platform_from_first_led')}<span className="bg-gradient-to-r from-brand-500 to-accent-500 bg-clip-text text-transparent">{t('to_national_final')}</span>
         </h1>

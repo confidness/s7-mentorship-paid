@@ -4,30 +4,494 @@
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 /*
-  Brutalist system, coloured by the shader it sits on.
+  Two independent axes, and keeping them independent is the whole design of this file.
 
-  The palette is not invented. It is read off the liquid-metal field: the near-black at the
-  centre of a metaball, the cool slate of its shadow side, the white of the tint, and the
-  molten red running into signal yellow that the chromatic aberration throws along every
-  edge. There is no green anywhere in that image, so there is none here.
+    data-theme  light | dark          — how much light is in the room
+    data-skin   plain | editorial | atelier | brutal | terminal
+                                      — what the interface is made of
 
-  What brutalism means in this file, concretely, since the word gets used loosely:
+  Every skin has to work in both themes, so nothing below hard-codes a literal colour into a
+  component. A component asks for a role — a sheet, an edge, a raised fill — and the skin
+  decides what that role looks like. That is what makes a second skin a block of custom
+  properties rather than a second stylesheet.
 
-  1. Nothing pretends to be glass. No blur, no saturation lift, no specular rim, no soft
-     shadow. A panel is an opaque rectangle with a black rule around it, and it says so.
-  2. Corners are square. Every radius token is 0 and the utilities were squared with them —
-     a 26px card holding 18px rows was the old system's idea of care, and it is gone.
-  3. Depth is a hard offset, not a blur. 4px 4px 0 black reads as one sheet of paper resting
-     on another, which is honest about what the interface is.
-  4. Hierarchy is weight and size. Colour is rationed: yellow for the one thing that matters
-     on a screen, red for what is destructive or wrong, and nothing else.
+  Three structural tokens carry most of the difference between skins, because most of what
+  separates one visual language from another is not hue:
+
+    --ui-radius / --ui-radius-sm   square, crisp, or squircle
+    --ui-border                    hairline, rule, or none
+    --shadow-soft / lift / float   diffuse ambient, hard offset, or nothing at all
+
+  The default is `plain`, and it is deliberately unremarkable: a neutral, templated interface
+  that gets out of the way. The opinionated ones are a choice someone makes in settings, not
+  something the product imposes on a first visit.
 */
 
 @theme {
+  /* ---------------------------------------------------------------- plain (default) */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans);
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* The metal's own light grey. Not white — white is the paper laid on top of it. */
+  --color-canvas: #f4f6fa;
+
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #e2e8f0;
+  --color-ink-300: #cbd5e1;
+  --color-ink-400: #94a3b8;
+  /* Measured, not picked: #64748b is 4.40:1 on this canvas, and secondary text is the most
+     common thing on any page here. Two steps darker clears AA with room to spare. */
+  --color-ink-500: #5a6779;
+  --color-ink-600: #475569;
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #0f172a;
+  --color-ink-950: #020617;
+
+  /* Indigo carries both roles here. A templated interface has one colour, not three. */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+
+  --color-accent-50: #eef2ff;
+  --color-accent-100: #e0e7ff;
+  --color-accent-200: #c7d2fe;
+  --color-accent-300: #818cf8;
+  --color-accent-400: #4f46e5;
+  --color-accent-500: #4338ca;
+  --color-accent-600: #3730a3;
+  --color-accent-700: #312e81;
+  --color-accent-800: #1e1b4b;
+
+  --color-slate-50: #f1f5f9;
+  --color-slate-cool: #64748b;
+  --color-slate-deep: #334155;
+
+  /*
+   * Semantic ramps, kept as whole ramps rather than a step each.
+   *
+   * Around 150 call sites reach for `amber`, `rose` and `emerald` directly, so overriding
+   * only the 600s would leave the rest of every ramp showing something the skin never chose.
+   * Here they mean what their names say: caution, danger, done.
+   */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #b45309;
+  --color-amber-700: #92400e;
+  --color-amber-800: #78350f;
+  --color-amber-900: #451a03;
+
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #4c0519;
+
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #047857;
+  --color-emerald-700: #065f46;
+  --color-emerald-800: #064e3b;
+  --color-emerald-900: #022c22;
+
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #c2410c;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0f766e;
+  --color-cyan-100: #cffafe;
+  --color-cyan-800: #155e75;
+  --color-sky-500: #0ea5e9;
+  --color-violet-500: #8b5cf6;
+
+  /* What sits on the primary fill. It does not invert: `ink-900` becomes white in the dark
+     theme, and white on this indigo is the one combination that must never happen. */
+  --color-on-accent: #ffffff;
+
+  /* Solid fills that carry white text in both themes. A colour tuned to read ON paper is the
+     wrong colour to print paper on, so these are separate from the text ramps above. */
+  --color-danger-solid: #e11d48;
+  --color-success-solid: #047857;
+
+  /* ------------------------------------------------------------ structure, not colour */
+  --ui-radius: 12px;
+  --ui-radius-sm: 8px;
+  --ui-border: 1px;
+  --ui-border-strong: 1px;
+
+  /* Kept under their old names because 30-odd call sites use them. */
+  --radius-glass: var(--ui-radius);
+  --radius-inner: var(--ui-radius-sm);
+  --radius-control: var(--ui-radius-sm);
+
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f8fafc;
+  --glass-border: #e2e8f0;
+  --glass-rim: transparent;
+  --fill-strong: #ffffff;
+  --fill-raised: #eef2ff;
+  --fill: #f1f5f9;
+  --fill-soft: #f8fafc;
+  --edge: #e2e8f0;
+  --divider: #e2e8f0;
+  --tint-blue: #eef2ff;
+  --tint-accent: #fef3c7;
+  --tint-mint: #ecfdf5;
+
+  /* Code keeps a dark surface under every skin. An editor is always a dark instrument. */
+  --code-bg: #0f172a;
+  --code-fg: #e2e8f0;
+  --code-muted: #94a3b8;
+  --code-line: #475569;
+  --code-edge: #1e293b;
+
+  /* Diffuse and low, the way a templated interface signals depth without shouting. */
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.05), 0 4px 12px -6px rgb(15 23 42 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 28px -12px rgb(15 23 42 / 0.22);
+  --shadow-float: 0 2px 6px rgb(15 23 42 / 0.06), 0 18px 40px -20px rgb(15 23 42 / 0.28);
+
+  --selection-bg: #c7d2fe;
+  --selection-fg: #0f172a;
+  --focus-ring: #4f46e5;
+
+  /* Turned on by the skins that are made of something. */
+  --skin-texture: none;
+  --skin-texture-size: auto;
+  --skin-texture-opacity: 0;
+}
+
+/* Plain, after dark. Same system, less light — nothing changes shape. */
+[data-theme='dark'] {
+  --color-canvas: #0b1120;
+
+  --color-ink-50: #0f172a;
+  --color-ink-100: #16203a;
+  --color-ink-200: #1e293b;
+  --color-ink-300: #334155;
+  --color-ink-400: #64748b;
+  --color-ink-500: #94a3b8;
+  --color-ink-600: #cbd5e1;
+  --color-ink-700: #e2e8f0;
+  --color-ink-800: #f1f5f9;
+  --color-ink-900: #f8fafc;
+  --color-ink-950: #ffffff;
+
+  /* The ramps invert so the numbers keep meaning the same thing: low is a fill, high is type. */
+  --color-brand-50: #1e1b4b;
+  --color-brand-100: #312e81;
+  --color-brand-200: #3730a3;
+  --color-brand-600: #a5b4fc;
+  --color-brand-700: #c7d2fe;
+  --color-brand-800: #e0e7ff;
+
+  --color-accent-50: #1e1b4b;
+  --color-accent-100: #312e81;
+  --color-accent-200: #3730a3;
+  --color-accent-300: #6366f1;
+  /* Not indigo-500: white on it is 4.47:1, three hundredths short of AA, and the primary
+     action is the one control that must never be the marginal case. */
+  --color-accent-400: #584ee0;
+  --color-accent-600: #a5b4fc;
+  --color-accent-700: #c7d2fe;
+  --color-accent-800: #e0e7ff;
+
+  --color-amber-50: #451a03;
+  --color-amber-100: #78350f;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-amber-600: #fcd34d;
+  --color-amber-700: #fde68a;
+  --color-amber-800: #fef3c7;
+  --color-amber-900: #fffbeb;
+
+  --color-rose-50: #4c0519;
+  --color-rose-100: #881337;
+  --color-rose-200: #9f1239;
+  --color-rose-300: #be123c;
+  --color-rose-600: #fda4af;
+  --color-rose-700: #fecdd3;
+  --color-rose-800: #ffe4e6;
+  --color-rose-900: #fff1f2;
+
+  --color-emerald-50: #022c22;
+  --color-emerald-100: #064e3b;
+  --color-emerald-200: #065f46;
+  --color-emerald-300: #047857;
+  --color-emerald-600: #6ee7b7;
+  --color-emerald-700: #a7f3d0;
+  --color-emerald-800: #d1fae5;
+  --color-emerald-900: #ecfdf5;
+
+  --color-orange-50: #431407;
+  --color-orange-100: #7c2d12;
+  --color-cyan-100: #164e63;
+  --color-cyan-800: #cffafe;
+
+  --color-slate-50: #16203a;
+  --color-slate-cool: #94a3b8;
+  --color-slate-deep: #cbd5e1;
+
+  --glass-card: #111a2e;
+  --glass-chrome: #111a2e;
+  --glass-dim: #0f172a;
+  --glass-border: #24304a;
+  --fill-strong: #16203a;
+  --fill-raised: #1e1b4b;
+  --fill: #131c33;
+  --fill-soft: #0f172a;
+  --edge: #24304a;
+  --divider: #24304a;
+  --tint-blue: #16203a;
+  --tint-accent: #3b2f0b;
+  --tint-mint: #0d2b22;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px -6px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.45), 0 12px 28px -12px rgb(0 0 0 / 0.7);
+  --shadow-float: 0 2px 6px rgb(0 0 0 / 0.5), 0 18px 40px -20px rgb(0 0 0 / 0.8);
+
+  --selection-bg: #312e81;
+  --selection-fg: #f8fafc;
+  --focus-ring: #a5b4fc;
+}
+
+/* ============================================================================ editorial
+   Warm monochrome, hairline rules, and colour rationed to almost nothing. The accents are
+   washed-out pastels rather than saturated states, so a tag never competes with the text
+   beside it. Body copy is off-black on bone, never pure black on pure white — that pairing
+   is what makes a long page feel like a screen rather than a document.
+   ------------------------------------------------------------------------------------- */
+[data-skin='editorial'] {
+  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+
+  --color-canvas: #f7f6f3;
+  --color-ink-900: #111111;
+  --color-ink-800: #2f3437;
+  --color-ink-700: #454b4f;
+  --color-ink-600: #5c6266;
+  /* The reference palette's muted grey is #787774, which lands at 4.14:1 on warm bone. It is
+     the right hue and the wrong value; this keeps the hue and clears AA. */
+  --color-ink-500: #67665f;
+  --color-ink-400: #9b9a97;
+  --color-ink-300: #d4d3d0;
+  --color-ink-200: #eaeaea;
+  --color-ink-100: #f4f3f0;
+  --color-ink-50: #fbfbfa;
+
+  --color-brand-600: #1f6c9f;
+  --color-brand-700: #185880;
+  --color-brand-100: #e1f3fe;
+  --color-brand-50: #f0f9ff;
+
+  /* The one strong mark on the page, and it is ink rather than a hue. */
+  --color-accent-400: #111111;
+  --color-accent-300: #2f3437;
+  --color-accent-100: #eaeaea;
+  --color-accent-50: #f4f3f0;
+  --color-on-accent: #ffffff;
+  --fill-raised: #f4f3f0;
+
+  --color-amber-100: #fbf3db;
+  --color-amber-600: #956400;
+  --color-rose-100: #fdebec;
+  --color-rose-600: #9f2f2d;
+  --color-emerald-100: #edf3ec;
+  --color-emerald-600: #346538;
+  --color-danger-solid: #9f2f2d;
+  --color-success-solid: #346538;
+
+  --ui-radius: 8px;
+  --ui-radius-sm: 4px;
+  --ui-border: 1px;
+
+  --glass-card: #ffffff;
+  --glass-chrome: #fbfbfa;
+  --glass-dim: #f9f9f8;
+  --glass-border: #eaeaea;
+  --fill-strong: #ffffff;
+  --fill: #f7f6f3;
+  --fill-soft: #fbfbfa;
+  --edge: #eaeaea;
+  --divider: #eaeaea;
+  --tint-blue: #f4f3f0;
+  --tint-accent: #fbf3db;
+  --tint-mint: #edf3ec;
+
+  /* Practically nothing. A shadow in this language is a mistake you can see. */
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.03);
+  --shadow-lift: 0 2px 8px rgb(0 0 0 / 0.04);
+  --shadow-float: 0 4px 16px rgb(0 0 0 / 0.05);
+
+  --selection-bg: #eaeaea;
+  --selection-fg: #111111;
+  --focus-ring: #111111;
+}
+
+[data-skin='editorial'][data-theme='dark'] {
+  --color-canvas: #141311;
+  --color-ink-900: #f4f3f0;
+  --color-ink-800: #e6e4e0;
+  --color-ink-700: #cfcdc8;
+  --color-ink-600: #b2afa8;
+  --color-ink-500: #8d8a83;
+  --color-ink-400: #6b6862;
+  --color-ink-300: #4a4842;
+  --color-ink-200: #302e2a;
+  --color-ink-100: #24221f;
+  --color-ink-50: #1b1a17;
+
+  --color-accent-400: #f4f3f0;
+  --color-accent-300: #e6e4e0;
+  --color-on-accent: #141311;
+
+  --glass-card: #1b1a17;
+  --glass-chrome: #1b1a17;
+  --glass-dim: #171614;
+  --glass-border: #302e2a;
+  --fill-strong: #24221f;
+  --fill-raised: #302e2a;
+  --fill: #1b1a17;
+  --fill-soft: #171614;
+  --edge: #302e2a;
+  --divider: #302e2a;
+  --tint-blue: #24221f;
+  --tint-accent: #332b14;
+  --tint-mint: #1d2620;
+
+  --selection-bg: #302e2a;
+  --selection-fg: #f4f3f0;
+  --focus-ring: #f4f3f0;
+}
+
+/* ============================================================================== atelier
+   Soft structuralism: no visible borders at all, depth carried entirely by very large radii
+   and unusually diffuse ambient shadow. Every surface floats. The rule that makes this read
+   as expensive rather than blurry is that shadows are wide and almost transparent — a tight
+   dark shadow under a big radius looks like a sticker.
+   ------------------------------------------------------------------------------------- */
+[data-skin='atelier'] {
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+
+  --color-canvas: #eceef1;
+  --color-ink-900: #14161a;
+  --color-ink-800: #23262c;
+  --color-ink-700: #3a3e46;
+  --color-ink-600: #565b66;
+  /* 3.61:1 before. Soft structuralism is about the absence of borders, not about text you
+     have to lean towards. */
+  --color-ink-500: #5c6270;
+  --color-ink-400: #9aa0ab;
+  --color-ink-300: #c3c7ce;
+  --color-ink-200: #dde0e5;
+  --color-ink-100: #eceef1;
+  --color-ink-50: #f6f7f9;
+
+  --color-brand-600: #1f6feb;
+  --color-brand-700: #1a5ac4;
+  --color-accent-400: #14161a;
+  --color-accent-300: #23262c;
+  --color-on-accent: #ffffff;
+
+  --ui-radius: 26px;
+  --ui-radius-sm: 14px;
+  --ui-border: 0px;
+
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f6f7f9;
+  --glass-border: transparent;
+  --fill-strong: #ffffff;
+  --fill-raised: #f6f7f9;
+  --fill: #f2f4f7;
+  --fill-soft: #eceef1;
+  --edge: #e3e6eb;
+  --divider: #e3e6eb;
+  --tint-blue: #e9edf6;
+  --tint-accent: #f4f0e6;
+  --tint-mint: #e8f2ee;
+
+  /* Wide, low, and almost not there. This is the whole material. */
+  --shadow-soft: 0 2px 6px rgb(20 22 26 / 0.04), 0 18px 40px -24px rgb(20 22 26 / 0.18);
+  --shadow-lift: 0 4px 10px rgb(20 22 26 / 0.05), 0 32px 64px -32px rgb(20 22 26 / 0.26);
+  --shadow-float: 0 6px 16px rgb(20 22 26 / 0.06), 0 40px 80px -36px rgb(20 22 26 / 0.3);
+
+  --selection-bg: #dde0e5;
+  --selection-fg: #14161a;
+  --focus-ring: #14161a;
+}
+
+[data-skin='atelier'][data-theme='dark'] {
+  --color-canvas: #050505;
+  --color-ink-900: #fafafa;
+  --color-ink-800: #ececec;
+  --color-ink-700: #d4d4d4;
+  --color-ink-600: #b4b4b4;
+  --color-ink-500: #8c8c8c;
+  --color-ink-400: #6a6a6a;
+  --color-ink-300: #4a4a4a;
+  --color-ink-200: #2c2c2c;
+  --color-ink-100: #1c1c1c;
+  --color-ink-50: #131313;
+
+  --color-accent-400: #fafafa;
+  --color-accent-300: #ececec;
+  --color-on-accent: #050505;
+
+  --glass-card: #111111;
+  --glass-chrome: #0d0d0d;
+  --glass-dim: #0a0a0a;
+  /* The one place a hairline is allowed here: on black, a shadow cannot describe an edge. */
+  --glass-border: #232323;
+  --ui-border: 1px;
+  --fill-strong: #191919;
+  --fill-raised: #232323;
+  --fill: #131313;
+  --fill-soft: #0d0d0d;
+  --edge: #232323;
+  --divider: #232323;
+  --tint-blue: #131a26;
+  --tint-accent: #201c10;
+  --tint-mint: #0f1d18;
+
+  --shadow-soft: 0 2px 8px rgb(0 0 0 / 0.5);
+  --shadow-lift: 0 8px 32px rgb(0 0 0 / 0.65);
+  --shadow-float: 0 12px 48px rgb(0 0 0 / 0.75);
+
+  --selection-bg: #2c2c2c;
+  --selection-fg: #fafafa;
+  --focus-ring: #fafafa;
+}
+
+/* =============================================================================== brutal
+   The shader palette this product was built on, kept as a choice rather than a default.
+   Nothing pretends to be glass: a panel is an opaque rectangle with a black rule round it,
+   corners are square, and depth is a hard offset rather than a blur. Colour is rationed —
+   yellow for the one thing that matters, red for what is wrong, and no green anywhere,
+   because there is none in the image the palette was read from.
+   ------------------------------------------------------------------------------------- */
+[data-skin='brutal'] {
   --color-canvas: #dcdcde;
 
   --color-ink-50: #f7f7f8;
@@ -42,8 +506,6 @@
   --color-ink-900: #000000;
   --color-ink-950: #000000;
 
-  /* Molten red, the inner edge of the aberration. 500 is the fill; 600 and up are the type
-     weights, because red has to be this dark to clear AA on paper. */
   --color-brand-50: #ffeceb;
   --color-brand-100: #ffd6d3;
   --color-brand-200: #ffb0aa;
@@ -54,9 +516,6 @@
   --color-brand-700: #9d150d;
   --color-brand-800: #6d0f09;
 
-  /* Signal yellow, the outer edge of the same aberration, and the loudest thing available.
-     It carries black text and never white, which is why the high end runs to olive:
-     text-accent-700 still has to be legible on paper. */
   --color-accent-50: #fffbe0;
   --color-accent-100: #fff4b0;
   --color-accent-200: #ffec70;
@@ -66,20 +525,8 @@
   --color-accent-600: #a89300;
   --color-accent-700: #6b5d00;
   --color-accent-800: #473d00;
+  --color-on-accent: #000000;
 
-  /* The cool side of the metal. It carries settled states — reviewed, approved, done —
-     because the warm family is spoken for and this palette has no green to spend. */
-  --color-slate-50: #e7e9f0;
-  --color-slate-cool: #6f7790;
-  --color-slate-deep: #3f4558;
-
-  /*
-   * Tailwind's own amber, rose and emerald are re-pointed at this palette, whole ramps rather
-   * than a step each. There are 150-odd call sites across the pages and overriding only the
-   * 600s left the rest of every ramp showing Tailwind's orange, pink and green — three hues
-   * that appear nowhere in the shader. Remapping here moves all of them without touching a
-   * component: amber becomes the signal yellow, rose the molten red, emerald the cool slate.
-   */
   --color-amber-50: #fffbe0;
   --color-amber-100: #fff4b0;
   --color-amber-200: #ffec70;
@@ -113,7 +560,6 @@
   --color-emerald-800: #262a37;
   --color-emerald-900: #1a1d28;
 
-  /* The handful of stragglers, folded into the same three families. */
   --color-orange-50: #fffbe0;
   --color-orange-100: #fff4b0;
   --color-orange-400: #ffe000;
@@ -126,27 +572,21 @@
   --color-sky-500: #6f7790;
   --color-violet-500: #3f4558;
 
-  /* Black on yellow, and it stays black in the dark theme too. ink-900 inverts to white,
-     which on the signal yellow is 1.3:1 — this is the token the primary action must use. */
-  --color-on-accent: #000000;
-
-  /* Solid fills that carry white text in both themes. Separate from the text colours above
-     for the reason this file learned the hard way: a colour tuned to read ON paper is the
-     wrong colour to print paper on. */
+  --color-slate-50: #e7e9f0;
+  --color-slate-cool: #6f7790;
+  --color-slate-deep: #3f4558;
   --color-danger-solid: #c81e14;
   --color-success-solid: #3f4558;
 
-  /* Square. All of them. Left as tokens so the intent stays greppable. */
-  --radius-glass: 0px;
-  --radius-inner: 0px;
-  --radius-control: 0px;
+  --ui-radius: 0px;
+  --ui-radius-sm: 0px;
+  --ui-border: 2px;
+  --ui-border-strong: 3px;
 
-  /* The material: opaque paper, black rules, hard offsets. */
   --glass-card: #ffffff;
   --glass-chrome: #ffffff;
   --glass-dim: #f2f2f3;
   --glass-border: #000000;
-  --glass-rim: transparent;
   --fill-strong: #ffffff;
   --fill-raised: #ffe000;
   --fill: #f2f2f3;
@@ -157,21 +597,22 @@
   --tint-accent: #fff4b0;
   --tint-mint: #ececed;
 
-  /* Code keeps its own dark surface in both themes — an editor is always a dark instrument. */
   --code-bg: #0c0c0f;
   --code-fg: #f2f2f3;
   --code-muted: #8a8a92;
   --code-line: #5b5b64;
   --code-edge: #2a2a31;
 
-  /* Depth is an offset, not a blur. Resting, lifted, floating. */
   --shadow-soft: 4px 4px 0 0 var(--color-ink-900);
   --shadow-lift: 8px 8px 0 0 var(--color-ink-900);
   --shadow-float: 6px 6px 0 0 var(--color-ink-900);
+
+  --selection-bg: #ffe000;
+  --selection-fg: #000000;
+  --focus-ring: #000000;
 }
 
-/* Dark is the same system with the paper and the ink swapped. Nothing softens. */
-[data-theme='dark'] {
+[data-skin='brutal'][data-theme='dark'] {
   --color-canvas: #141418;
 
   --color-ink-50: #16161a;
@@ -186,7 +627,6 @@
   --color-ink-900: #ffffff;
   --color-ink-950: #ffffff;
 
-  /* The ramp inverts so the numbers keep meaning the same thing: low is a fill, high is type. */
   --color-brand-50: #3a0b07;
   --color-brand-100: #5c110b;
   --color-brand-200: #8a1a11;
@@ -201,7 +641,6 @@
   --color-accent-700: #fff08a;
   --color-accent-800: #fff7c4;
 
-  /* The same three ramps, inverted: low steps become dark fills, high steps become light type. */
   --color-amber-50: #2e2800;
   --color-amber-100: #4a3f00;
   --color-amber-200: #6b5c00;
@@ -251,6 +690,760 @@
   --tint-blue: #1a1d28;
   --tint-accent: #4a3f00;
   --tint-mint: #1e1e24;
+
+  --selection-bg: #ffe000;
+  --selection-fg: #000000;
+  --focus-ring: #ffffff;
+}
+
+/* ============================================================================= terminal
+   Tactical telemetry: a deactivated CRT rather than a page. Monospace throughout, white
+   phosphor on near-black — never pure black, which reads as a hole rather than a screen —
+   hazard red as the only accent, and scanlines laid over the whole viewport.
+
+   Dark by construction. Choosing the light theme under this skin changes almost nothing,
+   because a light terminal is not a quieter terminal, it is a different instrument.
+   ------------------------------------------------------------------------------------- */
+[data-skin='terminal'] {
+  --font-sans: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+  --font-display: 'JetBrains Mono', ui-monospace, monospace;
+
+  --color-canvas: #0a0a0a;
+
+  --color-ink-50: #101010;
+  --color-ink-100: #161616;
+  --color-ink-200: #222222;
+  --color-ink-300: #333333;
+  --color-ink-400: #6a6a6a;
+  --color-ink-500: #9a9a9a;
+  --color-ink-600: #bdbdbd;
+  --color-ink-700: #d4d4d4;
+  --color-ink-800: #e2e2e2;
+  --color-ink-900: #eaeaea;
+  --color-ink-950: #ffffff;
+
+  --color-brand-50: #2a0606;
+  --color-brand-100: #3d0a0a;
+  --color-brand-200: #5c0f0f;
+  --color-brand-300: #8f1717;
+  --color-brand-400: #e61919;
+  --color-brand-500: #ff2a2a;
+  --color-brand-600: #ff5c5c;
+  --color-brand-700: #ff8a8a;
+  --color-brand-800: #ffb8b8;
+
+  --color-accent-50: #2a0606;
+  --color-accent-100: #3d0a0a;
+  --color-accent-200: #5c0f0f;
+  --color-accent-300: #ff2a2a;
+  --color-accent-400: #e61919;
+  --color-accent-500: #c41414;
+  --color-accent-600: #ff5c5c;
+  --color-accent-700: #ff8a8a;
+  --color-accent-800: #ffb8b8;
+  /* Phosphor on hazard red, not the substrate colour. Near-black on this red is 4.26:1 —
+     the red has to stay this saturated to mean danger, so the text moves instead. */
+  --color-on-accent: #ffffff;
+
+  /* One palette, three states. Amber and rose both fold into the hazard red; emerald is the
+     single permitted terminal green, and it appears only where something is confirmed. */
+  --color-amber-50: #2a0606;
+  --color-amber-100: #3d0a0a;
+  --color-amber-200: #5c0f0f;
+  --color-amber-300: #8f1717;
+  --color-amber-600: #ff8a8a;
+  --color-amber-700: #ffb8b8;
+  --color-amber-800: #ffd4d4;
+  --color-amber-900: #ffeaea;
+
+  --color-rose-50: #2a0606;
+  --color-rose-100: #3d0a0a;
+  --color-rose-200: #5c0f0f;
+  --color-rose-300: #8f1717;
+  --color-rose-600: #ff5c5c;
+  --color-rose-700: #ff8a8a;
+  --color-rose-800: #ffb8b8;
+  --color-rose-900: #ffd4d4;
+
+  --color-emerald-50: #0a1a06;
+  --color-emerald-100: #12280b;
+  --color-emerald-200: #1c3d11;
+  --color-emerald-300: #2d6119;
+  --color-emerald-600: #4af626;
+  --color-emerald-700: #7cf95f;
+  --color-emerald-800: #a9fb96;
+  --color-emerald-900: #d6fdcd;
+
+  --color-orange-50: #2a0606;
+  --color-orange-100: #3d0a0a;
+  --color-cyan-100: #161616;
+  --color-cyan-800: #e2e2e2;
+  --color-slate-50: #161616;
+  --color-slate-cool: #9a9a9a;
+  --color-slate-deep: #bdbdbd;
+
+  --color-danger-solid: #e61919;
+  --color-success-solid: #2d6119;
+
+  --ui-radius: 0px;
+  --ui-radius-sm: 0px;
+  --ui-border: 1px;
+  --ui-border-strong: 1px;
+
+  --glass-card: #0e0e0e;
+  --glass-chrome: #0c0c0c;
+  --glass-dim: #0a0a0a;
+  --glass-border: #2a2a2a;
+  --fill-strong: #161616;
+  --fill-raised: #222222;
+  --fill: #101010;
+  --fill-soft: #0c0c0c;
+  --edge: #2a2a2a;
+  --divider: #2a2a2a;
+  --tint-blue: #101010;
+  --tint-accent: #2a0606;
+  --tint-mint: #0a1a06;
+
+  --code-bg: #060606;
+  --code-fg: #eaeaea;
+  --code-muted: #6a6a6a;
+  --code-line: #333333;
+  --code-edge: #222222;
+
+  /* No depth. A CRT has no layers. */
+  --shadow-soft: none;
+  --shadow-lift: none;
+  --shadow-float: none;
+
+  --selection-bg: #e61919;
+  --selection-fg: #0a0a0a;
+  --focus-ring: #e61919;
+
+  /* The electron beam. Two pixels on, two off, straight across everything. */
+  --skin-texture: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.5) 0px, rgb(0 0 0 / 0.5) 1px, transparent 1px, transparent 3px);
+  --skin-texture-size: 100% 3px;
+  --skin-texture-opacity: 0.55;
+}
+
+/* ===========================================================================================
+   The five below are read off the platforms this product competes with.
+   ===========================================================================================
+   Their brand colours are used exactly as published, at the fill step, because that is what
+   was asked for. Two rules keep that from turning into somebody else's identity:
+
+   No theme carries a brand's name, here or in the interface. They are named for the
+   aesthetic, and the source is recorded in the comment above each block — which is what a
+   design influence is, as against a costume.
+
+   And the colour is a fill, not a text colour. White on owl green is 2.3:1; the green is
+   published and stays published, and `--color-on-accent` moves instead. Every ramp step
+   either side of 400 is derived for the job it does, exactly as the first five skins do,
+   because a colour tuned to print paper is the wrong colour to read off it.
+   ========================================================================================= */
+
+/* ========================================================================== marketplace
+   After Udemy. The densest of the ten and the native language of this category: a page you
+   scan rather than admire. Tight radii, one-pixel grey rules, shadow almost absent, and the
+   purple reserved for what can be clicked. Ink is near-black rather than black — at this
+   density pure black on white vibrates.
+   ------------------------------------------------------------------------------------- */
+[data-skin='marketplace'] {
+  --color-canvas: #ffffff;
+
+  --color-ink-900: #1c1d1f;
+  --color-ink-800: #2d2f31;
+  --color-ink-700: #3e4143;
+  --color-ink-600: #545759;
+  --color-ink-500: #6a6f73;
+  --color-ink-400: #9194a0;
+  --color-ink-300: #cbced1;
+  --color-ink-200: #d1d7dc;
+  --color-ink-100: #f0f2f5;
+  --color-ink-50: #f7f9fa;
+
+  --color-brand-50: #f5ecff;
+  --color-brand-100: #ead6ff;
+  --color-brand-200: #d4aeff;
+  --color-brand-300: #bb7dff;
+  --color-brand-400: #a435f0;
+  --color-brand-500: #8710d8;
+  --color-brand-600: #6d28b8;
+  --color-brand-700: #55208f;
+  --color-brand-800: #3d1768;
+
+  --color-accent-50: #f5ecff;
+  --color-accent-100: #ead6ff;
+  --color-accent-200: #d4aeff;
+  --color-accent-300: #b558f4;
+  --color-accent-400: #a435f0;
+  --color-accent-500: #8710d8;
+  --color-accent-600: #6d28b8;
+  --color-accent-700: #55208f;
+  --color-accent-800: #3d1768;
+  --color-on-accent: #ffffff;
+
+  --color-rose-600: #c4161c;
+  --color-danger-solid: #ea5252;
+  --color-success-solid: #1e6055;
+
+  --ui-radius: 4px;
+  --ui-radius-sm: 4px;
+  --ui-border: 1px;
+  --ui-border-strong: 1px;
+
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f7f9fa;
+  --glass-border: #d1d7dc;
+  --fill-strong: #ffffff;
+  --fill-raised: #f5ecff;
+  --fill: #f7f9fa;
+  --fill-soft: #f0f2f5;
+  --edge: #d1d7dc;
+  --divider: #d1d7dc;
+  --tint-blue: #f5ecff;
+  --tint-accent: #fff5e6;
+  --tint-mint: #e8f4f1;
+
+  --shadow-soft: 0 1px 2px rgb(28 29 31 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(28 29 31 / 0.08), 0 8px 16px -10px rgb(28 29 31 / 0.2);
+  --shadow-float: 0 2px 8px rgb(28 29 31 / 0.12);
+
+  --selection-bg: #ead6ff;
+  --selection-fg: #1c1d1f;
+  --focus-ring: #a435f0;
+}
+
+[data-skin='marketplace'][data-theme='dark'] {
+  --color-canvas: #1c1d1f;
+
+  --color-ink-900: #ffffff;
+  --color-ink-800: #f0f2f5;
+  --color-ink-700: #d1d7dc;
+  --color-ink-600: #b4b9be;
+  --color-ink-500: #9194a0;
+  --color-ink-400: #6a6f73;
+  --color-ink-300: #4a4d50;
+  --color-ink-200: #3e4143;
+  --color-ink-100: #2d2f31;
+  --color-ink-50: #232426;
+
+  --color-brand-50: #2d1747;
+  --color-brand-100: #3d1768;
+  --color-brand-200: #55208f;
+  --color-brand-600: #c99dfb;
+  --color-brand-700: #ddc0fd;
+  --color-brand-800: #efe0fe;
+
+  --color-accent-50: #2d1747;
+  --color-accent-100: #3d1768;
+  --color-accent-200: #55208f;
+  --color-accent-300: #b558f4;
+  --color-accent-400: #a435f0;
+  --color-accent-600: #c99dfb;
+  --color-accent-700: #ddc0fd;
+  --color-accent-800: #efe0fe;
+
+  --glass-card: #232426;
+  --glass-chrome: #232426;
+  --glass-dim: #1c1d1f;
+  --glass-border: #3e4143;
+  --fill-strong: #2d2f31;
+  --fill-raised: #3d1768;
+  --fill: #232426;
+  --fill-soft: #1c1d1f;
+  --edge: #3e4143;
+  --divider: #3e4143;
+  --tint-blue: #2d1747;
+  --tint-accent: #3a2a12;
+  --tint-mint: #16302b;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-lift: 0 8px 20px -10px rgb(0 0 0 / 0.7);
+  --shadow-float: 0 4px 14px rgb(0 0 0 / 0.6);
+
+  --selection-bg: #55208f;
+  --selection-fg: #ffffff;
+  --focus-ring: #c99dfb;
+}
+
+/* ============================================================================= academy
+   After Coursera. One saturated blue doing every job and no second accent at all — the
+   discipline is the message, and it is the cheapest way an interface says "institution".
+   The navy is not a second colour, it is the same blue pressed; it appears on emphasis
+   bands and nowhere else.
+   ------------------------------------------------------------------------------------- */
+[data-skin='academy'] {
+  --color-canvas: #f5f7fa;
+
+  --color-ink-900: #1f1f1f;
+  --color-ink-800: #2e2e2e;
+  --color-ink-700: #3c3c3c;
+  --color-ink-600: #52565e;
+  --color-ink-500: #5b6270;
+  --color-ink-400: #8a94a6;
+  --color-ink-300: #c2c9d6;
+  --color-ink-200: #dde3ec;
+  --color-ink-100: #eef2f7;
+  --color-ink-50: #f8fafc;
+
+  --color-brand-50: #e8f0fd;
+  --color-brand-100: #cfe0fb;
+  --color-brand-200: #9dc0f7;
+  --color-brand-300: #5a93ef;
+  --color-brand-400: #0056d2;
+  --color-brand-500: #004bb8;
+  --color-brand-600: #00419e;
+  --color-brand-700: #00369e;
+  --color-brand-800: #002a7a;
+
+  --color-accent-50: #e8f0fd;
+  --color-accent-100: #cfe0fb;
+  --color-accent-200: #9dc0f7;
+  --color-accent-300: #1a6ae0;
+  --color-accent-400: #0056d2;
+  --color-accent-500: #00419e;
+  --color-accent-600: #00369e;
+  --color-accent-700: #002a7a;
+  --color-accent-800: #001f5c;
+  --color-on-accent: #ffffff;
+
+  --color-danger-solid: #b3261e;
+  --color-success-solid: #1d6b4a;
+
+  --ui-radius: 8px;
+  --ui-radius-sm: 4px;
+  --ui-border: 1px;
+  --ui-border-strong: 1px;
+
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f8fafc;
+  --glass-border: #dde3ec;
+  --fill-strong: #ffffff;
+  --fill-raised: #e8f0fd;
+  --fill: #eef2f7;
+  --fill-soft: #f5f7fa;
+  --edge: #dde3ec;
+  --divider: #dde3ec;
+  --tint-blue: #e8f0fd;
+  --tint-accent: #fdf3e2;
+  --tint-mint: #e6f2ec;
+
+  --shadow-soft: 0 1px 3px rgb(31 31 31 / 0.08);
+  --shadow-lift: 0 4px 12px -4px rgb(31 31 31 / 0.16);
+  --shadow-float: 0 6px 20px -8px rgb(31 31 31 / 0.2);
+
+  --selection-bg: #cfe0fb;
+  --selection-fg: #1f1f1f;
+  --focus-ring: #0056d2;
+}
+
+[data-skin='academy'][data-theme='dark'] {
+  --color-canvas: #0a1633;
+
+  --color-ink-900: #f7f9fc;
+  --color-ink-800: #e6ebf3;
+  --color-ink-700: #d0d8e6;
+  --color-ink-600: #b3bed2;
+  --color-ink-500: #94a1ba;
+  --color-ink-400: #6f7d99;
+  --color-ink-300: #4a5771;
+  --color-ink-200: #2c3752;
+  --color-ink-100: #1b2642;
+  --color-ink-50: #132038;
+
+  --color-brand-50: #001f5c;
+  --color-brand-100: #002a7a;
+  --color-brand-200: #00369e;
+  --color-brand-600: #8fb8f5;
+  --color-brand-700: #bcd5fa;
+  --color-brand-800: #dfeafd;
+
+  --color-accent-50: #001f5c;
+  --color-accent-100: #002a7a;
+  --color-accent-200: #00369e;
+  --color-accent-300: #1a6ae0;
+  --color-accent-400: #1a6ae0;
+  --color-accent-600: #8fb8f5;
+  --color-accent-700: #bcd5fa;
+  --color-accent-800: #dfeafd;
+
+  --glass-card: #132038;
+  --glass-chrome: #132038;
+  --glass-dim: #0f1b30;
+  --glass-border: #2c3752;
+  --fill-strong: #1b2642;
+  --fill-raised: #002a7a;
+  --fill: #132038;
+  --fill-soft: #0f1b30;
+  --edge: #2c3752;
+  --divider: #2c3752;
+  --tint-blue: #1b2642;
+  --tint-accent: #3a2f14;
+  --tint-mint: #13302a;
+
+  --shadow-soft: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-lift: 0 6px 20px -8px rgb(0 0 0 / 0.7);
+  --shadow-float: 0 8px 26px -10px rgb(0 0 0 / 0.75);
+
+  --selection-bg: #00369e;
+  --selection-fg: #f7f9fc;
+  --focus-ring: #8fb8f5;
+}
+
+/* ============================================================================== streak
+   After Duolingo. The only one of the ten where pressing a button is a physical event: each
+   carries a four-pixel lip in its own darker shade and drops into it when pressed. Big
+   radii, thick pale borders, a white page and a green that is not asking permission.
+
+   This skin has something to attach to here — the product already keeps XP, streaks,
+   achievements and a leaderboard, and none of that has ever looked like what it is.
+   ------------------------------------------------------------------------------------- */
+[data-skin='streak'] {
+  --color-canvas: #ffffff;
+
+  --color-ink-900: #3c3c3c;
+  --color-ink-800: #4b4b4b;
+  --color-ink-700: #5a5a5a;
+  --color-ink-600: #6b6b6b;
+  --color-ink-500: #6f6f6f;
+  --color-ink-400: #afafaf;
+  --color-ink-300: #d4d4d4;
+  --color-ink-200: #e5e5e5;
+  --color-ink-100: #f0f0f0;
+  --color-ink-50: #f7f7f7;
+
+  --color-brand-50: #e5f8ff;
+  --color-brand-100: #c7efff;
+  --color-brand-200: #8adcff;
+  --color-brand-300: #49c7fb;
+  --color-brand-400: #1cb0f6;
+  --color-brand-500: #1899d6;
+  --color-brand-600: #117aac;
+  --color-brand-700: #0d5f86;
+  --color-brand-800: #084563;
+
+  --color-accent-50: #e8f9dd;
+  --color-accent-100: #d7f4c2;
+  --color-accent-200: #aae888;
+  --color-accent-300: #7ad84a;
+  --color-accent-400: #58cc02;
+  --color-accent-500: #46a302;
+  --color-accent-600: #3a8501;
+  --color-accent-700: #2d6701;
+  --color-accent-800: #1f4800;
+  /* Black on the owl green, because white on it is 2.3:1. The green is untouched. */
+  --color-on-accent: #1a2e00;
+
+  --color-rose-600: #d33131;
+  --color-danger-solid: #ff4b4b;
+  --color-success-solid: #3a8501;
+
+  --ui-radius: 16px;
+  --ui-radius-sm: 12px;
+  --ui-border: 2px;
+  --ui-border-strong: 2px;
+
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f7f7f7;
+  --glass-border: #e5e5e5;
+  --fill-strong: #ffffff;
+  --fill-raised: #e8f9dd;
+  --fill: #f7f7f7;
+  --fill-soft: #f0f0f0;
+  --edge: #e5e5e5;
+  --divider: #e5e5e5;
+  --tint-blue: #e5f8ff;
+  --tint-accent: #fff4d4;
+  --tint-mint: #e8f9dd;
+
+  /* Flat. Depth in this language lives in the lip on the controls, not under the cards. */
+  --shadow-soft: 0 2px 0 0 #e5e5e5;
+  --shadow-lift: 0 4px 0 0 #d4d4d4;
+  --shadow-float: 0 3px 0 0 #e5e5e5;
+
+  --selection-bg: #d7f4c2;
+  --selection-fg: #3c3c3c;
+  --focus-ring: #1cb0f6;
+}
+
+[data-skin='streak'][data-theme='dark'] {
+  --color-canvas: #131f24;
+
+  --color-ink-900: #f1f7fb;
+  --color-ink-800: #dce6ec;
+  --color-ink-700: #c3d0d9;
+  --color-ink-600: #a7b7c2;
+  --color-ink-500: #8fa3b0;
+  --color-ink-400: #6b7f8c;
+  --color-ink-300: #4a5c67;
+  --color-ink-200: #37464f;
+  --color-ink-100: #202f36;
+  --color-ink-50: #1a272d;
+
+  --color-brand-50: #08303f;
+  --color-brand-100: #0d4257;
+  --color-brand-200: #115a76;
+  --color-brand-600: #6fd3ff;
+  --color-brand-700: #a6e6ff;
+  --color-brand-800: #d2f3ff;
+
+  --color-accent-50: #16330a;
+  --color-accent-100: #1f4800;
+  --color-accent-200: #2d6701;
+  --color-accent-300: #7ad84a;
+  --color-accent-400: #58cc02;
+  --color-accent-600: #93e05e;
+  --color-accent-700: #b8ec93;
+  --color-accent-800: #d9f5c4;
+
+  --glass-card: #1a272d;
+  --glass-chrome: #1a272d;
+  --glass-dim: #162228;
+  --glass-border: #37464f;
+  --fill-strong: #202f36;
+  --fill-raised: #1f4800;
+  --fill: #1a272d;
+  --fill-soft: #162228;
+  --edge: #37464f;
+  --divider: #37464f;
+  --tint-blue: #08303f;
+  --tint-accent: #33290a;
+  --tint-mint: #16330a;
+
+  --shadow-soft: 0 2px 0 0 #37464f;
+  --shadow-lift: 0 4px 0 0 #4a5c67;
+  --shadow-float: 0 3px 0 0 #37464f;
+
+  --selection-bg: #2d6701;
+  --selection-fg: #f1f7fb;
+  --focus-ring: #6fd3ff;
+}
+
+/* ============================================================================== cinema
+   After MasterClass. Dark first and dark by intent: the screen is a theatre, everything is
+   black or smoky black, and the one saturated colour in the whole interface is on the thing
+   to click. The light theme is a dimmed house rather than a bright page, because a cinematic
+   language does not have a daylight version and pretending otherwise produces neither.
+   ------------------------------------------------------------------------------------- */
+[data-skin='cinema'] {
+  --color-canvas: #14100f;
+
+  --color-ink-900: #faf7f5;
+  --color-ink-800: #ebe6e3;
+  --color-ink-700: #d6cfcb;
+  --color-ink-600: #b8afaa;
+  --color-ink-500: #9a908b;
+  --color-ink-400: #6f6663;
+  --color-ink-300: #4c4542;
+  --color-ink-200: #332d2b;
+  --color-ink-100: #241f1e;
+  --color-ink-50: #1b1716;
+
+  --color-brand-50: #3a0a16;
+  --color-brand-100: #56101f;
+  --color-brand-200: #7d1730;
+  --color-brand-300: #b01f43;
+  --color-brand-400: #e32652;
+  --color-brand-500: #ee3e66;
+  --color-brand-600: #f4738f;
+  --color-brand-700: #f8a2b5;
+  --color-brand-800: #fccdd8;
+
+  --color-accent-50: #3a0a16;
+  --color-accent-100: #56101f;
+  --color-accent-200: #7d1730;
+  --color-accent-300: #ee3e66;
+  --color-accent-400: #e32652;
+  --color-accent-500: #b01f43;
+  --color-accent-600: #f4738f;
+  --color-accent-700: #f8a2b5;
+  --color-accent-800: #fccdd8;
+  --color-on-accent: #ffffff;
+
+  --color-amber-600: #f0c063;
+  --color-amber-100: #3b2f14;
+  --color-rose-600: #f4738f;
+  --color-rose-100: #56101f;
+  --color-emerald-600: #8fd6a8;
+  --color-emerald-100: #133224;
+  --color-danger-solid: #c4183f;
+  --color-success-solid: #1f6b42;
+
+  --color-slate-50: #241f1e;
+  --color-slate-cool: #9a908b;
+  --color-slate-deep: #b8afaa;
+
+  --ui-radius: 6px;
+  --ui-radius-sm: 4px;
+  --ui-border: 1px;
+  --ui-border-strong: 1px;
+
+  --glass-card: #1b1716;
+  --glass-chrome: #191514;
+  --glass-dim: #14100f;
+  --glass-border: #332d2b;
+  --fill-strong: #241f1e;
+  --fill-raised: #332d2b;
+  --fill: #1b1716;
+  --fill-soft: #191514;
+  --edge: #332d2b;
+  --divider: #332d2b;
+  --tint-blue: #241f1e;
+  --tint-accent: #3b2f14;
+  --tint-mint: #133224;
+
+  --code-bg: #0b0908;
+  --code-fg: #ebe6e3;
+  --code-muted: #6f6663;
+  --code-line: #4c4542;
+  --code-edge: #241f1e;
+
+  --shadow-soft: 0 2px 10px rgb(0 0 0 / 0.55);
+  --shadow-lift: 0 10px 34px -12px rgb(0 0 0 / 0.8);
+  --shadow-float: 0 14px 44px -16px rgb(0 0 0 / 0.85);
+
+  --selection-bg: #e32652;
+  --selection-fg: #ffffff;
+  --focus-ring: #e32652;
+}
+
+/* Darker still, and nothing else moves. There is no second palette to write. */
+[data-skin='cinema'][data-theme='dark'] {
+  --color-canvas: #000000;
+  --glass-card: #0d0b0b;
+  --glass-chrome: #0a0909;
+  --glass-dim: #000000;
+  --fill-strong: #151211;
+  --fill: #0d0b0b;
+  --fill-soft: #080707;
+  --glass-border: #2a2523;
+  --edge: #2a2523;
+  --divider: #2a2523;
+}
+
+/* ============================================================================== poster
+   After Skillshare's 2020 identity. Flat, loud and graphic: acid green and Persian blue laid
+   straight onto black or white with no shadow between them, the way a printed poster has no
+   depth. The two colours never share a surface — blue is the page's, green is the action's.
+   ------------------------------------------------------------------------------------- */
+[data-skin='poster'] {
+  --color-canvas: #ffffff;
+
+  --color-ink-900: #000000;
+  --color-ink-800: #171717;
+  --color-ink-700: #2b2b2b;
+  --color-ink-600: #444444;
+  --color-ink-500: #595959;
+  --color-ink-400: #8c8c8c;
+  --color-ink-300: #c4c4c4;
+  --color-ink-200: #e0e0e0;
+  --color-ink-100: #f0f0f0;
+  --color-ink-50: #f7f7f7;
+
+  --color-brand-50: #eceaff;
+  --color-brand-100: #d7d2ff;
+  --color-brand-200: #b0a6ff;
+  --color-brand-300: #7c6cf5;
+  --color-brand-400: #3722d3;
+  --color-brand-500: #2d1cae;
+  --color-brand-600: #2d1cae;
+  --color-brand-700: #241688;
+  --color-brand-800: #1a1063;
+
+  --color-accent-50: #dbffee;
+  --color-accent-100: #b3ffdb;
+  --color-accent-200: #66ffb8;
+  --color-accent-300: #1fff96;
+  --color-accent-400: #00ff84;
+  --color-accent-500: #00c866;
+  --color-accent-600: #00804a;
+  --color-accent-700: #00603a;
+  --color-accent-800: #004128;
+  /* Black on the acid green. White on it is 1.3:1 — barely a colour at all. */
+  --color-on-accent: #000000;
+
+  --color-danger-solid: #d61f3c;
+  --color-success-solid: #00804a;
+
+  --ui-radius: 0px;
+  --ui-radius-sm: 0px;
+  --ui-border: 1px;
+  --ui-border-strong: 2px;
+
+  --glass-card: #ffffff;
+  --glass-chrome: #ffffff;
+  --glass-dim: #f7f7f7;
+  --glass-border: #000000;
+  --fill-strong: #ffffff;
+  --fill-raised: #dbffee;
+  --fill: #f7f7f7;
+  --fill-soft: #f0f0f0;
+  --edge: #000000;
+  --divider: #000000;
+  --tint-blue: #eceaff;
+  --tint-accent: #dbffee;
+  --tint-mint: #dbffee;
+
+  /* None. A poster is ink on paper. */
+  --shadow-soft: none;
+  --shadow-lift: none;
+  --shadow-float: none;
+
+  --selection-bg: #00ff84;
+  --selection-fg: #000000;
+  --focus-ring: #3722d3;
+}
+
+[data-skin='poster'][data-theme='dark'] {
+  --color-canvas: #000000;
+
+  --color-ink-900: #ffffff;
+  --color-ink-800: #f0f0f0;
+  --color-ink-700: #d9d9d9;
+  --color-ink-600: #bdbdbd;
+  --color-ink-500: #a1a1a1;
+  --color-ink-400: #757575;
+  --color-ink-300: #4d4d4d;
+  --color-ink-200: #333333;
+  --color-ink-100: #1f1f1f;
+  --color-ink-50: #141414;
+
+  --color-brand-50: #1a1063;
+  --color-brand-100: #241688;
+  --color-brand-200: #2d1cae;
+  --color-brand-300: #7c6cf5;
+  --color-brand-400: #7c6cf5;
+  --color-brand-600: #b0a6ff;
+  --color-brand-700: #d7d2ff;
+  --color-brand-800: #eceaff;
+
+  --color-accent-50: #004128;
+  --color-accent-100: #00603a;
+  --color-accent-200: #00804a;
+  --color-accent-600: #66ffb8;
+  --color-accent-700: #b3ffdb;
+  --color-accent-800: #dbffee;
+
+  --glass-card: #0d0d0d;
+  --glass-chrome: #0d0d0d;
+  --glass-dim: #000000;
+  --glass-border: #ffffff;
+  --fill-strong: #1f1f1f;
+  --fill-raised: #004128;
+  --fill: #141414;
+  --fill-soft: #0d0d0d;
+  --edge: #ffffff;
+  --divider: #ffffff;
+  --tint-blue: #1a1063;
+  --tint-accent: #004128;
+  --tint-mint: #004128;
+
+  --selection-bg: #00ff84;
+  --selection-fg: #000000;
+  --focus-ring: #00ff84;
 }
 
 @layer base {
@@ -263,36 +1456,70 @@
     color-scheme: dark;
   }
 
+  /* Whatever the theme says, this one is a dark instrument. */
+  html[data-skin='terminal'] {
+    color-scheme: dark;
+  }
+
   body {
     @apply text-ink-900 font-sans antialiased;
     margin: 0;
-    /* No aurora. The shader is the background now, and anything painted here would only sit
-       between it and the content. */
     background-color: var(--color-canvas);
   }
 
-  /* Tight and heavy: size and weight do the work colour used to. */
+  /*
+   * The skin's own material, laid over the viewport and nothing else.
+   *
+   * Fixed and `pointer-events: none`, which is the only safe place for a texture: attached
+   * to a scrolling container it repaints on every frame of every scroll, which is a phone
+   * with a hot battery and a janky page.
+   */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    background-image: var(--skin-texture);
+    background-size: var(--skin-texture-size);
+    opacity: var(--skin-texture-opacity);
+  }
+
   h1,
   h2,
   h3 {
+    font-family: var(--font-display);
     letter-spacing: -0.03em;
+  }
+
+  /* Monospace wants air, not compression — the tight tracking above is for grotesques. */
+  [data-skin='terminal'] h1,
+  [data-skin='terminal'] h2,
+  [data-skin='terminal'] h3 {
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  /* A serif display face needs looser tracking than a sans at the same size. */
+  [data-skin='editorial'] h1,
+  [data-skin='editorial'] h2 {
+    letter-spacing: -0.02em;
   }
 
   * {
     scrollbar-width: auto;
-    scrollbar-color: var(--color-ink-900) transparent;
+    scrollbar-color: var(--color-ink-400) transparent;
   }
 
-  /* Focus is a block, not a hairline — it has to survive on top of a moving shader. */
   :focus-visible {
-    outline: 3px solid var(--color-ink-900);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-    border-radius: 0;
+    border-radius: var(--ui-radius-sm);
   }
 
   ::selection {
-    background: #ffe000;
-    color: #000000;
+    background: var(--selection-bg);
+    color: var(--selection-fg);
   }
 
   /* Grid children default to min-width:auto, so one long unbreakable string widens the whole
@@ -309,56 +1536,70 @@
 @layer components {
   /* ---------------------------------------------------------------- the material */
 
-  /* A sheet of paper with a rule around it. `.glass` is the same thing under the name the
-     old system used; renaming 31 call sites to say the opposite of what they said before
-     would not make anything truer. */
+  /* A surface. What that means — a bordered sheet, a floating slab, a framed panel — is the
+     skin's decision, made entirely in the three structural tokens. `.glass` is the same
+     thing under the name the old system used; its 31 call sites keep working. */
   .card,
   .glass {
     background: var(--glass-card);
-    border: 2px solid var(--glass-border);
-    border-radius: 0;
+    border: var(--ui-border) solid var(--glass-border);
+    border-radius: var(--ui-radius);
     box-shadow: var(--shadow-soft);
   }
 
-  /* Chrome sits above scrolling content, so it takes the heavier rule and offset. */
+  /* Chrome sits above scrolling content, so it takes the heavier rule and the deeper shadow. */
   .chrome {
     background: var(--glass-chrome);
-    border: 3px solid var(--glass-border);
+    border: var(--ui-border-strong) solid var(--glass-border);
+    border-radius: var(--ui-radius);
     box-shadow: var(--shadow-float);
   }
 
   /* Recessed well inside a sheet — rows, wells, code frames. */
   .inset {
     background: var(--fill-soft);
-    border: 2px solid var(--edge);
+    border: var(--ui-border) solid var(--edge);
+    border-radius: var(--ui-radius-sm);
   }
 
   .glass-dim {
     background: var(--glass-dim);
-    border: 2px solid var(--glass-border);
+    border: var(--ui-border) solid var(--glass-border);
+    border-radius: var(--ui-radius);
   }
 
-  /* Was the lensing streak along a lit edge. There is no lit edge now; the class stays so its
-     19 call sites keep parsing, and does nothing. */
   .specular {
     position: relative;
   }
 
-  /* The primary action does not glow. It sits on the page like a stamped plate. */
   .glow-cta {
     box-shadow: var(--shadow-soft);
   }
 
-  /* Hover moves the sheet into its own shadow rather than lifting it out of one. */
+  /*
+   * Hover, and the two honest answers to it.
+   *
+   * A skin with a hard offset shadow moves the sheet *into* its own shadow, because that is
+   * what a sheet of paper does. A skin with a diffuse one lifts the sheet away from the
+   * page. Doing the first with a soft shadow just looks like a bug, so the offset skins
+   * override it below rather than everything sharing one gesture.
+   */
   .card-hover {
-    @apply transition-[transform,box-shadow] duration-150;
+    @apply transition-[transform,box-shadow] duration-200;
   }
   .card-hover:hover {
-    transform: translate(-2px, -2px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
   }
+  [data-skin='brutal'] .card-hover:hover {
+    transform: translate(-2px, -2px);
+  }
+  [data-skin='terminal'] .card-hover:hover {
+    transform: none;
+    border-color: var(--color-brand-400);
+  }
 
-  /* Flat tints — surfaces that carry a role, with no gradient left in them. */
+  /* Flat tints — surfaces that carry a role. */
   .tint-blue {
     background: var(--tint-blue);
   }
@@ -390,10 +1631,85 @@
     border-color: var(--divider);
   }
 
-  /* Code surfaces stay dark in both themes. */
+  /*
+   * Buttons, shaped by the skin rather than by the call site.
+   *
+   * The variants in `components/ui.tsx` used to carry `border-2 border-ink-900
+   * shadow-[4px_4px_0_0_…]` in their class strings, which pinned every button to one visual
+   * language. They now carry colour only, and everything about the shape lives here.
+   */
+  .btn-shell {
+    border: var(--ui-border) solid var(--btn-border, transparent);
+    border-radius: var(--ui-radius-sm);
+    box-shadow: var(--btn-shadow, none);
+    transition:
+      background-color 0.15s,
+      box-shadow 0.15s,
+      transform 0.15s;
+  }
+  .btn-shell:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* A stamped plate that goes down into its own shadow when pressed. */
+  [data-skin='brutal'] .btn-shell {
+    --btn-border: var(--color-ink-900);
+    --btn-shadow: var(--shadow-soft);
+  }
+  [data-skin='brutal'] .btn-shell:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 var(--color-ink-900);
+  }
+
+  [data-skin='terminal'] .btn-shell {
+    --btn-border: var(--edge);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  [data-skin='terminal'] .btn-shell:hover:not(:disabled) {
+    --btn-border: var(--color-brand-400);
+  }
+
+  [data-skin='editorial'] .btn-shell {
+    --btn-border: transparent;
+  }
+
+  /*
+   * The lip.
+   *
+   * A four-pixel hard shadow in the button's *own* darker shade, so the control reads as a
+   * physical key with a side to it rather than a rectangle with a shadow. Pressing it moves
+   * the button down by exactly the height of the lip and removes the lip, which is what
+   * makes the travel feel like travel and not like a colour change.
+   *
+   * `--btn-lip` is set per variant in `components/ui.tsx`, because six variants need six
+   * shades and one token cannot be all of them. Every other skin ignores it.
+   */
+  [data-skin='streak'] .btn-shell {
+    --btn-border: transparent;
+    --btn-shadow: 0 4px 0 0 var(--btn-lip, var(--color-ink-200));
+    margin-bottom: 4px;
+  }
+  [data-skin='streak'] .btn-shell:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--btn-lip, var(--color-ink-200));
+  }
+
+  /* No border, no shadow — the fill and the radius carry it. */
+  [data-skin='atelier'] .btn-shell {
+    --btn-border: transparent;
+    --btn-shadow: 0 1px 2px rgb(20 22 26 / 0.06), 0 8px 20px -12px rgb(20 22 26 / 0.3);
+    border-radius: 999px;
+  }
+  [data-skin='atelier'] .btn-shell:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  /* Code surfaces stay dark under every skin. */
   .code-surface {
     background: var(--code-bg);
     color: var(--code-fg);
+    border-radius: var(--ui-radius-sm);
   }
   .code-chrome {
     color: var(--code-muted);
@@ -404,18 +1720,23 @@
     color: var(--code-line);
   }
 
-  /* The exposed grid, which brutalism is entitled to leave showing. */
+  /* The exposed grid, which the structural skins are entitled to leave showing. */
   .surface-grid {
+    background-image: none;
+  }
+  [data-skin='brutal'] .surface-grid,
+  [data-skin='terminal'] .surface-grid {
     background-image:
-      linear-gradient(to right, rgb(0 0 0 / 0.16) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(0 0 0 / 0.16) 1px, transparent 1px);
+      linear-gradient(to right, color-mix(in srgb, var(--color-ink-900) 16%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-ink-900) 16%, transparent) 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
   .skeleton {
     @apply animate-pulse;
     background: var(--fill);
-    border: 2px solid var(--edge);
+    border: var(--ui-border) solid var(--edge);
+    border-radius: var(--ui-radius-sm);
   }
 }
 
