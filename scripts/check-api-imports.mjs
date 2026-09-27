@@ -4,7 +4,8 @@
  *
  * Under those rules a relative import needs its `.js` extension. Vite and esbuild resolve
  * `./_lib/server` happily, so the build and the tests pass while every Node function on
- * Vercel fails with ERR_MODULE_NOT_FOUND. This is the check that sees what Vercel sees.
+ * Vercel fails with ERR_MODULE_NOT_FOUND. And a Node function must export named methods:
+ * a default export is called as (req, res). This is the check that sees what Vercel sees.
  *
  *   node scripts/check-api-imports.mjs
  */
@@ -27,7 +28,11 @@ let failed = 0
 for (const file of walk(join(root, 'api')).filter((f) => f.endsWith('.ts') && !f.includes('_lib'))) {
   const rel = relative(root, file).replace(/\.ts$/, '.js')
   try {
-    await import(pathToFileURL(join(out, rel)).href)
+    const mod = await import(pathToFileURL(join(out, rel)).href)
+    // A default export on the Node runtime is called as (req, res) and its Response dropped.
+    if (mod.config?.runtime === 'nodejs' && typeof mod.GET !== 'function' && typeof mod.POST !== 'function') {
+      throw new Error('Node function exports no named HTTP method (GET/POST/...), so Vercel will call it as (req, res)')
+    }
     console.log(`✓ ${rel}`)
   } catch (error) {
     failed++

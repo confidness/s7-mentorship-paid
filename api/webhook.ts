@@ -21,7 +21,7 @@ import type Stripe from 'stripe'
 import { adminClient, fail, json, requireEnv } from './_lib/server.js'
 import { stripe } from './_lib/stripe.js'
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
   const signature = req.headers.get('stripe-signature')
@@ -183,3 +183,6 @@ async function syncAccount(account: Stripe.Account) {
  * verification goes through Web Crypto, which is async.
  */
 export const config = { runtime: 'nodejs' }
+
+/** Vercel's Node runtime treats a default export as `(req, res) => void` and drops the returned Response; named methods get the Web `Request`. Each handler rejects the methods it does not serve. */
+export { handler as GET, handler as POST, handler as PATCH, handler as DELETE }

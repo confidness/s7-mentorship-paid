@@ -21,7 +21,7 @@ interface Body {
   ops?: unknown
 }
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   try {
     requireMethod(req, 'GET', 'POST')
     const caller = await requireUser(req)
@@ -197,3 +197,6 @@ export function toUuid(seed: string): string {
 
 /** Node runtime: the Supabase SDK is not edge-compatible. */
 export const config = { runtime: 'nodejs' }
+
+/** Vercel's Node runtime treats a default export as `(req, res) => void` and drops the returned Response; named methods get the Web `Request`. Each handler rejects the methods it does not serve. */
+export { handler as GET, handler as POST, handler as PATCH, handler as DELETE }
