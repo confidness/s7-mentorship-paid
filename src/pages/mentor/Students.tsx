@@ -134,7 +134,7 @@ function StudentDetail({ id }: { id: string }) {
               {profile && (
                 <span className="inline-flex items-center gap-1.5">
                   <Flame size={12} className="text-rose-500" aria-hidden="true" />
-                  {profile.streak} day streak · last active {relativeTime(profile.lastActiveDate)}
+                  {t('streak_days', { n: profile.streak })} · {t('last_active', { when: relativeTime(profile.lastActiveDate) })}
                 </span>
               )}
             </p>

@@ -237,7 +237,7 @@ export default function LessonBuilder() {
                 key={String(isPaid)}
                 onClick={() => setPaid(isPaid)}
                 aria-pressed={paid === isPaid}
-                className={`px-4 py-3 text-sm font-semibold transition ${
+                className={`rounded-[var(--ui-radius-sm)] px-4 py-3 text-sm font-semibold transition ${
                   paid === isPaid ? 'bg-brand-100/80 text-brand-700 ring-2 ring-brand-400' : 'fill text-ink-600 ring-1 rim hover:fill-strong'
                 }`}
               >

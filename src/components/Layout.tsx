@@ -1,74 +1,30 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import {
-  Bell, BookOpen, CalendarClock, ChevronRight, Compass, ClipboardCheck, FilePlus2, FolderKanban, GraduationCap, LayoutDashboard, LogOut, Menu,
-  Settings, Sparkles, User as UserIcon, Users, X, Zap,
-} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import { MoreHorizontal, X } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { notificationsFor, profileOf, resolveVars } from '../lib/selectors'
-import { levelFor } from '../lib/gamification'
-import { Avatar, Badge, ProgressBar } from './ui'
 import ThemeToggle from './ThemeToggle'
 import LocaleToggle from './LocaleToggle'
-import type { LucideIcon } from 'lucide-react'
-import { t, formatDate } from '../i18n'
+import { t } from '../i18n'
 import { Mark } from './Mark'
 import LiquidMetalBackground from './LiquidMetalBackground'
-import { AnimatedNumber, PageTransition } from './motion'
+import { PageTransition } from './motion'
 import { SectionTabs, tabsForPath } from './sections'
-import { localizeLevelName } from '../i18n/content'
+import { isNavActive, navFor, type NavItem } from './nav'
+import { LevelCard, NavRail, NotificationBell, UserMenu, XpChip, useEscape } from './menubar'
 
-interface NavItem {
-  to: string
-  label: string
-  icon: LucideIcon
-  end?: boolean
-  primary?: boolean
-  /** Label for the mobile bottom bar, where there is room for one short word. */
-  short?: string
-  /**
-   * The other paths this entry covers.
-   *
-   * A section is one sidebar entry over several pages — "Work" is projects, the gallery and
-   * competitions — so the link has to stay lit while the reader moves between them with the
-   * tabs. Without this the sidebar would go dark the moment they did, and look like they had
-   * left the section they are plainly still in.
-   */
-  covers?: string[]
+/** The mark on its disc. Under the orbit skin a slow ring of light turns behind it. */
+function BrandMark({ size = 38 }: { size?: number }) {
+  return (
+    <span className="brand-mark relative grid shrink-0 place-items-center rounded-full">
+      <Mark size={size} className="relative rounded-full shadow-[0_8px_18px_-8px_rgb(21_96_236/0.7)]" />
+    </span>
+  )
 }
-
-/**
- * Five entries, not eleven.
- *
- * The catalogue is the home page: what a person can learn here is the first thing the
- * platform has to show, and the old dashboard opened on a progress summary that a new
- * account had nothing to put in. Progress moved one level down, into the section it belongs
- * to, where it is the first tab.
- *
- * Everything else is grouped by what someone is trying to do rather than by which screen it
- * happens to live on: Learning is the track, the assignments and the badges; Work is
- * projects, the gallery they end up in and the competitions they are entered into.
- */
-const STUDENT_NAV: NavItem[] = [
-  { to: '/', label: 'courses', icon: BookOpen, end: true, primary: true, short: 'courses', covers: ['/requests'] },
-  { to: '/learning', label: 'section_learning', icon: GraduationCap, primary: true, short: 'learning_short', covers: ['/assigned', '/achievements'] },
-  { to: '/projects', label: 'section_work', icon: FolderKanban, primary: true, covers: ['/gallery', '/competition'] },
-  { to: '/ai', label: 'ai_advisor', icon: Compass, primary: true, short: 'ai_mentor' },
-  { to: '/profile', label: 'section_account', icon: UserIcon, covers: ['/settings'] },
-]
-
-const MENTOR_NAV: NavItem[] = [
-  { to: '/m', label: 'section_overview', icon: LayoutDashboard, end: true, primary: true, short: 'dashboard', covers: ['/m/analytics'] },
-  { to: '/m/lessons', label: 'section_materials', icon: FilePlus2, primary: true, short: 'my_lessons', covers: ['/m/requests', '/m/courses', '/m/competition'] },
-  { to: '/m/reviews', label: 'section_review', icon: ClipboardCheck, primary: true, short: 'reviews', covers: ['/m/projects'] },
-  { to: '/m/students', label: 'section_people', icon: Users, primary: true, short: 'students', covers: ['/m/groups'] },
-  { to: '/m/settings', label: 'section_account', icon: Settings, covers: ['/m/payouts'] },
-]
 
 export function Logo({ compact }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
-      <Mark size={40} className="shrink-0 rounded-full shadow-[0_8px_18px_-8px_rgb(21_96_236/0.7)]" />
+      <BrandMark size={40} />
       {!compact && (
         <span className="leading-tight">
           <span className="block text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
@@ -79,234 +35,111 @@ export function Logo({ compact }: { compact?: boolean }) {
   )
 }
 
-/** True when the reader is anywhere inside this entry's section, not only on its own page. */
-function covers(item: NavItem, pathname: string) {
-  return (item.covers ?? []).some((path) => pathname === path || pathname.startsWith(path + '/'))
+function useScrolled(threshold = 8) {
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const sync = () => setScrolled(window.scrollY > threshold)
+    sync()
+    window.addEventListener('scroll', sync, { passive: true })
+    return () => window.removeEventListener('scroll', sync)
+  }, [threshold])
+  return scrolled
 }
 
-function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
+/**
+ * The phone's menu: a dock at the thumb, four sections and "more".
+ *
+ * The marker is one element translated by whole slots, so it glides between them the same way
+ * the desktop rail does. A section that is not in the dock — the account — lights "more",
+ * because that is where it is reached from.
+ */
+function MobileDock({ items, onMore }: { items: NavItem[]; onMore: () => void }) {
   const { pathname } = useLocation()
+  const dock = items.filter((n) => n.primary).slice(0, 4)
+  const at = dock.findIndex((item) => isNavActive(item, pathname))
+  const elsewhere = at < 0 && items.some((item) => isNavActive(item, pathname))
+  const slot = at >= 0 ? at : elsewhere ? 4 : -1
+
   return (
-    <nav className="flex flex-col gap-0.5" aria-label={t('main')}>
-      {items.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.end}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            `group flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition ${
-              isActive || covers(item, pathname) ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.1),0_8px_18px_-10px_rgb(11_18_32/0.4)]' : 'text-ink-600 hover:fill-soft hover:text-ink-900'
-            }`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <item.icon size={18} className={isActive || covers(item, pathname) ? 'text-brand-500' : 'text-ink-400 group-hover:text-ink-600'} aria-hidden="true" />
-              {t(item.label)}
-            </>
+    <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 lg:hidden" aria-label={t('primary')}>
+      <div className="dock relative mx-auto max-w-md">
+        <div aria-hidden="true" className="menubar-slab chrome absolute inset-0" />
+        <div className="relative grid grid-cols-5 p-1.5">
+          {slot >= 0 && (
+            <span
+              aria-hidden="true"
+              className="nav-pill slide pointer-events-none absolute top-1.5 bottom-1.5 left-1.5"
+              style={{ width: 'calc((100% - 0.75rem) / 5)', transform: `translateX(${slot * 100}%)` }}
+            />
           )}
-        </NavLink>
-      ))}
+          {dock.map((item, i) => {
+            const on = i === at
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={on ? 'page' : undefined}
+                className={`relative z-10 flex min-w-0 flex-col items-center gap-1 px-0.5 py-2 text-[11px] font-semibold transition-colors ${on ? 'text-ink-900' : 'text-ink-500'}`}
+              >
+                <item.icon size={19} className={on ? 'text-brand-500' : ''} aria-hidden="true" />
+                <span className="max-w-full truncate">{t(item.short ?? item.label)}</span>
+              </Link>
+            )
+          })}
+          <button onClick={onMore} className={`relative z-10 flex min-w-0 flex-col items-center gap-1 px-0.5 py-2 text-[11px] font-semibold ${slot === 4 ? 'text-ink-900' : 'text-ink-500'}`} aria-haspopup="dialog">
+            <MoreHorizontal size={19} className={slot === 4 ? 'text-brand-500' : ''} aria-hidden="true" />
+            <span className="max-w-full truncate">{t('more')}</span>
+          </button>
+        </div>
+      </div>
     </nav>
   )
 }
 
-/**
- * Escape closes it.
- *
- * All three overlays here — the bell, the account menu and the mobile drawer — dismiss by
- * clicking a transparent full-screen button behind them. That works with a mouse and is
- * invisible to a keyboard, which leaves anyone not using one with no way out except tabbing
- * through the whole panel. One listener on the window is cheaper than a focus trap and covers
- * the case a focus trap exists to make survivable.
- */
-function useEscape(open: boolean, close: () => void) {
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, close])
-}
-
-function NotificationBell() {
-  const { state, user, readNotifications } = useApp()
-  const [open, setOpen] = useState(false)
-  const navigate = useNavigate()
-  const items = useMemo(() => (user ? notificationsFor(state, user.id) : []), [state, user])
-  const unread = items.filter((n) => !n.read).length
-  useEscape(open, () => setOpen(false))
+/** Everything the dock has no room for, in a sheet that rises from where the thumb already is. */
+function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }) {
+  const { pathname } = useLocation()
+  const closeButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => closeButton.current?.focus(), [])
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="relative grid h-10 w-10 place-items-center fill text-ink-600 ring-1 rim transition hover:fill-raised hover:text-ink-900"
-        aria-label={unread ? t('notifications_n_unread', { n: unread }) : t('notifications')}
-        aria-expanded={open}
-        aria-haspopup="menu"
-      >
-        <Bell size={18} aria-hidden="true" />
-        {unread > 0 && (
-          <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center bg-danger-solid px-1 text-[10px] font-bold text-white ring-2 ring-white">{unread}</span>
-        )}
-      </button>
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <button className="absolute inset-0 bg-ink-950/30 backdrop-blur-md" onClick={onClose} aria-label={t('close_navigation')} tabIndex={-1} />
+      <div role="dialog" aria-modal="true" aria-label={t('main')} className="animate-sheet chrome absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] mx-auto max-h-[85vh] max-w-md overflow-y-auto p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <Logo />
+          <button ref={closeButton} onClick={onClose} className="grid h-9 w-9 place-items-center rounded-[var(--ui-radius-sm)] fill text-ink-500 hover:fill-raised hover:text-ink-900" aria-label={t('close_navigation')}>
+            <X size={17} aria-hidden="true" />
+          </button>
+        </div>
 
-      {open && (
-        <>
-          <button className="fixed inset-0 z-40 cursor-default" aria-label={t('close_notifications')} onClick={() => setOpen(false)} />
-          <div className="animate-rise chrome specular absolute right-0 z-50 mt-2.5 w-[min(22rem,calc(100vw-2rem))] overflow-hidden">
-            <div className="relative flex items-center justify-between border-b edge px-4 py-3">
-              <p className="text-sm font-bold text-ink-900">{t('notifications')}</p>
-              {unread > 0 && (
-                <button className="text-xs font-semibold text-brand-600 hover:text-brand-700" onClick={() => readNotifications()}>
-                  {t('mark_all_read')}
-                </button>
-              )}
-            </div>
-            <ul className="relative max-h-[22rem] divide-y divider overflow-y-auto">
-              {items.length === 0 && <li className="px-4 py-10 text-center text-sm text-ink-500">{t('nothing_yet_actions_you_take_will_show_up_here')}</li>}
-              {items.slice(0, 12).map((n) => (
-                <li key={n.id}>
-                  <button
-                    className={`flex w-full gap-3 px-4 py-3 text-left transition hover:fill ${n.read ? '' : 'bg-brand-100/45'}`}
-                    onClick={() => {
-                      readNotifications(n.id)
-                      setOpen(false)
-                      if (n.href) navigate(n.href)
-                    }}
-                  >
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 ${n.read ? 'bg-ink-300' : 'bg-brand-600'}`} />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-ink-900">{t(n.title)}</span>
-                      <span className="mt-0.5 block text-xs leading-relaxed text-ink-600">{t(n.body, resolveVars(state, n.vars))}</span>
-                      <span className="mt-1 block text-[11px] text-ink-500">{formatDate(n.createdAt, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function UserMenu() {
-  const { user, standing, logout } = useApp()
-  const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
-  useEscape(open, () => setOpen(false))
-  if (!user) return null
-
-  return (
-    <div className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 fill py-1.5 pr-3 pl-1.5 ring-1 rim transition hover:fill-raised" aria-expanded={open} aria-haspopup="menu" aria-label={t('account_menu')}>
-        <Avatar name={user.name} initials={user.avatar} size={30} />
-        <span className="hidden text-left sm:block">
-          <span className="block text-xs font-bold text-ink-900">{user.name.split(' ')[0]}</span>
-          <span className="block text-[11px] text-ink-500">{t(user.role)}</span>
-        </span>
-      </button>
-
-      {open && (
-        <>
-          <button className="fixed inset-0 z-40 cursor-default" aria-label={t('close_menu')} onClick={() => setOpen(false)} />
-          <div className="animate-rise chrome specular absolute right-0 z-50 mt-2.5 w-64 overflow-hidden">
-            <div className="relative border-b edge px-4 py-3">
-              <p className="text-sm font-bold text-ink-900">{user.name}</p>
-              <p className="truncate text-xs text-ink-500">{user.email}</p>
-            </div>
-            <div className="relative p-2">
-              <Link to={user.role === 'mentor' ? '/m/settings' : '/profile'} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
-                <UserIcon size={16} aria-hidden="true" />{t('profile')}</Link>
-              {/* Teaching is a thing someone does, not a kind of person they are. A mentor is
-                  still learning something, so both halves of the app stay reachable from here
-                  rather than one of them replacing the other. */}
-              {user.role === 'mentor' && (
-                <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
-                  <BookOpen size={16} aria-hidden="true" />{t('switch_to_learning')}</Link>
-              )}
-              {user.role === 'student' && standing.isMentor && (
-                <Link to="/m" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:fill-strong">
-                  <FilePlus2 size={16} aria-hidden="true" />{t('switch_to_teaching')}</Link>
-              )}
-              <div className="flex items-center justify-between gap-2 px-3 py-2 md:hidden">
-                <span className="text-sm font-medium text-ink-700">{t('language')}</span>
-                <LocaleToggle compact />
-              </div>
-              <div className="flex items-center justify-between gap-2 px-3 py-2 sm:hidden">
-                <span className="text-sm font-medium text-ink-700">{t('theme')}</span>
-                <ThemeToggle compact />
-              </div>
-              <button
-                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50/80"
-                onClick={() => {
-                  logout()
-                  navigate('/login')
-                }}
+        <nav className="grid grid-cols-2 gap-2" aria-label={t('main')}>
+          {items.map((item) => {
+            const on = isNavActive(item, pathname)
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={onClose}
+                aria-current={on ? 'page' : undefined}
+                className={`flex items-center gap-2.5 rounded-[var(--ui-radius-sm)] px-3.5 py-3 text-sm font-semibold transition ${on ? 'nav-pill text-ink-900' : 'fill text-ink-700 hover:fill-raised'}`}
               >
-                <LogOut size={16} aria-hidden="true" />{t('sign_out')}</button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
+                <item.icon size={18} className={on ? 'text-brand-500' : 'text-ink-400'} aria-hidden="true" />
+                <span className="truncate">{t(item.label)}</span>
+              </Link>
+            )
+          })}
+        </nav>
 
-function XpPill() {
-  const { state, user } = useApp()
-  const profile = user ? profileOf(state, user.id) : undefined
-  if (!profile) return null
-  const lv = levelFor(profile.xp)
-  return (
-    <Link to="/achievements" className="hidden items-center gap-3 fill px-3 py-1.5 ring-1 rim transition hover:fill-raised md:flex" aria-label={t('level_and_xp', { n: lv.level.index, xp: profile.xp })}>
-      <span className="grid h-8 w-8 place-items-center bg-gradient-to-b from-amber-400 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgb(249_115_22/0.9)]">
-        <Zap size={15} aria-hidden="true" />
-      </span>
-      <span className="leading-tight">
-        <span className="block text-xs font-bold text-ink-900 tabular-nums"><AnimatedNumber value={profile.xp} /> XP</span>
-        <span className="block text-[11px] text-ink-500">{localizeLevelName(lv.level.name)}</span>
-      </span>
-      <span className="w-16">
-        <ProgressBar value={lv.percent} size="sm" tone="amber" label={t('level_progress')} />
-      </span>
-    </Link>
-  )
-}
+        <div className="mt-4 empty:hidden">
+          <LevelCard />
+        </div>
 
-function SidebarFooter() {
-  const { state, user } = useApp()
-  const profile = user ? profileOf(state, user.id) : undefined
-  if (user?.role === 'mentor') {
-    // Only a real group produces a real next session; otherwise the rail stays quiet.
-    const group = state.groups.find((g) => g.mentorId === user.id)
-    if (!group) return null
-    return (
-      <div className="fill p-4 ring-1 rim">
-        <p className="flex items-center gap-2 text-xs font-bold text-ink-900">
-          <CalendarClock size={14} className="text-brand-500" aria-hidden="true" />{t('next_session')}</p>
-        <p className="mt-1.5 text-xs leading-relaxed text-ink-600">
-          {group.name} · {group.schedule} · {group.room}
-        </p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t edge pt-4">
+          <LocaleToggle compact />
+          <ThemeToggle compact />
+        </div>
       </div>
-    )
-  }
-  if (!profile) return null
-  const lv = levelFor(profile.xp)
-  return (
-    <div className="fill p-4 ring-1 rim">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-ink-900">{localizeLevelName(lv.level.name)}</p>
-        <p className="text-xs font-semibold text-brand-600 tabular-nums"><AnimatedNumber value={profile.xp} /> XP</p>
-      </div>
-      <div className="mt-2.5">
-        <ProgressBar value={lv.percent} size="sm" tone="amber" label={t('level_progress')} />
-      </div>
-      <p className="mt-2 text-[11px] text-ink-500">{lv.next ? t('xp_to_level', { n: lv.xpToNext, level: localizeLevelName(lv.next.name) }) : t('highest_level_reached')}</p>
     </div>
   )
 }
@@ -314,123 +147,69 @@ function SidebarFooter() {
 export default function Layout() {
   const { user } = useApp()
   const location = useLocation()
-  const [drawer, setDrawer] = useState(false)
+  const [sheet, setSheet] = useState(false)
+  const closeSheet = useCallback(() => setSheet(false), [])
+  const scrolled = useScrolled()
   const sectionTabs = tabsForPath(location.pathname)
-  useEscape(drawer, () => setDrawer(false))
-  // The area decides the sidebar, not the role. A mentor browsing the catalogue is on the
-  // learner side and should be given the learner's navigation while they are there.
-  const nav = location.pathname.startsWith('/m') ? MENTOR_NAV : STUDENT_NAV
-  const mobilePrimary = nav.filter((n) => n.primary).slice(0, 4)
+  const nav = navFor(location.pathname)
+  const home = user?.role === 'mentor' ? '/m' : '/'
+  useEscape(sheet, closeSheet)
 
   useEffect(() => {
-    setDrawer(false)
+    setSheet(false)
     window.scrollTo({ top: 0 })
   }, [location.pathname])
 
   return (
     <div className="min-h-screen">
-      {/* The metal sits under every surface here, heavily veiled: these screens are dense with
-          text on glass, and the veil is what keeps their measured contrast. */}
+      {/* Each self-gates by skin: the metal under `brutal`; the orbit scene is mounted once in
+          App.tsx so it survives navigation. */}
       <LiquidMetalBackground depth="app" />
 
-      {/* floating rail */}
-      <aside className="chrome specular fixed top-4 bottom-4 left-4 z-40 hidden w-60 flex-col justify-between px-3.5 py-5 lg:flex">
-        <div className="relative">
-          <Link to={user?.role === 'mentor' ? '/m' : '/'} className="mb-7 block px-1">
-            <Logo />
-          </Link>
-          <NavList items={nav} />
-        </div>
-        <div className="relative">
-          <SidebarFooter />
-        </div>
-      </aside>
-
-      <div className="lg:pl-[17.5rem]">
-        <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6">
-          <div className="chrome specular mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-3 sm:px-4">
-            <button className="grid h-10 w-10 place-items-center fill text-ink-700 ring-1 rim lg:hidden" onClick={() => setDrawer(true)} aria-label={t('open_navigation')}>
-              <Menu size={18} aria-hidden="true" />
-            </button>
-            <Link to={user?.role === 'mentor' ? '/m' : '/'} className="lg:hidden">
-              <Mark size={36} className="rounded-full" />
-            </Link>
-            <span className="relative hidden pl-2 lg:block">
-              <Badge tone="brand" icon={Sparkles}>
-                {user?.role === 'mentor' ? t('mentor_workspace') : t('student_workspace')}
-              </Badge>
-            </span>
-            <div className="flex-1" />
-            {user?.role === 'student' && <XpPill />}
-            <span className="hidden md:inline-flex">
-              <LocaleToggle compact />
-            </span>
-            <span className="hidden sm:inline-flex">
-              <ThemeToggle compact />
-            </span>
-            <NotificationBell />
-            <UserMenu />
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-7xl px-4 pt-6 pb-32 sm:px-6 lg:pb-12">
-          {/* The section strip sits outside the transition on purpose: it belongs to the
-              section rather than to the page, so it should stay put while the page under it
-              changes. Animating it would make moving between two tabs look like leaving. */}
-          {sectionTabs && <SectionTabs tabs={sectionTabs} />}
-          {/* Replaces `.animate-rise` on every page root: the same movement in one place, and
-              the outgoing screen can leave rather than vanish. */}
-          <PageTransition routeKey={location.pathname}>
-            <Outlet />
-          </PageTransition>
-        </main>
-      </div>
-
-      {/* mobile drawer */}
-      {drawer && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button className="absolute inset-0 bg-ink-950/25 backdrop-blur-md" onClick={() => setDrawer(false)} aria-label={t('close_navigation')} />
-          <div className="animate-rise chrome specular absolute top-3 bottom-3 left-3 flex w-[16.5rem] flex-col justify-between px-3.5 py-5">
-            <div className="relative">
-              <div className="mb-7 flex items-center justify-between px-1">
-                <Logo />
-                <button onClick={() => setDrawer(false)} className="grid h-8 w-8 place-items-center fill text-ink-500 hover:fill-raised hover:text-ink-900" aria-label={t('close_navigation')}>
-                  <X size={17} aria-hidden="true" />
-                </button>
-              </div>
-              <NavList items={nav} onNavigate={() => setDrawer(false)} />
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
+        {/* The glass is a sibling of the content, not its parent: a backdrop-filter would
+            otherwise become the containing block of the popovers and clip their blur. */}
+        <div className="menubar relative mx-auto max-w-7xl" data-scrolled={scrolled || undefined}>
+          <div aria-hidden="true" className="menubar-slab chrome absolute inset-0" />
+          {/* Two equal flexible sides keep the rail centred; the right side never shrinks
+              below its own width, so a long label pushes the rail over rather than under it. */}
+          <div className="relative flex h-16 items-center gap-2 px-2 sm:px-3">
+            <div className="flex min-w-0 flex-1 basis-0">
+              <Link to={home} aria-label={t('s7_brand')} className="flex min-w-0 items-center gap-2.5 rounded-[var(--ui-radius-sm)] pr-2">
+                <BrandMark />
+                <span className="min-w-0 leading-tight lg:hidden xl:block">
+                  <span className="block truncate text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
+                  <span className="block truncate text-[11px] text-ink-500">{user?.role === 'mentor' ? t('mentor_workspace') : t('student_workspace')}</span>
+                </span>
+              </Link>
             </div>
-            <div className="relative">
-              <SidebarFooter />
+
+            <NavRail items={nav} />
+
+            <div className="flex min-w-max flex-1 basis-0 items-center justify-end gap-1.5">
+              {user?.role === 'student' && <XpChip />}
+              <span className="hidden xl:inline-flex">
+                <ThemeToggle compact />
+              </span>
+              <NotificationBell />
+              <UserMenu />
             </div>
           </div>
         </div>
-      )}
+      </header>
 
-      {/* mobile bottom bar */}
-      <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 lg:hidden" aria-label={t('primary')}>
-        <div className="chrome specular grid grid-cols-5 px-1 py-1">
-          {mobilePrimary.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `relative flex flex-col items-center gap-1 py-2 text-[11px] font-semibold transition ${
-                  isActive ? 'fill-strong text-brand-600 shadow-[0_1px_2px_rgb(11_18_32/0.1)]' : 'text-ink-500'
-                }`
-              }
-            >
-              <item.icon size={19} aria-hidden="true" />
-              {t(item.short ?? item.label)}
-            </NavLink>
-          ))}
-          <button className="relative flex flex-col items-center gap-1 py-2 text-[11px] font-semibold text-ink-500" onClick={() => setDrawer(true)}>
-            <ChevronRight size={19} aria-hidden="true" />
-            {t('more')}
-          </button>
-        </div>
-      </nav>
+      <main className="mx-auto max-w-7xl px-4 pt-7 pb-36 sm:px-6 lg:pb-16">
+        {/* The section strip sits outside the transition on purpose: it belongs to the
+            section rather than to the page, so it should stay put while the page under it
+            changes. Animating it would make moving between two tabs look like leaving. */}
+        {sectionTabs && <SectionTabs tabs={sectionTabs} />}
+        <PageTransition routeKey={location.pathname}>
+          <Outlet />
+        </PageTransition>
+      </main>
+
+      {sheet && <MoreSheet items={nav} onClose={closeSheet} />}
+      <MobileDock items={nav} onMore={() => setSheet(true)} />
     </div>
   )
 }

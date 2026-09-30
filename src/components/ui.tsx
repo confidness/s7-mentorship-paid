@@ -1,6 +1,7 @@
 import { cloneElement, isValidElement, useEffect, useRef, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { t } from '../i18n'
+import { useSlidingIndicator } from './motion'
 
 /* ------------------------------------------------------------------ buttons */
 
@@ -204,7 +205,7 @@ export function StatTile({ label, value, sub, icon: Icon, tone = 'brand' }: { la
           {sub && <p className="mt-2 truncate text-xs text-ink-500">{sub}</p>}
         </div>
         {Icon && (
-          <span className={`grid h-10 w-10 shrink-0 place-items-center ring-1 ring-inset ${TONES[tone]}`}>
+          <span className={`icon-tile grid h-10 w-10 shrink-0 place-items-center ring-1 ring-inset ${TONES[tone]}`}>
             <Icon size={18} aria-hidden="true" />
           </span>
         )}
@@ -224,7 +225,7 @@ export function Avatar({ name, initials, size = 40, tone }: { name: string; init
   const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360
   return (
     <span
-      className="grid shrink-0 place-items-center font-bold text-white ring-2 ring-white"
+      className="avatar grid shrink-0 place-items-center font-bold text-white ring-2 ring-white"
       style={{ width: size, height: size, fontSize: size * 0.36, background: tone ?? `linear-gradient(135deg, hsl(${hue} 65% 52%), hsl(${(hue + 40) % 360} 70% 42%))` }}
       aria-hidden="true"
       title={name}
@@ -237,7 +238,7 @@ export function Avatar({ name, initials, size = 40, tone }: { name: string; init
 export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIcon; title: string; body: string; action?: ReactNode }) {
   return (
     <div className="card flex flex-col items-center justify-center px-6 py-14 text-center">
-      <span className="mb-4 grid h-14 w-14 place-items-center fill-strong text-brand-500 shadow-[var(--shadow-soft)]">
+      <span className="icon-tile mb-4 grid h-14 w-14 place-items-center fill-strong text-brand-500 shadow-[var(--shadow-soft)]">
         <Icon size={24} aria-hidden="true" />
       </span>
       <h3 className="text-base font-bold tracking-[-0.02em] text-ink-900">{title}</h3>
@@ -318,6 +319,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, wide }
  */
 export function Tabs<T extends string>({ tabs, value, onChange, className = '' }: { tabs: { id: T; label: string; icon?: LucideIcon; count?: number }[]; value: T; onChange: (id: T) => void; className?: string }) {
   const strip = useRef<HTMLDivElement>(null)
+  const { box, ready } = useSlidingIndicator(strip, '[role="tab"]', tabs.findIndex((t) => t.id === value), tabs.map((t) => t.id).join('|'))
 
   /** Move selection, and take focus with it — otherwise the arrows move nothing visible. */
   const step = (to: number) => {
@@ -339,7 +341,8 @@ export function Tabs<T extends string>({ tabs, value, onChange, className = '' }
 
   return (
     <div className={`-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 ${className}`}>
-      <div ref={strip} role="tablist" onKeyDown={onKeyDown} className="chrome inline-flex min-w-full gap-1 p-1 sm:min-w-0">
+      <div ref={strip} role="tablist" onKeyDown={onKeyDown} className="chrome relative inline-flex min-w-full gap-1 p-1 sm:min-w-0">
+        {box && <span aria-hidden="true" className={`nav-pill pointer-events-none absolute top-1 bottom-1 left-0 ${ready ? 'slide' : ''}`} style={{ width: box.w, transform: `translateX(${box.x}px)` }} />}
         {tabs.map((t) => {
           const active = t.id === value
           return (
@@ -349,14 +352,14 @@ export function Tabs<T extends string>({ tabs, value, onChange, className = '' }
               aria-selected={active}
               tabIndex={active ? 0 : -1}
               onClick={() => onChange(t.id)}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition ${
-                active ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12),0_4px_10px_-4px_rgb(11_18_32/0.25)]' : 'text-ink-600 hover:text-ink-900'
+              className={`relative z-10 inline-flex flex-1 items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition ${
+                active ? 'text-ink-900' : 'text-ink-600 hover:text-ink-900'
               }`}
             >
               {t.icon && <t.icon size={15} aria-hidden="true" />}
               {t.label}
               {t.count !== undefined && (
-                <span className={`px-1.5 py-0.5 text-[11px] tabular-nums ${active ? 'bg-brand-100 text-brand-700' : 'fill text-ink-500'}`}>{t.count}</span>
+                <span className={`count-chip px-1.5 py-0.5 text-[11px] tabular-nums ${active ? 'bg-brand-100 text-brand-700' : 'fill text-ink-500'}`}>{t.count}</span>
               )}
             </button>
           )
@@ -401,12 +404,19 @@ export const controlClass =
 
 export const inputClass = `w-full ${controlClass}`
 
+/**
+ * Shown on hover or focus, and only then in the layout.
+ *
+ * It used to be `display: block` at opacity 0 from `sm` up, which kept every tooltip on the
+ * page laid out at once — a long one near the right edge widened the document and gave the
+ * whole page a sideways scroll.
+ */
 export const Tooltip = ({ label, children }: { label: string; children: ReactNode }) => (
   <span className="group/tt relative inline-flex">
     {children}
     <span
       role="tooltip"
-      className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden -translate-x-1/2 bg-[#0f1724]/92 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/tt:block group-hover/tt:opacity-100 sm:block"
+      className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden -translate-x-1/2 rounded-[var(--ui-radius-sm)] bg-[#0f1724]/92 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white backdrop-blur-sm sm:group-focus-within/tt:block sm:group-hover/tt:block"
     >
       {label}
     </span>

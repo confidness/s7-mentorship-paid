@@ -100,20 +100,24 @@ export function useTheme() {
  * the editorial skin at night, not a different one — so a skin defines both themes and the
  * two choices never collapse into a single list of five hybrid options.
  *
- * `plain` is the default and is meant to be unremarkable. A product should not make a
- * statement on somebody's first visit; the opinionated skins are a choice, taken here.
+ * `orbit` is the default: the platform's own world, a live 3D scene under frosted glass. The
+ * rest are a choice taken in settings — `plain` among them, for anyone who would rather the
+ * interface got out of the way.
  */
-export type SkinChoice = 'plain' | 'editorial' | 'atelier' | 'brutal' | 'terminal' | 'marketplace' | 'academy' | 'streak' | 'cinema' | 'poster'
+export type SkinChoice = 'orbit' | 'plain' | 'editorial' | 'atelier' | 'brutal' | 'terminal' | 'marketplace' | 'academy' | 'streak' | 'cinema' | 'poster'
+
+export const DEFAULT_SKIN: SkinChoice = 'orbit'
 
 /**
  * Two families, and the split is where they came from.
  *
- * The first five are design disciplines — minimalism, agency work, brutalism, terminal UI.
+ * The first six are made here — the house scene, then design disciplines: minimalism, agency
+ * work, brutalism, terminal UI.
  * The second five were read off the platforms this product competes with, whose visual
  * languages are each a bet about what sells a course. Keeping the groups apart in the picker
  * is the difference between a choice and a list of ten.
  */
-export const HOUSE_SKINS: SkinChoice[] = ['plain', 'editorial', 'atelier', 'brutal', 'terminal']
+export const HOUSE_SKINS: SkinChoice[] = ['orbit', 'plain', 'editorial', 'atelier', 'brutal', 'terminal']
 export const INDUSTRY_SKINS: SkinChoice[] = ['marketplace', 'academy', 'streak', 'cinema', 'poster']
 
 export const SKINS: SkinChoice[] = [...HOUSE_SKINS, ...INDUSTRY_SKINS]
@@ -127,7 +131,7 @@ export function readSkin(): SkinChoice {
   } catch {
     /* storage blocked — fall through to the default */
   }
-  return 'plain'
+  return DEFAULT_SKIN
 }
 
 export function applySkin(skin: SkinChoice) {
@@ -149,7 +153,7 @@ export function applySkin(skin: SkinChoice) {
 export function useAppliedSkin(): SkinChoice {
   const read = (): SkinChoice => {
     const value = typeof document !== 'undefined' ? document.documentElement.dataset.skin : undefined
-    return value && (SKINS as string[]).includes(value) ? (value as SkinChoice) : 'plain'
+    return value && (SKINS as string[]).includes(value) ? (value as SkinChoice) : DEFAULT_SKIN
   }
   const [skin, setSkin] = useState<SkinChoice>(read)
 

@@ -112,9 +112,11 @@ export default function Payouts() {
             {t('check_again')}
           </Button>
         </div>
-      </Card>
 
-      <p className="text-xs leading-relaxed text-ink-500">{t('stripe_handles_identity_and_bank_details_we_never_see_them')}</p>
+        {/* Inside the sheet, next to the button it qualifies — on the bare page it sat over
+            whatever the background happened to be doing. */}
+        <p className="border-t edge pt-4 text-xs leading-relaxed text-ink-500">{t('stripe_handles_identity_and_bank_details_we_never_see_them')}</p>
+      </Card>
     </div>
   )
 }

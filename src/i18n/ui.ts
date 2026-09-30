@@ -621,11 +621,17 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     ru: 'Светлая и тёмная — одно решение, из чего сделан интерфейс — другое. Тема задаёт обе, так что выбор не отбирает у тебя тёмный режим.',
     kk: 'Ашық пен қараңғы — бір таңдау, интерфейс неден жасалғаны — екіншісі. Тақырып екеуін де анықтайды.',
   },
+  skin_orbit: { en: 'Orbit', ru: 'Орбита', kk: 'Орбита' },
+  skin_orbit_note: {
+    en: 'The default. A live 3D scene under frosted glass — the S7 mark in light, a turning galaxy, a circuit floor. The camera moves as you change sections.',
+    ru: 'По умолчанию. Живая 3D-сцена под матовым стеклом — знак S7 из света, вращающаяся галактика, светящаяся сетка. Камера перемещается, когда вы меняете раздел.',
+    kk: 'Әдепкі. Күңгірт шыны астындағы тірі 3D-сахна — жарықтан жасалған S7 белгісі, айналатын галактика, жарқыраған тор. Бөлімді ауыстырғанда камера қозғалады.',
+  },
   skin_plain: { en: 'Plain', ru: 'Обычная', kk: 'Қарапайым' },
   skin_plain_note: {
-    en: 'The default. Neutral greys, soft corners, quiet shadows — an interface that gets out of the way.',
-    ru: 'По умолчанию. Нейтральные серые, мягкие углы, тихие тени — интерфейс, который не мешает.',
-    kk: 'Әдепкі. Бейтарап сұр түстер, жұмсақ бұрыштар, тыныш көлеңкелер — кедергі келтірмейтін интерфейс.',
+    en: 'Neutral greys, soft corners, quiet shadows — an interface that gets out of the way.',
+    ru: 'Нейтральные серые, мягкие углы, тихие тени — интерфейс, который не мешает.',
+    kk: 'Бейтарап сұр түстер, жұмсақ бұрыштар, тыныш көлеңкелер — кедергі келтірмейтін интерфейс.',
   },
   skin_editorial: { en: 'Editorial', ru: 'Редакция', kk: 'Редакция' },
   skin_editorial_note: {

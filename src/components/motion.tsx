@@ -1,5 +1,5 @@
 import { AnimatePresence, m, useReducedMotion, type Variants } from 'motion/react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { formatNumber } from '../i18n'
 
 /**
@@ -156,4 +156,46 @@ export function TransitionPanel({ index, direction, children, className = '' }: 
       </AnimatePresence>
     </div>
   )
+}
+
+/**
+ * Where the selection marker of a strip should sit, measured off the item it marks.
+ *
+ * A menu or a tab strip that lights the chosen item in place reads as a list of switches; a
+ * marker that travels from the old choice to the new one reads as one control with a state,
+ * and shows where you came from. `layoutId` would do this, but it needs Motion's layout
+ * features, which the LazyMotion bundle in main.tsx leaves out on purpose — so it is measured
+ * here and moved with a CSS transition (`.slide` in index.css), which the reduced-motion rule
+ * there already reaches.
+ *
+ * Offsets are relative to the container, which therefore has to be positioned. `ready` turns
+ * true one frame after the first measurement, so the marker appears in place on load rather
+ * than sliding in from the left edge.
+ */
+export function useSlidingIndicator(container: RefObject<HTMLElement>, selector: string, index: number, version = '') {
+  const [box, setBox] = useState<{ x: number; w: number } | null>(null)
+  const [ready, setReady] = useState(false)
+
+  useLayoutEffect(() => {
+    const root = container.current
+    if (!root) return
+    const measure = () => {
+      const el = index >= 0 ? root.querySelectorAll<HTMLElement>(selector)[index] : undefined
+      setBox(el ? { x: el.offsetLeft, w: el.offsetWidth } : null)
+    }
+    measure()
+    // Labels change width with the language and with late-loading fonts; follow them.
+    const observer = new ResizeObserver(measure)
+    observer.observe(root)
+    root.querySelectorAll(selector).forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [container, selector, index, version])
+
+  useEffect(() => {
+    if (!box || ready) return
+    const raf = requestAnimationFrame(() => setReady(true))
+    return () => cancelAnimationFrame(raf)
+  }, [box, ready])
+
+  return { box, ready }
 }
