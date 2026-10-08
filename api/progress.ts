@@ -8,11 +8,11 @@
  *
  * It runs as the caller, not as the service role. Nothing here needs to act outside what the
  * person may do: row level security already says a learner writes only their own rows, and
- * refuses the two XP kinds that are somebody else's decision about them.
+ * refuses the XP kinds that are somebody else's decision about them.
  */
 
 import { HttpError, fail, json, readJson, requireMethod, requireUser, type Caller } from './_lib/server.js'
-import type { ProgressOp } from '../src/lib/progress'
+import { BROWSER_XP_KINDS, type ProgressOp } from '../src/lib/progress.js'
 
 /** A batch bound, so one bad client cannot post a million rows in a single request. */
 const MAX_OPS = 500
@@ -107,6 +107,11 @@ async function apply(req: Request, caller: Caller): Promise<Response> {
         break
       }
       case 'xp':
+        // An award the policy would refuse is dropped, not sent. One refused row fails the
+        // whole insert, and a 500 is retried forever without spending an attempt — so a single
+        // queued `assignment` row from before 0013 would stall this learner's sync for good.
+        // The route that decided it has already paid it.
+        if (!BROWSER_XP_KINDS.has(op.kind)) break
         ledger.push({ user_id: caller.id, amount: op.amount, reason: op.reason, vars: op.vars ?? null, kind: op.kind, ref_id: op.refId ?? null, op_id: toUuid(op.id), created_at: op.at })
         break
       case 'profile':

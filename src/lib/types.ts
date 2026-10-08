@@ -356,11 +356,14 @@ export interface LessonSubmission {
   id: string
   lessonId: string
   studentId: string
+  /** From the server, so an author can see who answered without having met them in this browser. */
+  studentName?: string
   answers: TaskAnswer[]
   /** Quiz questions mark themselves; this is the share answered correctly. */
   quizScore: number
   quizTotal: number
-  status: 'submitted' | 'reviewed'
+  /** `needs_changes` is the author sending it back: the student may answer again. */
+  status: 'submitted' | 'needs_changes' | 'reviewed'
   submittedAt: string
   reviewedAt?: string
   reviewerId?: string

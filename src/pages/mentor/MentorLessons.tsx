@@ -1,21 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Code2, EyeOff, FileText, ListChecks, MessageSquareText, Pencil, Plus, Send, Trash2, Users } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { customLessonById, lessonsByAuthor, submissionsForLesson, userById } from '../../lib/selectors'
-import type { CustomTask, LessonSubmission } from '../../lib/types'
+import type { AppState, CustomTask, LessonSubmission } from '../../lib/types'
+import { lessonPoints, reachedServer, type ReviewDecision } from '../../lib/submissions'
+import { getLessonContent } from '../../lib/api'
+import { backendConfigured } from '../../lib/supabase'
 import { Avatar, Badge, Button, Card, EmptyState, Field, Modal, inputClass } from '../../components/ui'
 import { t, formatDate } from '../../i18n'
 
 const KIND_ICON = { quiz: ListChecks, code: Code2, open: MessageSquareText }
 const KIND_LABEL = { quiz: 'task_kind_quiz', code: 'task_kind_code', open: 'task_kind_open' }
+const STATUS_BADGE = {
+  submitted: { tone: 'warning', label: 'awaiting_review' },
+  needs_changes: { tone: 'neutral', label: 'changes_requested' },
+  reviewed: { tone: 'success', label: 'reviewed' },
+} as const
+
+/**
+ * The hand-ins on a lesson that can be decided from here. With a server, one it never received
+ * cannot be decided there either — it was saved in this browser by a build that kept hand-ins
+ * local — so it is not offered as if it could.
+ */
+const handInsFor = (state: AppState, lessonId: string) => submissionsForLesson(state, lessonId).filter((sub) => !backendConfigured || reachedServer(sub))
 
 /* ------------------------------------------------------------------ list */
 
 export default function MentorLessons() {
-  const { state, user, setLessonPublished, deleteCustomLesson } = useApp()
+  const { state, user, setLessonPublished, deleteCustomLesson, refreshSubmissions } = useApp()
   const toast = useToast()
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  // The waiting counts on each card are only as fresh as the last read of hand-ins.
+  useEffect(() => {
+    void refreshSubmissions()
+  }, [refreshSubmissions])
   if (!user) return null
 
   const lessons = lessonsByAuthor(state, user.id)
@@ -38,7 +57,7 @@ export default function MentorLessons() {
       ) : (
         <ul className="grid gap-4 lg:grid-cols-2">
           {lessons.map((lesson) => {
-            const subs = submissionsForLesson(state, lesson.id)
+            const subs = handInsFor(state, lesson.id)
             const waiting = subs.filter((s) => s.status === 'submitted').length
             return (
               <li key={lesson.id}>
@@ -127,18 +146,46 @@ export default function MentorLessons() {
 
 export function LessonSubmissions() {
   const { lessonId } = useParams()
-  const { state, reviewLessonSubmission } = useApp()
+  const { state, reviewLessonSubmission, refreshSubmissions } = useApp()
   const toast = useToast()
   const [open, setOpen] = useState<LessonSubmission | null>(null)
   const [feedback, setFeedback] = useState('')
   const [xp, setXp] = useState(0)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  /**
+   * The questions as the server holds them, answer key included — this is their author.
+   *
+   * The copy in this browser is either a catalogue teaser with no questions in it, or, if the
+   * lesson was written here, questions under ids this browser made up; the server gives each
+   * question its own id when it saves, and students answer against those. Either way the
+   * answers would line up with nothing. Without a server the local copy is the only one there
+   * is, and is used as before.
+   */
+  const [serverTasks, setServerTasks] = useState<CustomTask[] | null>(null)
+  useEffect(() => {
+    void refreshSubmissions()
+    if (!backendConfigured || !lessonId) return
+    let alive = true
+    void getLessonContent(lessonId)
+      .then((result) => {
+        if (alive && !('paywalled' in result)) setServerTasks(result.tasks)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [lessonId, refreshSubmissions])
 
   const lesson = customLessonById(state, lessonId)
   if (!lesson) return <EmptyState icon={FileText} title={t('lesson_not_found')} body={t('it_may_have_been_deleted')} />
 
-  const subs = submissionsForLesson(state, lesson.id)
-  const maxXp = lesson.tasks.reduce((n, task) => n + task.points, 0)
+  const tasks = serverTasks ?? lesson.tasks
+  const subs = handInsFor(state, lesson.id)
+  const maxXp = lessonPoints(tasks)
+  // Somebody who has never been seen in this browser still has a name: the server sends it.
+  const nameOf = (sub: LessonSubmission) => userById(state, sub.studentId)?.name ?? sub.studentName ?? t('unknown')
 
   function startReview(sub: LessonSubmission) {
     setOpen(sub)
@@ -146,6 +193,34 @@ export function LessonSubmissions() {
     // Quiz answers already mark themselves; that share of the points is the obvious starting offer.
     setXp(sub.quizTotal ? Math.round((sub.quizScore / sub.quizTotal) * maxXp) : maxXp)
     setError('')
+  }
+
+  /**
+   * Approve and pay, or send back. Server first: a decision that did not land is not a
+   * decision, so the toast waits for the round trip and a refusal says so instead.
+   */
+  async function decide(decision: ReviewDecision) {
+    if (!open) return
+    if (!feedback.trim()) {
+      setError(t('feedback_is_required_for_both_decisions'))
+      return
+    }
+    setBusy(true)
+    try {
+      await reviewLessonSubmission(open.id, decision, feedback.trim(), xp)
+    } catch (err) {
+      setBusy(false)
+      toast({ title: t('could_not_save_the_review'), body: err instanceof Error ? err.message : '', tone: 'error' })
+      return
+    }
+    setBusy(false)
+    const name = nameOf(open)
+    setOpen(null)
+    toast(
+      decision === 'approved'
+        ? { title: t('answers_reviewed'), body: t('student_received_xp', { name, xp }), tone: 'success' }
+        : { title: t('changes_requested'), body: t('student_notified_resubmit', { name }), tone: 'success' },
+    )
   }
 
   return (
@@ -168,18 +243,18 @@ export function LessonSubmissions() {
             return (
               <li key={sub.id}>
                 <Card className="flex flex-wrap items-center gap-4 p-4">
-                  <Avatar name={student?.name ?? ''} initials={student?.avatar ?? '?'} size={38} />
+                  <Avatar name={nameOf(sub)} initials={student?.avatar ?? (sub.studentName ?? '?').slice(0, 2).toUpperCase()} size={38} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-ink-900">{student?.name ?? t('unknown')}</p>
+                    <p className="truncate text-sm font-bold text-ink-900">{nameOf(sub)}</p>
                     <p className="text-xs text-ink-500">{t('submitted_when', { when: formatDate(sub.submittedAt) })}</p>
                   </div>
                   {sub.quizTotal > 0 && (
                     <Badge tone={sub.quizScore === sub.quizTotal ? 'success' : 'warning'}>{t('quiz_n_of_total', { n: sub.quizScore, total: sub.quizTotal })}</Badge>
                   )}
-                  <Badge tone={sub.status === 'reviewed' ? 'success' : 'warning'}>{sub.status === 'reviewed' ? t('reviewed') : t('awaiting_review')}</Badge>
-                  {sub.status === 'reviewed' ? (
-                    <Badge tone="brand">{t('plus_xp', { n: sub.awardedXp ?? 0 })}</Badge>
-                  ) : (
+                  <Badge tone={STATUS_BADGE[sub.status].tone}>{t(STATUS_BADGE[sub.status].label)}</Badge>
+                  {sub.status === 'reviewed' && <Badge tone="brand">{t('plus_xp', { n: sub.awardedXp ?? 0 })}</Badge>}
+                  {/* Sent back is the student's move, not the author's: nothing to review until they answer again. */}
+                  {sub.status === 'submitted' && (
                     <Button size="sm" onClick={() => startReview(sub)}>
                       {t('review')}
                     </Button>
@@ -191,11 +266,15 @@ export function LessonSubmissions() {
         </ul>
       )}
 
-      <Modal open={!!open} onClose={() => setOpen(null)} wide title={t('review_answers')} subtitle={userById(state, open?.studentId)?.name}>
+      <Modal open={!!open} onClose={() => !busy && setOpen(null)} wide title={t('review_answers')} subtitle={open ? nameOf(open) : undefined}>
         {open && (
           <div className="space-y-5">
+            {open.feedback && (
+              // What was asked for last time, so the second read is against it.
+              <p className="border border-brand-200/70 bg-brand-100/50 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-brand-800">{open.feedback}</p>
+            )}
             <ol className="space-y-3">
-              {lesson.tasks.map((task, i) => (
+              {tasks.map((task, i) => (
                 <li key={task.id} className="border edge fill-soft p-4">
                   <AnswerRow task={task} index={i} value={open.answers.find((a) => a.taskId === task.id)?.value ?? ''} />
                 </li>
@@ -217,21 +296,14 @@ export function LessonSubmissions() {
               />
             </Field>
 
-            <Button
-              icon={CheckCircle2}
-              className="w-full"
-              onClick={() => {
-                if (!feedback.trim()) {
-                  setError(t('feedback_is_required_for_any_decision'))
-                  return
-                }
-                reviewLessonSubmission(open.id, feedback.trim(), xp)
-                setOpen(null)
-                toast({ title: t('answers_reviewed'), body: t('the_student_has_been_notified'), tone: 'success' })
-              }}
-            >
-              {t('finish_review')}
-            </Button>
+            <div className="space-y-2.5">
+              <Button variant="success" icon={CheckCircle2} className="w-full" loading={busy} onClick={() => void decide('approved')}>
+                {t('approve')}
+              </Button>
+              <Button variant="secondary" icon={Send} className="w-full" disabled={busy} onClick={() => void decide('needs_changes')}>
+                {t('request_changes')}
+              </Button>
+            </div>
           </div>
         )}
       </Modal>
@@ -242,7 +314,7 @@ export function LessonSubmissions() {
 /** One answer, rendered the way its question type deserves. */
 function AnswerRow({ task, index, value }: { task: CustomTask; index: number; value: string }) {
   const Icon = KIND_ICON[task.kind]
-  const correct = task.kind === 'quiz' && Number(value) === task.answerIndex
+  const correct = task.kind === 'quiz' && value !== '' && Number(value) === task.answerIndex
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">

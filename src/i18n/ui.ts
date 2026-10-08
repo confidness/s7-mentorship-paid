@@ -1673,7 +1673,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   not_started: { en: 'Not started', ru: 'Не начат', kk: 'Басталмаған' },
   review_answers: { en: 'Review answers', ru: 'Проверить ответы', kk: 'Жауаптарды тексеру' },
   answers_reviewed: { en: 'Answers reviewed', ru: 'Ответы проверены', kk: 'Жауаптар тексерілді' },
-  finish_review: { en: 'Finish review', ru: 'Завершить проверку', kk: 'Тексеруді аяқтау' },
   xp_to_award: { en: 'XP to award', ru: 'Начислить XP', kk: 'Берілетін XP' },
   up_to_n_for_this_lesson: { en: 'Up to {n} for this lesson', ru: 'Максимум {n} за этот урок', kk: 'Бұл сабаққа ең көбі {n}' },
   quiz_n_of_total: { en: 'Quiz {n}/{total}', ru: 'Тест {n}/{total}', kk: 'Тест {n}/{total}' },
@@ -1735,6 +1734,26 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     kk: 'Тәлімгер «{title}» тапсырмасын тексеріп, {xp} XP берді.',
   },
   xp_assignment_completed: { en: 'Assignment · {title}', ru: 'Задание · {title}', kk: 'Тапсырма · {title}' },
+  /**
+   * Answers sent back, and answers that never left. The author can now return a hand-in for
+   * another go, as with projects, and the student is told by the server in their own language.
+   * The title of that notification is `notif_changes_requested`, shared with projects.
+   */
+  notif_assignment_changes_requested_body: {
+    en: 'Your mentor read your answers to “{title}” and asked for changes. Read the feedback and send them again.',
+    ru: 'Наставник прочитал(а) твои ответы на «{title}» и попросил(а) доработать. Прочитай отзыв и отправь их снова.',
+    kk: 'Тәлімгер «{title}» тапсырмасына берген жауаптарыңды оқып, түзетуді сұрады. Пікірді оқы да, қайта жібер.',
+  },
+  answers_sent_back_edit_and_resend: {
+    en: 'Your mentor sent these back. Read what they wrote, change your answers and send them again.',
+    ru: 'Наставник вернул(а) ответы. Прочитай отзыв, исправь ответы и отправь их снова.',
+    kk: 'Тәлімгер жауаптарды қайтарды. Пікірді оқы, жауаптарыңды түзет те, қайта жібер.',
+  },
+  answers_never_reached_your_mentor: {
+    en: 'These answers were saved in this browser but never reached your mentor. Check them and send them again.',
+    ru: 'Эти ответы сохранились в этом браузере, но так и не дошли до наставника. Проверь их и отправь снова.',
+    kk: 'Бұл жауаптар осы браузерде сақталды, бірақ тәлімгеріңе жетпеді. Тексер де, қайта жібер.',
+  },
   edit: { en: 'Edit', ru: 'Изменить', kk: 'Өңдеу' },
   delete: { en: 'Delete', ru: 'Удалить', kk: 'Жою' },
   title: { en: 'Title', ru: 'Название', kk: 'Атауы' },

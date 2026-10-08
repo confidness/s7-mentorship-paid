@@ -7,6 +7,7 @@ import { MAX_TASKS_PER_LESSON } from './types'
 import { evaluateAchievements } from './gamification'
 import { lessonOrder } from './selectors'
 import { lessonById } from './selectors'
+import { canHandIn, decideReview, lessonPoints, settle, type ReviewDecision } from './submissions'
 
 export const uid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`
 const now = () => new Date().toISOString()
@@ -490,56 +491,71 @@ export function setLessonPublished(s: AppState, lessonId: string, published: boo
   return next
 }
 
-/** Quiz questions mark themselves. Anything written by hand needs a person to read it. */
-export function gradeQuiz(lesson: CustomLesson, answers: TaskAnswer[]): { score: number; total: number } {
-  const quizzes = lesson.tasks.filter((t) => t.kind === 'quiz')
-  const score = quizzes.reduce((n, task) => {
-    const given = answers.find((a) => a.taskId === task.id)?.value
-    return given !== undefined && Number(given) === task.answerIndex ? n + 1 : n
-  }, 0)
-  return { score, total: quizzes.length }
+/**
+ * Where a hand-in lands in this browser, however it was graded.
+ *
+ * Shared by the two ways answers arrive: marked here, when there is no server, and marked by
+ * the server against the key only it may read. Either way the student sees the row, is paid
+ * what a settled one earned, and is told the result — once, because `awardXp` pays once per
+ * lesson, which is also what keeps a resubmission from paying again.
+ *
+ * The author is not told from here. Without a server the caller below tells them; with one,
+ * the route already put it in their inbox, and a copy written into the student's browser
+ * would be addressed to somebody who never reads it there.
+ */
+function landHandIn(s: AppState, submission: LessonSubmission, lessonTitle: string): AppState {
+  const { studentId, lessonId } = submission
+  const others = s.lessonSubmissions.filter((sub) => !(sub.lessonId === lessonId && sub.studentId === studentId))
+  let next: AppState = { ...s, lessonSubmissions: [submission, ...others] }
+
+  if (submission.status === 'reviewed') {
+    const earned = submission.awardedXp ?? 0
+    if (earned > 0) next = awardXp(next, studentId, earned, 'xp_assignment_completed', 'assignment', lessonId, { title: lessonTitle })
+    next = notify(next, {
+      userId: studentId,
+      title: 'notif_assignment_marked',
+      body: 'notif_assignment_marked_body',
+      vars: { title: lessonTitle, score: submission.quizScore, total: submission.quizTotal, xp: earned },
+      kind: 'achievement',
+      href: `/assigned/${lessonId}`,
+    })
+  }
+
+  next = touchStreak(next, studentId)
+  return syncAchievements(next, studentId)
 }
 
 /**
  * A lesson made only of quizzes can settle itself the moment it is handed in. One with code or
  * written answers cannot, so it waits for the mentor — the same review loop projects use.
+ *
+ * This is the path with no server. The rules are `settle` and `canHandIn`, which the server
+ * runs too; only the answer key differs, and here the local copy has it.
  */
 export function submitLessonAnswers(s: AppState, studentId: string, lessonId: string, answers: TaskAnswer[]): AppState {
   const lesson = s.customLessons.find((l) => l.id === lessonId)
-  if (!lesson || s.lessonSubmissions.some((sub) => sub.lessonId === lessonId && sub.studentId === studentId)) return s
+  const existing = s.lessonSubmissions.find((sub) => sub.lessonId === lessonId && sub.studentId === studentId)
+  if (!lesson || !canHandIn(existing)) return s
 
-  const { score, total } = gradeQuiz(lesson, answers)
-  const selfMarking = lesson.tasks.length > 0 && lesson.tasks.every((t) => t.kind === 'quiz')
-  const points = lesson.tasks.reduce((n, t) => n + t.points, 0)
-
+  const graded = settle(lesson.tasks, answers)
+  const at = now()
   const submission: LessonSubmission = {
-    id: uid('ls'),
+    // A resubmission is the same hand-in answered again, so it keeps its id. The feedback that
+    // sent it back stays with it until the next decision replaces it.
+    id: existing?.id ?? uid('ls'),
     lessonId,
     studentId,
     answers,
-    quizScore: score,
-    quizTotal: total,
-    status: selfMarking ? 'reviewed' : 'submitted',
-    submittedAt: now(),
-    ...(selfMarking
-      ? { reviewedAt: now(), awardedXp: total ? Math.round((score / total) * points) : 0 }
-      : {}),
+    quizScore: graded.quizScore,
+    quizTotal: graded.quizTotal,
+    status: graded.status,
+    submittedAt: at,
+    feedback: existing?.feedback,
+    ...(graded.status === 'reviewed' ? { reviewedAt: at, awardedXp: graded.awardedXp } : {}),
   }
 
-  let next: AppState = { ...s, lessonSubmissions: [submission, ...s.lessonSubmissions] }
-
-  if (selfMarking) {
-    const earned = submission.awardedXp ?? 0
-    if (earned > 0) next = awardXp(next, studentId, earned, 'xp_assignment_completed', 'assignment', lessonId, { title: lesson.title })
-    next = notify(next, {
-      userId: studentId,
-      title: 'notif_assignment_marked',
-      body: 'notif_assignment_marked_body',
-      vars: { title: lesson.title, score, total, xp: earned },
-      kind: 'achievement',
-      href: `/assigned/${lessonId}`,
-    })
-  } else {
+  let next = landHandIn(s, submission, lesson.title)
+  if (submission.status === 'submitted') {
     next = notify(next, {
       userId: lesson.authorId,
       title: 'notif_assignment_submitted',
@@ -549,31 +565,77 @@ export function submitLessonAnswers(s: AppState, studentId: string, lessonId: st
       href: `/m/lessons/${lessonId}`,
     })
   }
-
-  next = touchStreak(next, studentId)
-  return syncAchievements(next, studentId)
+  return next
 }
 
-/** The mentor reads the written answers, sets the XP and closes the submission. */
-export function reviewLessonSubmission(s: AppState, submissionId: string, mentorId: string, feedback: string, awardedXp: number): AppState {
-  const submission = s.lessonSubmissions.find((sub) => sub.id === submissionId)
-  if (!submission || submission.status === 'reviewed') return s
-  const lesson = s.customLessons.find((l) => l.id === submission.lessonId)
-  const cap = lesson ? lesson.tasks.reduce((n, t) => n + t.points, 0) : awardedXp
-  const xp = Math.max(0, Math.min(Math.round(awardedXp), cap))
+/**
+ * Records a hand-in the server accepted and graded.
+ *
+ * Nothing is decided here: the server already ran `settle` against the real answer key, which
+ * this browser does not have for a lesson it fetched. Marking those answers locally scored them
+ * against a copy with no questions in it — nothing right, nothing settled, and a quiz that
+ * should have paid on the spot left waiting for a review no mentor could see.
+ */
+export function recordHandIn(s: AppState, submission: LessonSubmission, lessonTitle: string): AppState {
+  return landHandIn(s, submission, lessonTitle)
+}
 
+/**
+ * The author reads the answers and decides: approve and pay, or send them back.
+ *
+ * The decision itself is `decideReview`, which the server runs too. This is the path with no
+ * server, where the author and the student share a browser; with one, the client records what
+ * the route returns rather than deciding a second time.
+ */
+export function reviewLessonSubmission(
+  s: AppState,
+  submissionId: string,
+  mentorId: string,
+  feedback: string,
+  awardedXp: number,
+  decision: ReviewDecision = 'approved',
+): AppState {
+  const submission = s.lessonSubmissions.find((sub) => sub.id === submissionId)
+  if (!submission) return s
+  const lesson = s.customLessons.find((l) => l.id === submission.lessonId)
+  const verdict = decideReview({
+    reviewerId: mentorId,
+    lessonAuthorId: lesson?.authorId ?? '',
+    studentId: submission.studentId,
+    status: submission.status,
+    decision,
+    feedback,
+    awardedXp,
+    maxXp: lessonPoints(lesson?.tasks ?? []),
+  })
+  if (!verdict.ok) return s
+
+  const title = lesson?.title ?? ''
+  const xp = verdict.awardedXp ?? 0
   let next: AppState = {
     ...s,
     lessonSubmissions: s.lessonSubmissions.map((sub) =>
-      sub.id === submissionId ? { ...sub, status: 'reviewed', reviewedAt: now(), reviewerId: mentorId, feedback, awardedXp: xp } : sub,
+      sub.id === submissionId ? { ...sub, status: verdict.status, reviewedAt: now(), reviewerId: mentorId, feedback, awardedXp: verdict.awardedXp } : sub,
     ),
   }
-  if (xp > 0) next = awardXp(next, submission.studentId, xp, 'xp_assignment_completed', 'assignment', submission.lessonId, { title: lesson?.title ?? '' })
+
+  if (verdict.status === 'needs_changes') {
+    return notify(next, {
+      userId: submission.studentId,
+      title: 'notif_changes_requested',
+      body: 'notif_assignment_changes_requested_body',
+      vars: { title },
+      kind: 'review',
+      href: `/assigned/${submission.lessonId}`,
+    })
+  }
+
+  if (xp > 0) next = awardXp(next, submission.studentId, xp, 'xp_assignment_completed', 'assignment', submission.lessonId, { title })
   next = notify(next, {
     userId: submission.studentId,
     title: 'notif_assignment_reviewed',
     body: 'notif_assignment_reviewed_body',
-    vars: { title: lesson?.title ?? '', xp },
+    vars: { title, xp },
     kind: 'approval',
     href: `/assigned/${submission.lessonId}`,
   })

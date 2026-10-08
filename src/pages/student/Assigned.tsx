@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, ClipboardList, Code2, Download, FileText, ListChecks, MessageSquareText, Send } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ClipboardList, Code2, Download, FileText, ListChecks, MessageSquareText, RotateCcw, Send } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { assignedLessons, customLessonById, submissionFor, userById } from '../../lib/selectors'
-import type { CustomTask, TaskAnswer } from '../../lib/types'
+import { reachedServer } from '../../lib/submissions'
+import type { AppState, CustomTask, LessonSubmission, TaskAnswer } from '../../lib/types'
 import { Badge, Button, Card, EmptyState, SectionHeading, inputClass } from '../../components/ui'
 import { t, formatDate, useLocale } from '../../i18n'
 import Paywall from '../../components/Paywall'
@@ -14,6 +15,24 @@ import type { CustomLesson, LessonMaterial } from '../../lib/types'
 
 const KIND_ICON = { quiz: ListChecks, code: Code2, open: MessageSquareText }
 const KIND_LABEL = { quiz: 'task_kind_quiz', code: 'task_kind_code', open: 'task_kind_open' }
+const STATUS_BADGE = {
+  submitted: { tone: 'warning', label: 'awaiting_review' },
+  needs_changes: { tone: 'warning', label: 'changes_requested' },
+  reviewed: { tone: 'success', label: 'reviewed' },
+} as const
+
+/**
+ * This student's hand-in for a lesson, if it counts as handed in.
+ *
+ * With a server, one the server never received does not: it was saved here by a build that
+ * marked fetched lessons against an empty copy, and no mentor can see it. It is offered back as
+ * a draft instead of sitting under "awaiting review" for good.
+ */
+function handedIn(state: AppState, lessonId: string, studentId: string): { sub?: LessonSubmission; unsent?: LessonSubmission } {
+  const sub = submissionFor(state, lessonId, studentId)
+  if (sub && backendConfigured && !reachedServer(sub)) return { unsent: sub }
+  return { sub }
+}
 
 /* ------------------------------------------------------------------ list */
 
@@ -35,7 +54,7 @@ export default function Assigned() {
       ) : (
         <ul className="grid gap-4 lg:grid-cols-2">
           {lessons.map((lesson) => {
-            const done = submissionFor(state, lesson.id, user.id)
+            const done = handedIn(state, lesson.id, user.id).sub
             const author = userById(state, lesson.authorId)
             return (
               <li key={lesson.id}>
@@ -43,7 +62,7 @@ export default function Assigned() {
                   <Card className="flex h-full flex-col p-5 transition hover:border-brand-300">
                     <div className="flex flex-wrap items-center gap-2">
                       {done ? (
-                        <Badge tone={done.status === 'reviewed' ? 'success' : 'warning'}>{done.status === 'reviewed' ? t('reviewed') : t('awaiting_review')}</Badge>
+                        <Badge tone={STATUS_BADGE[done.status].tone}>{t(STATUS_BADGE[done.status].label)}</Badge>
                       ) : (
                         <Badge tone="brand">{t('not_started')}</Badge>
                       )}
@@ -75,9 +94,14 @@ export default function Assigned() {
 
 export function AssignedLesson() {
   const { lessonId } = useParams()
-  const { state, user, submitLessonAnswers } = useApp()
+  const { state, user, submitLessonAnswers, refreshSubmissions } = useApp()
   const toast = useToast()
   const local = customLessonById(state, lessonId)
+
+  // A verdict may have landed since sign-in, and this is the page it is read on.
+  useEffect(() => {
+    void refreshSubmissions()
+  }, [lessonId, refreshSubmissions])
 
   /**
    * Paid lessons are fetched, not read out of local state.
@@ -126,15 +150,26 @@ export function AssignedLesson() {
     return { ...local, tasks: remote.tasks, material: remote.material ?? undefined } as CustomLesson
   }, [local, remote])
 
-  const done = user && lesson ? submissionFor(state, lesson.id, user.id) : undefined
+  const { sub: found, unsent } = user && lesson ? handedIn(state, lesson.id, user.id) : {}
+  // Sent back is not done: the answers are open again, with the author's feedback above them.
+  const sentBack = found?.status === 'needs_changes' ? found : undefined
+  const done = found && !sentBack ? found : undefined
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [touched, setTouched] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  // Seeded once the real task list is known — for a paid lesson that is after the fetch.
+  /**
+   * Seeded once the real task list is known — for a paid lesson that is after the fetch.
+   *
+   * Answering again starts from what was sent, not from blank: the author asked for changes,
+   * not for the whole thing written out a second time. Seeding stops the moment the student
+   * types, so a refresh landing mid-answer cannot wipe what they wrote.
+   */
+  const prior = (sentBack ?? unsent)?.answers
   useEffect(() => {
-    setAnswers((current) =>
-      Object.keys(current).length ? current : Object.fromEntries((lesson?.tasks ?? []).map((task) => [task.id, task.kind === 'code' ? (task.starter ?? '') : ''])),
-    )
-  }, [lesson])
+    if (touched) return
+    setAnswers(Object.fromEntries((lesson?.tasks ?? []).map((task) => [task.id, prior?.find((a) => a.taskId === task.id)?.value ?? (task.kind === 'code' ? (task.starter ?? '') : '')])))
+  }, [lesson, prior, touched])
   const [error, setError] = useState('')
 
   const maxXp = useMemo(() => (lesson?.tasks ?? []).reduce((n, task) => n + task.points, 0), [lesson])
@@ -145,15 +180,37 @@ export function AssignedLesson() {
   if (!lesson || !lesson.published) return <EmptyState icon={FileText} title={t('lesson_not_found')} body={t('it_may_have_been_deleted')} />
 
   const answered = lesson.tasks.filter((task) => (answers[task.id] ?? '').trim() !== '').length
+  const answer = (taskId: string, value: string) => {
+    setTouched(true)
+    setAnswers((a) => ({ ...a, [taskId]: value }))
+  }
 
-  function submit() {
+  async function submit() {
     if (answered < lesson!.tasks.length) {
       setError(t('answer_every_question_before_sending'))
       return
     }
+    setError('')
     const payload: TaskAnswer[] = lesson!.tasks.map((task) => ({ taskId: task.id, value: answers[task.id] ?? '' }))
-    submitLessonAnswers(lesson!.id, payload)
-    toast({ title: t('answers_sent'), body: t('your_mentor_will_read_them'), tone: 'success' })
+    setBusy(true)
+    let result: LessonSubmission | undefined
+    try {
+      result = await submitLessonAnswers(lesson!.id, payload)
+    } catch (err) {
+      // Answers that did not reach the server are not handed in, whatever this page says.
+      setBusy(false)
+      toast({ title: t('could_not_submit'), body: err instanceof Error ? err.message : '', tone: 'error' })
+      return
+    }
+    setBusy(false)
+    if (!result) return toast({ title: t('could_not_submit'), tone: 'error' })
+    setTouched(false)
+    // The mark is whatever came back, never something worked out on this page.
+    toast(
+      result.status === 'reviewed'
+        ? { title: t('notif_assignment_marked'), body: t('notif_assignment_marked_body', { title: lesson!.title, score: result.quizScore, total: result.quizTotal, xp: result.awardedXp ?? 0 }), tone: 'success' }
+        : { title: t('answers_sent'), body: t('your_mentor_will_read_them'), tone: 'success' },
+    )
   }
 
   return (
@@ -214,6 +271,19 @@ export function AssignedLesson() {
         </Card>
       ) : (
         <>
+          {sentBack && (
+            <Card className="p-6">
+              <SectionHeading title={t('changes_requested')} subtitle={t('answers_sent_back_edit_and_resend')} icon={RotateCcw} />
+              {sentBack.feedback && (
+                <p className="mt-4 border border-brand-200/70 bg-brand-100/50 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-brand-800">{sentBack.feedback}</p>
+              )}
+            </Card>
+          )}
+          {unsent && (
+            <p role="status" className="border border-amber-300/60 bg-amber-100/60 px-3.5 py-2.5 text-sm font-medium text-amber-800">
+              {t('answers_never_reached_your_mentor')}
+            </p>
+          )}
           <ol className="space-y-4">
             {lesson.tasks.map((task, i) => {
               const Icon = KIND_ICON[task.kind]
@@ -241,7 +311,7 @@ export function AssignedLesson() {
                                   type="button"
                                   role="radio"
                                   aria-checked={picked}
-                                  onClick={() => setAnswers((a) => ({ ...a, [task.id]: String(oi) }))}
+                                  onClick={() => answer(task.id, String(oi))}
                                   className={`flex w-full items-center gap-3 border px-4 py-3 text-left text-sm transition ${
                                     picked ? 'border-brand-400 bg-brand-100/60 font-semibold text-brand-800' : 'edge fill text-ink-700 hover:border-brand-300'
                                   }`}
@@ -259,7 +329,7 @@ export function AssignedLesson() {
                         <textarea
                           className={`${inputClass} min-h-40 resize-y font-mono text-xs`}
                           value={answers[task.id] ?? ''}
-                          onChange={(e) => setAnswers((a) => ({ ...a, [task.id]: e.target.value }))}
+                          onChange={(e) => answer(task.id, e.target.value)}
                           spellCheck={false}
                           aria-label={t('your_code_for_question_n', { n: i + 1 })}
                         />
@@ -267,7 +337,7 @@ export function AssignedLesson() {
                         <textarea
                           className={`${inputClass} min-h-28 resize-y`}
                           value={answers[task.id] ?? ''}
-                          onChange={(e) => setAnswers((a) => ({ ...a, [task.id]: e.target.value }))}
+                          onChange={(e) => answer(task.id, e.target.value)}
                           placeholder={t('write_your_answer')}
                           aria-label={t('your_answer_to_question_n', { n: i + 1 })}
                         />
@@ -281,8 +351,8 @@ export function AssignedLesson() {
 
           <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
             <p className="text-sm text-ink-600">{t('n_of_total_answered', { n: answered, total: lesson.tasks.length })}</p>
-            <Button icon={Send} onClick={submit} disabled={lesson.tasks.length === 0}>
-              {t('send_answers')}
+            <Button icon={Send} onClick={() => void submit()} loading={busy} disabled={lesson.tasks.length === 0}>
+              {sentBack ? t('resubmit_with_changes') : t('send_answers')}
             </Button>
           </Card>
           {error && (
@@ -296,20 +366,28 @@ export function AssignedLesson() {
   )
 }
 
-/** The student's own answer, shown back to them once it has been handed in. */
+/**
+ * The student's own answer, shown back to them once it has been handed in.
+ *
+ * Right or wrong is shown only where this copy has the answer key, which is a lesson kept in
+ * this browser with no server. A lesson fetched from the server never carries one — that is
+ * the point of stripping it — so marking against it here called every answer wrong and named
+ * the first option as the right one. The score the server worked out is on the card above.
+ */
 function Review({ task, index, value }: { task: CustomTask; index: number; value: string }) {
-  const correct = task.kind === 'quiz' && Number(value) === task.answerIndex
+  const keyed = task.kind === 'quiz' && task.answerIndex !== undefined
+  const correct = keyed && value !== '' && Number(value) === task.answerIndex
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-bold text-ink-900">{t('question_n', { n: index + 1 })}</span>
-        {task.kind === 'quiz' && <Badge tone={correct ? 'success' : 'danger'}>{correct ? t('correct') : t('incorrect')}</Badge>}
+        {keyed && <Badge tone={correct ? 'success' : 'danger'}>{correct ? t('correct') : t('incorrect')}</Badge>}
       </div>
       <p className="mt-2 text-sm font-medium text-ink-900">{task.prompt}</p>
       {task.kind === 'quiz' ? (
         <p className="mt-2 text-sm text-ink-600">
           {t('chose_answer', { answer: (task.options ?? [])[Number(value)] ?? '—' })}
-          {!correct && <span className="block text-emerald-700">{t('correct_answer_was', { answer: (task.options ?? [])[task.answerIndex ?? 0] ?? '—' })}</span>}
+          {keyed && !correct && <span className="block text-emerald-700">{t('correct_answer_was', { answer: (task.options ?? [])[task.answerIndex ?? 0] ?? '—' })}</span>}
         </p>
       ) : task.kind === 'code' ? (
         <pre className="code-surface mt-2 overflow-x-auto p-3 font-mono text-xs whitespace-pre-wrap text-[#e2e8f0]">{value || t('left_blank')}</pre>

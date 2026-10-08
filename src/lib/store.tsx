@@ -12,6 +12,8 @@ import { profileOf, resolveVars } from './selectors'
 import type { Standing } from './types'
 import { backendConfigured, supabase } from './supabase'
 import * as api from './api'
+import type { LessonSubmission } from './types'
+import { mergeSubmissions, type ReviewDecision } from './submissions'
 import { t as translate, useLocale } from '../i18n'
 import { localizeAchievement, localizeCourse, localizeLesson, localizeModule } from '../i18n/content'
 
@@ -141,8 +143,17 @@ interface Ctx {
   saveCustomLesson: (lesson: CustomLesson) => Promise<void>
   deleteCustomLesson: (lessonId: string) => Promise<void>
   setLessonPublished: (lessonId: string, published: boolean) => Promise<void>
-  submitLessonAnswers: (lessonId: string, answers: TaskAnswer[]) => void
-  reviewLessonSubmission: (submissionId: string, feedback: string, awardedXp: number) => void
+  /**
+   * Answers to a mentor-written lesson round-trip through the server, like projects, so these
+   * can fail and have to be awaited. A hand-in the server refused is not handed in, and the
+   * caller must be able to say so instead of showing a success toast over it.
+   *
+   * Handing in resolves to the hand-in as it now stands — marked, if it marks itself.
+   */
+  submitLessonAnswers: (lessonId: string, answers: TaskAnswer[]) => Promise<LessonSubmission | undefined>
+  reviewLessonSubmission: (submissionId: string, decision: ReviewDecision, feedback: string, awardedXp: number) => Promise<void>
+  /** Re-reads the hand-ins this person may see, so a page shows what arrived since sign-in. */
+  refreshSubmissions: () => Promise<void>
   saveCompetition: (competition: Competition) => void
   deleteCompetition: (competitionId: string) => void
   announceCompetition: (competitionId: string) => void
@@ -293,6 +304,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  /**
+   * Re-reads hand-ins, for the pages where they are the whole point.
+   *
+   * The pull on sign-in is enough to be correct and not enough to be useful: an author would
+   * only see answers that arrived since they signed in by reloading. Row level security decides
+   * which rows come back — your own, and the ones on lessons you wrote — so nothing is filtered.
+   *
+   * A verdict pays on the server, so when one of this person's own hand-ins comes back reviewed
+   * the ledger is read as well. Otherwise the page says +20 XP and the total waits for the next
+   * sign-in to agree. `applyOps` pays nothing twice, so reading it again costs a request and
+   * nothing else. Both writes check the account is still the one that asked.
+   */
+  const sessionUserId = state.sessionUserId
+  const refreshSubmissions = useCallback(async () => {
+    const uid = sessionUserId
+    if (!backendConfigured || !uid) return
+    const remote = await api.listSubmissions().then((r) => r.submissions).catch(() => null)
+    if (!remote) return
+    setState((s) => (s.sessionUserId === uid ? { ...s, lessonSubmissions: mergeSubmissions(s.lessonSubmissions, remote) } : s))
+    if (!remote.some((sub) => sub.studentId === uid && sub.status === 'reviewed')) return
+    const progress = await api.getProgress().catch(() => null)
+    if (progress) setState((s) => (s.sessionUserId === uid ? applyOps(s, uid, fromSnapshot(progress)) : s))
+  }, [sessionUserId])
+
   // Курс мазмұны кодтан оқылады, сондықтан тіл ауысқанда оны қайта аудару жеткілікті.
   // Content is never persisted, so switching language simply re-derives it. Each pass starts
   // from the English canonical rather than from the current state — English has no pack, so
@@ -425,6 +460,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           for (const p of remoteProjects) byId.set(p.id, { ...(byId.get(p.id) ?? {}), ...p, feedback: p.feedback } as Project)
           return { ...s, projects: [...byId.values()] }
         })
+      }
+
+      /**
+       * Pull the answers handed in to mentor-written lessons — this person's own, and for an
+       * author, the ones on lessons they wrote. Row level security decides which.
+       *
+       * The same rule as projects: the server wins for every hand-in it has, since it marked
+       * them against the real key and holds the author's verdict, and local-only ones are kept.
+       * XP a review paid is not in these rows; it is in the ledger the progress pull below
+       * reads, so it arrives on the same sign-in.
+       */
+      const remoteSubmissions = await api.listSubmissions().then((r) => r.submissions).catch(() => null)
+      if (alive && remoteSubmissions) {
+        setState((s) => ({ ...s, lessonSubmissions: mergeSubmissions(s.lessonSubmissions, remoteSubmissions) }))
       }
 
       /**
@@ -721,9 +770,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (backendConfigured) await api.publishLesson(lessonId, published)
         setState((s) => logic.setLessonPublished(s, lessonId, published))
       },
-      submitLessonAnswers: (lessonId, answers) => user && commit((s) => logic.submitLessonAnswers(s, user.id, lessonId, answers)),
-      reviewLessonSubmission: (submissionId, feedback, awardedXp) =>
-        user && setState((s) => logic.reviewLessonSubmission(s, submissionId, user.id, feedback, awardedXp)),
+      /**
+       * Server first, then state, as with projects: a hand-in that did not reach the server is
+       * not handed in, so the caller's toast depends on the round trip.
+       *
+       * With a server, nothing is marked here. The server marks the answers against the key it
+       * alone holds and answers with the row, and that row is what lands — this browser's copy
+       * of a fetched lesson has no answer key, and marking against it scored every quiz zero.
+       * Without one, the local reducer marks against the local copy exactly as before.
+       */
+      submitLessonAnswers: async (lessonId, answers) => {
+        if (!user) return undefined
+        if (backendConfigured) {
+          const { submission } = await api.handInLesson(lessonId, answers)
+          const title = state.customLessons.find((l) => l.id === lessonId)?.title ?? ''
+          commit((s) => logic.recordHandIn(s, submission, title))
+          return submission
+        }
+        const next = logic.submitLessonAnswers(state, user.id, lessonId, answers)
+        if (next === state) return undefined
+        commit(() => next)
+        return next.lessonSubmissions.find((sub) => sub.lessonId === lessonId && sub.studentId === user.id)
+      },
+      // The server decides and answers with the row as it now stands, which is all this browser
+      // records: the XP and the student's notification were written by the route, for the
+      // student, and copies of them here would be addressed to an account that is not this one.
+      reviewLessonSubmission: async (submissionId, decision, feedback, awardedXp) => {
+        if (!user) return
+        if (backendConfigured) {
+          const { submission } = await api.reviewSubmission(submissionId, decision, feedback, awardedXp)
+          setState((s) => ({ ...s, lessonSubmissions: mergeSubmissions(s.lessonSubmissions, [submission]) }))
+          return
+        }
+        setState((s) => logic.reviewLessonSubmission(s, submissionId, user.id, feedback, awardedXp, decision))
+      },
+      refreshSubmissions,
       saveCompetition: (competition) => setState((s) => logic.saveCompetition(s, competition)),
       deleteCompetition: (competitionId) => setState((s) => logic.deleteCompetition(s, competitionId)),
       announceCompetition: (competitionId) => setState((s) => logic.announceCompetition(s, competitionId)),
@@ -738,7 +819,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState(createInitialState())
       },
     }
-  }, [state, user, profile, standing, refreshStanding])
+  }, [state, user, profile, standing, refreshStanding, refreshSubmissions])
 
   return (
     <AppCtx.Provider value={value}>

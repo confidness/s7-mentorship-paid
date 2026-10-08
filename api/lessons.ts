@@ -66,7 +66,10 @@ async function list(req: Request, caller: Caller): Promise<Response> {
       .eq('author_id', caller.id)
       .order('updated_at', { ascending: false })
     if (error) throw new HttpError(500, 'read_failed', error.message)
-    return json({ lessons: (data ?? []).map(toTeaser) })
+    // The author is named, because the client files a lesson under whoever wrote it. Without
+    // it, a lesson withdrawn from the storefront had no author on any other device and
+    // dropped out of its own author's list, along with the answers still waiting on it.
+    return json({ lessons: (data ?? []).map((row) => ({ ...toTeaser(row), authorId: caller.id })) })
   }
 
   // The storefront. Prices and titles are public to signed-in users by design — a student

@@ -7,7 +7,7 @@
  * really the server's and this is the cached copy.
  */
 
-import type { CustomLesson, CustomTask, LessonStats, Notification } from './types'
+import type { CustomLesson, CustomTask, LessonStats, LessonSubmission, Notification, TaskAnswer } from './types'
 import { accessToken, backendConfigured, supabase } from './supabase'
 
 export class ApiError extends Error {
@@ -259,6 +259,27 @@ export const claimProject = (id: string) => call<{ ok: true; id: string }>('/api
 
 export const decideProject = (id: string, decision: 'approved' | 'needs_changes', message: string, rubric?: { completeness: number; clarity: number; craft: number }) =>
   call<{ ok: true; id: string }>('/api/projects', { method: 'PATCH', body: JSON.stringify({ id, action: 'decide', decision, message, rubric }) })
+
+/* ------------------------------------------------------- lesson hand-ins */
+
+/**
+ * Answers to a mentor-written lesson, and the author's verdict on them.
+ *
+ * They live under `/api/lesson-content` because that route holds the answer key they are marked
+ * against, and because the deployment has no room for another function. See its header.
+ */
+export const listSubmissions = () => call<{ submissions: LessonSubmission[] }>('/api/lesson-content?submissions=1')
+
+/**
+ * Hands answers in. No score travels with them — the server marks them against the key and
+ * answers with the row as it now stands, which is what the caller should show.
+ */
+export const handInLesson = (lessonId: string, answers: TaskAnswer[]) =>
+  call<{ ok: true; submission: LessonSubmission }>('/api/lesson-content', { method: 'POST', body: JSON.stringify({ lessonId, answers }) })
+
+/** The author's decision. The XP figure is held to the lesson's points on the server. */
+export const reviewSubmission = (id: string, decision: 'approved' | 'needs_changes', feedback: string, awardedXp: number) =>
+  call<{ ok: true; submission: LessonSubmission }>('/api/lesson-content', { method: 'PATCH', body: JSON.stringify({ id, decision, feedback, awardedXp }) })
 
 /* --------------------------------------------------------- notifications */
 

@@ -32,6 +32,18 @@ export type ProgressOp =
   | { id: string; t: 'xp'; amount: number; reason: string; vars?: TextVars; kind: XPTransaction['kind']; refId?: string; at: string }
   | { id: string; t: 'profile'; patch: ProfilePatch; at: string }
 
+/**
+ * The awards a learner records about themselves, and the only ones this sync sends.
+ *
+ * The rest are somebody else's decision about you — a mentor approving a project, an author
+ * marking your answers, a quiz marked against a key you may not read — and are paid by the
+ * route that made the decision, never posted from the browser of the person being paid. This
+ * list is `xp_ledger_insert_own` in `0013_lesson_submissions.sql`, said once more in the one
+ * other place that has to know it: a row the policy refuses fails the whole batch it rode in,
+ * and a batch that fails on the server is retried forever.
+ */
+export const BROWSER_XP_KINDS: ReadonlySet<XPTransaction['kind']> = new Set(['lesson', 'challenge', 'achievement', 'submission'])
+
 /** Client-minted, and it becomes `xp_ledger.op_id` — the guard against a retried request paying twice. */
 const opId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 
@@ -65,8 +77,10 @@ export function opsFor(prev: AppState, next: AppState, userId: string): Progress
   for (const achievementId of added((p) => p.unlockedAchievementIds)) ops.push({ id: opId(), t: 'achievement', achievementId, at })
 
   // The ledger is append-only, so new rows are the ones the previous state had never seen.
+  // An award the server pays is shown here at once and arrives from the server on the next
+  // pull, where `applyOps` sees it is already paid; sending it as well would only be refused.
   const seen = new Set(prev.xp.filter((x) => x.userId === userId).map((x) => x.id))
-  for (const row of next.xp.filter((x) => x.userId === userId && !seen.has(x.id))) {
+  for (const row of next.xp.filter((x) => x.userId === userId && !seen.has(x.id) && BROWSER_XP_KINDS.has(x.kind))) {
     ops.push({ id: opId(), t: 'xp', amount: row.amount, reason: row.reason, vars: row.vars, kind: row.kind, refId: row.refId, at: row.createdAt })
   }
 
