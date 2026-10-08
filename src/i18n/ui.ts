@@ -2159,4 +2159,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     kk: 'Әр экран үш тілде жазылған. Кез келген сәтте ауыстыр: ештеңе қайта жүктелмейді, ештеңе жоғалмайды, ал хабарламалар сенімен бірге тілін өзгертеді.',
   },
   landing_code_on_github: { en: 'Code on GitHub', ru: 'Код на GitHub', kk: 'GitHub-тағы код' },
+
+  /* ---- platform */
+  skip_to_content: { en: 'Skip to content', ru: 'Перейти к содержимому', kk: 'Мазмұнға өту' },
 }

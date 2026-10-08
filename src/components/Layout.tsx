@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell, BookOpen, CalendarClock, ChevronRight, Compass, ClipboardCheck, FilePlus2, FolderKanban, GraduationCap, LayoutDashboard, LogOut, Menu,
@@ -11,11 +11,11 @@ import { Avatar, Badge, ProgressBar, Skeleton } from './ui'
 import ThemeToggle from './ThemeToggle'
 import LocaleToggle from './LocaleToggle'
 import type { LucideIcon } from 'lucide-react'
-import { t, formatDate } from '../i18n'
+import { t, formatDate, useLocale } from '../i18n'
 import { Mark } from './Mark'
 import LiquidMetalBackground from './LiquidMetalBackground'
 import { AnimatedNumber, PageTransition } from './motion'
-import { SectionTabs, tabsForPath } from './sections'
+import { SectionTabs, tabsForPath, type SectionTab } from './sections'
 import { localizeLevelName } from '../i18n/content'
 
 interface NavItem {
@@ -82,6 +82,20 @@ export function Logo({ compact }: { compact?: boolean }) {
 /** True when the reader is anywhere inside this entry's section, not only on its own page. */
 function covers(item: NavItem, pathname: string) {
   return (item.covers ?? []).some((path) => pathname === path || pathname.startsWith(path + '/'))
+}
+
+/**
+ * The name of the page for the browser tab: its own tab in the section strip if it has one,
+ * otherwise the sidebar entry it sits under.
+ *
+ * Derived from the navigation rather than set by each screen, so there is one place that
+ * decides it and no page can forget to. A page outside every section — a single lesson, a
+ * course — gets the brand alone, which is what every page used to get.
+ */
+function pageLabel(pathname: string, nav: NavItem[], tabs: SectionTab[] | null): string | undefined {
+  const tab = tabs?.find((tab) => tab.to === pathname)
+  if (tab) return tab.label
+  return nav.find((item) => pathname === item.to || (!item.end && pathname.startsWith(item.to + '/')) || covers(item, pathname))?.label
 }
 
 /**
@@ -329,6 +343,7 @@ function SidebarFooter() {
 
 export default function Layout() {
   const { user } = useApp()
+  const { locale } = useLocale()
   const location = useLocation()
   const [drawer, setDrawer] = useState(false)
   const sectionTabs = tabsForPath(location.pathname)
@@ -337,14 +352,47 @@ export default function Layout() {
   // learner side and should be given the learner's navigation while they are there.
   const nav = location.pathname.startsWith('/m') ? MENTOR_NAV : STUDENT_NAV
   const mobilePrimary = nav.filter((n) => n.primary).slice(0, 4)
+  const main = useRef<HTMLElement>(null)
+  const lastPath = useRef(location.pathname)
 
   useEffect(() => {
     setDrawer(false)
     window.scrollTo({ top: 0 })
+    // A client-side navigation leaves focus on the link that was used, which may not even
+    // exist on the next page, so a screen reader announces nothing and the next Tab starts
+    // from wherever that was. Moving it to the page says a new one has arrived. Compared
+    // against the last path rather than skipped once, so a first load — and StrictMode's
+    // second run of this effect — leaves focus where the browser put it.
+    if (lastPath.current === location.pathname) return
+    lastPath.current = location.pathname
+    main.current?.focus({ preventScroll: true })
   }, [location.pathname])
+
+  const page = pageLabel(location.pathname, nav, sectionTabs)
+  useEffect(() => {
+    document.title = page ? `${t(page)} · ${t('s7_brand')}` : t('s7_brand')
+  }, [page, locale])
+
+  const skipToMain = (e: MouseEvent) => {
+    // Focus rather than follow the hash: `#main` in the address bar would sit there through
+    // every later navigation, and the router would record it as a visit of its own.
+    e.preventDefault()
+    main.current?.focus()
+  }
 
   return (
     <div className="min-h-screen">
+      {/* First in the tab order, parked above the viewport until focused: without it a
+          keyboard has to walk the whole sidebar and header on every page before reaching
+          what changed. Moved off screen rather than hidden, so a screen reader still has it. */}
+      <a
+        href="#main"
+        onClick={skipToMain}
+        className="chrome fixed top-4 left-4 z-[70] -translate-y-[calc(100%+2rem)] px-4 py-2.5 text-sm font-semibold text-ink-900 focus:translate-y-0"
+      >
+        {t('skip_to_content')}
+      </a>
+
       {/* The metal sits under every surface here, heavily veiled: these screens are dense with
           text on glass, and the veil is what keeps their measured contrast. */}
       <LiquidMetalBackground depth="app" />
@@ -389,7 +437,9 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 pt-6 pb-32 sm:px-6 lg:pb-12">
+        {/* tabIndex -1 makes it a place focus can be sent to without making it a stop on the
+            Tab key; the outline is dropped because it is a destination, not a control. */}
+        <main ref={main} id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 pt-6 pb-32 outline-none sm:px-6 lg:pb-12">
           {/* The section strip sits outside the transition on purpose: it belongs to the
               section rather than to the page, so it should stay put while the page under it
               changes. Animating it would make moving between two tabs look like leaving. */}
