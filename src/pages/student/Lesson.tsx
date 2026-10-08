@@ -57,6 +57,16 @@ function LessonPage() {
   const profile = user ? profileOf(state, user.id) : undefined
   const project = useMemo(() => state.projects.find((p) => p.lessonId === lessonId && p.authorId === user?.id), [state.projects, lessonId, user])
 
+  // Above the early returns, with every other hook. It used to sit below them, so a lesson
+  // that locked or unlocked while open changed how many hooks ran between two renders and
+  // React threw instead of drawing either screen. The section is plain state, so nothing
+  // here needs the lesson to exist.
+  const sectionIndex = ORDER.indexOf(section)
+  const direction = sectionIndex >= seenIndex.current ? 1 : -1
+  useEffect(() => {
+    seenIndex.current = sectionIndex
+  }, [sectionIndex])
+
   if (!lesson || !course || !user || !profile) return <NotFound />
 
   if (!isLessonUnlocked(state, user.id, lesson.id)) {
@@ -85,11 +95,6 @@ function LessonPage() {
   // with no checks to run have nothing to prove, and open straight away.
   const checkPassed = lesson.checks.length === 0 || profile.passedCheckLessonIds.includes(lesson.id)
   const next = nextLessonAfter(state, lesson.id)
-  const sectionIndex = ORDER.indexOf(section)
-  const direction = sectionIndex >= seenIndex.current ? 1 : -1
-  useEffect(() => {
-    seenIndex.current = sectionIndex
-  }, [sectionIndex])
   const allRequirementsChecked = checked.length === lesson.task.requirements.length
 
   function runCodeCheck() {
