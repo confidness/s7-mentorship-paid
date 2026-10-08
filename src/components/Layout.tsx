@@ -438,8 +438,17 @@ export default function Layout() {
         </header>
 
         {/* tabIndex -1 makes it a place focus can be sent to without making it a stop on the
-            Tab key; the outline is dropped because it is a destination, not a control. */}
-        <main ref={main} id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 pt-6 pb-32 outline-none sm:px-6 lg:pb-12">
+            Tab key; the outline is dropped because it is a destination, not a control.
+            The backdrop keeps its first 560 pixels calm: every page's heading, lede and
+            section titles sit straight on the canvas there, and everything wider is a card. */}
+        <main
+          ref={main}
+          id="main"
+          tabIndex={-1}
+          data-backdrop-calm="column"
+          data-backdrop-measure="560"
+          className="mx-auto max-w-7xl px-4 pt-6 pb-32 outline-none sm:px-6 lg:pb-12"
+        >
           {/* The section strip sits outside the transition on purpose: it belongs to the
               section rather than to the page, so it should stay put while the page under it
               changes. Animating it would make moving between two tabs look like leaving. */}

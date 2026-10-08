@@ -77,7 +77,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
       {/* The one screen with a headline and almost no body text, so the metal runs uncovered. */}
       <LiquidMetalBackground depth="hero" />
       {/* story side — one claim, three numbers, nothing else */}
-      <section className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
+      <section data-backdrop-calm="text" className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
         {/* atelier-only: floats behind the copy, not in front of it */}
         <AtelierSceneGate />
         {/* The way back to what this is, for somebody who arrived here first. */}
@@ -128,7 +128,8 @@ export default function Login({ register: startOnRegister }: { register?: boolea
         </div>
 
         <div className="flex flex-1 items-center justify-center py-6">
-        <div className="card specular relative w-full max-w-md p-6 sm:p-8">
+        {/* The backdrop puts its subject in the gap between the story and this card, not behind it. */}
+        <div data-backdrop-avoid className="card specular relative w-full max-w-md p-6 sm:p-8">
           <div className="relative mb-7 lg:hidden">
             <Link to="/welcome" className="inline-flex items-center gap-2.5">
               <Mark size={40} className="rounded-full" />

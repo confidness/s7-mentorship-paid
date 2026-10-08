@@ -106,7 +106,9 @@ export default function Landing() {
 
       <main className="flex-1">
         <section aria-labelledby="landing-headline">
-          <div className="mx-auto max-w-6xl px-4 pt-10 pb-2 sm:px-6 sm:pt-16 sm:pb-6 lg:px-8 lg:pt-20">
+          {/* The backdrop is kept calm over the words of the hero and the column below them,
+              measured off the text itself rather than the box it is allowed to grow to. */}
+          <div data-backdrop-calm="text" className="mx-auto max-w-6xl px-4 pt-10 pb-2 sm:px-6 sm:pt-16 sm:pb-6 lg:px-8 lg:pt-20">
             <p className="text-sm font-semibold text-ink-600">{t('landing_kicker')}</p>
             <h1 id="landing-headline" className="mt-4 max-w-4xl text-[34px] leading-[1.08] font-bold tracking-[-0.035em] text-balance text-ink-900 sm:text-5xl sm:leading-[1.05] lg:text-[64px]">
               {t('landing_headline')}

@@ -1447,9 +1447,18 @@
 }
 
 @layer base {
+  /*
+   * The canvas colour belongs to `html`, and `body` stays transparent.
+   *
+   * The background shaders sit in a fixed layer behind everything at a negative z-index. A
+   * background on `body` is painted above that layer, so it would cover the shader everywhere;
+   * one on `html` is painted below it. It is also what shows before a shader's first frame and
+   * whenever there is none, so the page is never anything but its own colour.
+   */
   html {
     -webkit-text-size-adjust: 100%;
     color-scheme: light;
+    background-color: var(--color-canvas);
   }
 
   html[data-theme='dark'] {
@@ -1464,7 +1473,7 @@
   body {
     @apply text-ink-900 font-sans antialiased;
     margin: 0;
-    background-color: var(--color-canvas);
+    background-color: transparent;
   }
 
   /*

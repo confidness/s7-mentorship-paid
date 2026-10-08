@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useAppliedSkin, useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
+import { useAppliedBackdrop } from '../lib/backdrop'
 
 /**
  * Loads the Three.js scene only for the one skin that uses it.
@@ -21,6 +22,7 @@ export default function AtelierSceneGate({ className = '' }: { className?: strin
   const skin = useAppliedSkin()
   const theme = useAppliedTheme()
   const reduced = usePrefersReducedMotion()
+  const look = useAppliedBackdrop()
   const [hidden, setHidden] = useState(false)
   // Mirrors the `lg:` breakpoint of the section this mounts in — no sense starting a WebGL
   // context for a canvas the layout has already set to display:none.
@@ -42,7 +44,9 @@ export default function AtelierSceneGate({ className = '' }: { className?: strin
     }
   }, [])
 
-  if (skin !== 'atelier' || !wide) return null
+  // Atelier's background is the sculpture now, drawn behind every page. This scene is what
+  // the sign-in page shows when somebody has switched the background off — never both.
+  if (skin !== 'atelier' || !wide || look !== 'off') return null
 
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute inset-0 -z-10 overflow-hidden ${className}`}>

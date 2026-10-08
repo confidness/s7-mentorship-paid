@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { lazy, type ReactNode } from 'react'
 import Layout from './components/Layout'
+import Backdrop from './components/Backdrop'
 import { useApp } from './lib/store'
 
 // Eager: the first screen anyone signed out sees, and the one that renders outside the
@@ -75,74 +76,79 @@ export default function App() {
   const home = user?.role === 'mentor' ? '/m' : '/'
 
   return (
-    <Routes>
-      {/* Public, and only while signed out: anybody signed in is sent home from all three. */}
-      <Route path="/welcome" element={user ? <Navigate to={home} replace /> : <Landing />} />
-      <Route path="/login" element={user ? <Navigate to={home} replace /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to={home} replace /> : <Login register />} />
+    <>
+      {/* Outside the routes, so one canvas and one WebGL context serve every page and survive
+          every navigation between them. */}
+      <Backdrop />
+      <Routes>
+        {/* Public, and only while signed out: anybody signed in is sent home from all three. */}
+        <Route path="/welcome" element={user ? <Navigate to={home} replace /> : <Landing />} />
+        <Route path="/login" element={user ? <Navigate to={home} replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to={home} replace /> : <Login register />} />
 
-      <Route
-        element={
-          <Protected>
-            <Layout />
-          </Protected>
-        }
-      >
-        {/* The catalogue is the front door: what there is to learn here, before anything
-            about one account's progress. `/courses` still resolves to the same page so old
-            links keep working. */}
-        <Route path="/" element={<Courses />} />
-        <Route path="/courses" element={<Navigate to="/" replace />} />
-        {/* The demand board sits beside the catalogue: what there is to learn, and what
-            there is not yet. Both sides of the marketplace read the same page. */}
-        <Route path="/requests" element={<Requests />} />
-        <Route path="/courses/:courseId" element={<CourseDetail />} />
-        <Route path="/learn/:courseId/:lessonId" element={<LessonPage />} />
-        {/* Progress used to be the home page. It is the first tab of Learning now. */}
-        <Route path="/learning" element={<Dashboard />} />
-        <Route path="/learning/courses" element={<MyLearning />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:projectId" element={<ProjectDetail />} />
-        <Route path="/achievements" element={<Achievements />} />
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/competition" element={<Competition />} />
-        <Route path="/ai" element={<AIMentor />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/assigned" element={<Assigned />} />
-        <Route path="/assigned/:lessonId" element={<AssignedLesson />} />
-        <Route path="/settings" element={<StudentSettings />} />
-      </Route>
+        <Route
+          element={
+            <Protected>
+              <Layout />
+            </Protected>
+          }
+        >
+          {/* The catalogue is the front door: what there is to learn here, before anything
+              about one account's progress. `/courses` still resolves to the same page so old
+              links keep working. */}
+          <Route path="/" element={<Courses />} />
+          <Route path="/courses" element={<Navigate to="/" replace />} />
+          {/* The demand board sits beside the catalogue: what there is to learn, and what
+              there is not yet. Both sides of the marketplace read the same page. */}
+          <Route path="/requests" element={<Requests />} />
+          <Route path="/courses/:courseId" element={<CourseDetail />} />
+          <Route path="/learn/:courseId/:lessonId" element={<LessonPage />} />
+          {/* Progress used to be the home page. It is the first tab of Learning now. */}
+          <Route path="/learning" element={<Dashboard />} />
+          <Route path="/learning/courses" element={<MyLearning />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:projectId" element={<ProjectDetail />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/competition" element={<Competition />} />
+          <Route path="/ai" element={<AIMentor />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/assigned" element={<Assigned />} />
+          <Route path="/assigned/:lessonId" element={<AssignedLesson />} />
+          <Route path="/settings" element={<StudentSettings />} />
+        </Route>
 
-      <Route
-        path="/m"
-        element={
-          <Protected mentor>
-            <Layout />
-          </Protected>
-        }
-      >
-        <Route index element={<MentorDashboard />} />
-        <Route path="groups" element={<MentorGroups />} />
-        <Route path="students" element={<MentorStudents />} />
-        <Route path="students/:studentId" element={<MentorStudents />} />
-        <Route path="reviews" element={<MentorReviews />} />
-        <Route path="reviews/:projectId" element={<ReviewDetail />} />
-        <Route path="projects" element={<MentorProjects />} />
-        <Route path="courses" element={<MentorCourses />} />
-        <Route path="competition" element={<MentorCompetition />} />
-        <Route path="competition/new" element={<EventBuilder />} />
-        <Route path="competition/:competitionId/edit" element={<EventBuilder />} />
-        <Route path="analytics" element={<MentorAnalytics />} />
-        <Route path="requests" element={<Requests />} />
-        <Route path="lessons" element={<MentorLessons />} />
-        <Route path="lessons/new" element={<LessonBuilder />} />
-        <Route path="lessons/:lessonId" element={<LessonSubmissions />} />
-        <Route path="lessons/:lessonId/edit" element={<LessonBuilder />} />
-        <Route path="settings" element={<MentorSettings />} />
-        <Route path="payouts" element={<Payouts />} />
-      </Route>
+        <Route
+          path="/m"
+          element={
+            <Protected mentor>
+              <Layout />
+            </Protected>
+          }
+        >
+          <Route index element={<MentorDashboard />} />
+          <Route path="groups" element={<MentorGroups />} />
+          <Route path="students" element={<MentorStudents />} />
+          <Route path="students/:studentId" element={<MentorStudents />} />
+          <Route path="reviews" element={<MentorReviews />} />
+          <Route path="reviews/:projectId" element={<ReviewDetail />} />
+          <Route path="projects" element={<MentorProjects />} />
+          <Route path="courses" element={<MentorCourses />} />
+          <Route path="competition" element={<MentorCompetition />} />
+          <Route path="competition/new" element={<EventBuilder />} />
+          <Route path="competition/:competitionId/edit" element={<EventBuilder />} />
+          <Route path="analytics" element={<MentorAnalytics />} />
+          <Route path="requests" element={<Requests />} />
+          <Route path="lessons" element={<MentorLessons />} />
+          <Route path="lessons/new" element={<LessonBuilder />} />
+          <Route path="lessons/:lessonId" element={<LessonSubmissions />} />
+          <Route path="lessons/:lessonId/edit" element={<LessonBuilder />} />
+          <Route path="settings" element={<MentorSettings />} />
+          <Route path="payouts" element={<Payouts />} />
+        </Route>
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   )
 }

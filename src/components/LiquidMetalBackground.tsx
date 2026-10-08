@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { useAppliedSkin, useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
+import { useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
+import { useAppliedBackdrop } from '../lib/backdrop'
 
 /**
  * The liquid-metal field the interface sits on.
@@ -45,7 +46,7 @@ const VEIL: Record<Depth, { light: number; dark: number }> = {
 
 export default function LiquidMetalBackground({ depth = 'app', className = '' }: { depth?: Depth; className?: string }) {
   const theme = useAppliedTheme()
-  const skin = useAppliedSkin()
+  const look = useAppliedBackdrop()
   const reduced = usePrefersReducedMotion()
   const [hidden, setHidden] = useState(false)
 
@@ -57,15 +58,17 @@ export default function LiquidMetalBackground({ depth = 'app', className = '' }:
   }, [])
 
   /**
-   * Only under the skin whose palette came out of it.
+   * Only under the skin whose palette came out of it, and only while that skin is left to
+   * pick its own background.
    *
    * These colours were read off this shader — the near-black at the centre of a metaball,
    * the cool slate of its shadow side, the yellow the aberration throws along an edge — so
    * the field belongs to `brutal` and looks like a stray photograph behind any of the
-   * others. Skipping it also means four of the five skins never start a WebGL context at
-   * all, which the default in particular has no use for.
+   * others. Somebody who picks a background of their own under brutal gets that instead:
+   * two moving backgrounds on one screen would be one too many. The decision is
+   * `resolveBackdrop`'s, so this and the root `Backdrop` cannot both say yes.
    */
-  if (skin !== 'brutal') return null
+  if (look !== 'metal') return null
 
   const veil = VEIL[depth][theme]
 

@@ -10,7 +10,7 @@ export default function NotFound() {
 
   return (
     <div className="grid min-h-[60vh] place-items-center px-4 py-16">
-      <div className="max-w-md text-center">
+      <div data-backdrop-calm="box" className="max-w-md text-center">
         <span className="mx-auto grid h-16 w-16 place-items-center bg-gradient-to-b from-brand-400 to-accent-500 text-white shadow-[0_14px_30px_-14px_rgb(47_107_240/0.9)]">
           <Compass size={28} aria-hidden="true" />
         </span>
