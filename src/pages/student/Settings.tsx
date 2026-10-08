@@ -5,6 +5,7 @@ import { useApp, useToast } from '../../lib/store'
 import { profileOf } from '../../lib/selectors'
 import { Button, Card, Field, Modal, SectionHeading, inputClass } from '../../components/ui'
 import SkinPicker from '../../components/SkinPicker'
+import BackdropPicker from '../../components/BackdropPicker'
 import { ApiError, setTeaching } from '../../lib/api'
 import { t, formatNumber } from '../../i18n'
 
@@ -100,6 +101,9 @@ export default function Settings() {
         <SkinPicker />
         {/* Light and dark stays where it has always been, in the header — this card is the
             other axis. Putting both here would suggest they are one list of ten. */}
+        <div className="mt-6">
+          <BackdropPicker />
+        </div>
       </Card>
 
       <Card className="p-5 sm:p-6">

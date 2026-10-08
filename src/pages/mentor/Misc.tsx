@@ -6,6 +6,7 @@ import { courseProgress, leaderboard, profileOf, students } from '../../lib/sele
 import { lessonsForCourse, modulesForCourse } from '../../lib/curriculum'
 import { Avatar, Badge, Button, Card, EmptyState, Modal, ProgressBar, SectionHeading } from '../../components/ui'
 import SkinPicker from '../../components/SkinPicker'
+import BackdropPicker from '../../components/BackdropPicker'
 import { formatDate } from '../../lib/hooks'
 import { NoEvents } from './EventBuilder'
 import ServerStatus from '../../components/ServerStatus'
@@ -380,6 +381,9 @@ export function MentorSettings() {
       <Card className="p-5 sm:p-6">
         <SectionHeading title={t('appearance')} subtitle={t('appearance_note')} icon={Palette} />
         <SkinPicker />
+        <div className="mt-6">
+          <BackdropPicker />
+        </div>
       </Card>
 
       <Card className="p-5 sm:p-6">
