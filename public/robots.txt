@@ -1,0 +1,6 @@
+# Everything is open to crawl except the API and the mentor workspace, neither of which has
+# anything to show a crawler but a sign-in screen or a JSON error.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /m/
