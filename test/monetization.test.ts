@@ -10,11 +10,14 @@
  *     what the server hands to someone who asks for content they never paid for.
  *
  * The important one is entitlement: a signed-in student with no entitlement row must get a
- * 402 with no tasks and no material URL, no matter what their browser claims to own.
+ * 402 with no tasks and no material URL, no matter what their browser claims to own. Its other
+ * half is the webhook's `settle`, which decides when that row is written and when it goes: a
+ * refund or chargeback has to take it away once, and no redelivery may hand it back.
  */
 
 import { platformFee, mentorShare, parsePrice, formatMoney, feeBpsFromEnv, DEFAULT_PLATFORM_FEE_BPS } from '../src/lib/money.ts'
 import { decideAccess, publicTask } from '../api/lesson-content.ts'
+import { settle, STRIPE_RETRY_SECONDS, type OrderStatus, type PaymentNotice } from '../api/webhook.ts'
 
 declare const process: { env: Record<string, string | undefined>; exitCode?: number }
 
@@ -184,6 +187,145 @@ const quizRow = { id: 'q1', kind: 'quiz', prompt: '180 or 320?', points: 10, opt
   eq('an open question has no answer key even for the author', forAuthor.answerIndex, undefined)
 }
 
+/* ------------------------------------------- the webhook, event by event */
+
+// The handler makes two writes per step — the order's status and the entitlement row — and
+// `deliver` makes the same two to plain values, so a run of deliveries can be played end to end
+// with no Stripe and no database. `linked` is whether the order knows its payment intent yet:
+// a payment notice finds its order by Checkout Session, which checkout writes, but a refund or
+// a dispute finds it by payment intent, which only the payment notice writes.
+interface Sale {
+  status: OrderStatus
+  linked: boolean
+  entitled: boolean
+  retried: number
+}
+
+const checkoutStarted: Sale = { status: 'pending', linked: false, entitled: false, retried: 0 }
+
+function deliver(sale: Sale, notice: PaymentNotice, ageSeconds = 60): Sale {
+  const found = notice.kind === 'paid' || sale.linked ? sale.status : null
+  const step = settle(found, notice, ageSeconds)
+  if (step.act === 'retry') return { ...sale, retried: sale.retried + 1 }
+  if (step.act !== 'move') return sale
+  return {
+    status: step.to,
+    linked: sale.linked || notice.kind === 'paid',
+    entitled: step.access === 'grant' ? true : step.access === 'withdraw' ? false : sale.entitled,
+    retried: sale.retried,
+  }
+}
+
+const same = (a: Sale, b: Sale) => JSON.stringify(a) === JSON.stringify(b)
+
+const PAID: PaymentNotice = { kind: 'paid' }
+const FULL_REFUND: PaymentNotice = { kind: 'refunded', full: true }
+const PARTIAL_REFUND: PaymentNotice = { kind: 'refunded', full: false }
+const OPENED: PaymentNotice = { kind: 'dispute_opened' }
+const closed = (outcome: string): PaymentNotice => ({ kind: 'dispute_closed', outcome })
+
+const bought = deliver(checkoutStarted, PAID)
+check('a paid session grants the lesson', bought.status === 'paid' && bought.entitled && bought.linked, bought)
+check('and a redelivery of it changes nothing', same(deliver(bought, PAID), bought))
+eq('a paid session with no order row is rebuilt rather than dropped', settle(null, PAID, 0).act, 'record')
+check('a session marked failed that Stripe then calls paid still grants', deliver({ ...checkoutStarted, status: 'failed' }, PAID).entitled)
+
+console.log('a chargeback takes the lesson back, once')
+
+const disputed = deliver(bought, OPENED)
+eq('a dispute withdraws access', disputed.entitled, false)
+eq('and marks the order disputed', disputed.status, 'disputed')
+check('a redelivered dispute changes nothing', same(deliver(disputed, OPENED), disputed))
+eq('it is not even a write', settle('disputed', OPENED, 60).act, 'nothing')
+
+// The hole a dispute opens if the payment notice is not guarded: Stripe retries it, or an
+// operator resends it, and the lesson comes back while the bank holds the money.
+check('a late payment notice does not reopen a disputed lesson', same(deliver(disputed, PAID), disputed))
+
+const won = deliver(disputed, closed('won'))
+check('a won dispute gives the lesson back', won.status === 'paid' && won.entitled, won)
+check('and a redelivered win changes nothing', same(deliver(won, closed('won')), won))
+{
+  // The order is written back to paid before the entitlement is, so a restore that failed
+  // between the two is finished by Stripe's retry rather than read as already done.
+  const again = settle('paid', closed('won'), 60)
+  check('a win on an order already paid grants again, so a half-finished restore completes', again.act === 'move' && again.to === 'paid' && again.access === 'grant', again)
+}
+
+const lost = deliver(disputed, closed('lost'))
+eq('a lost dispute keeps the lesson shut', lost.entitled, false)
+eq('and the order says why', lost.status, 'charged_back')
+check('a redelivered loss changes nothing', same(deliver(lost, closed('lost')), lost))
+check('nor does a late payment notice after it', same(deliver(lost, PAID), lost))
+check('nor a stale copy of the opening', same(deliver(lost, OPENED), lost))
+
+// An inquiry is the bank asking before it decides whether to charge back. The lesson waits
+// for the answer, and comes back if the answer is no.
+const inquiryClosed = deliver(disputed, closed('warning_closed'))
+check('an inquiry that closes without a chargeback reopens the lesson', inquiryClosed.status === 'paid' && inquiryClosed.entitled, inquiryClosed)
+
+check('a prevented dispute leaves the lesson shut', same(deliver(disputed, closed('prevented')), disputed))
+check('so does a status this code has never heard of', same(deliver(disputed, closed('some_future_status')), disputed))
+
+// If the opening was missed — acknowledged past the retry window, say — the close still has to
+// do its job, and a win on an order nobody took anything from has nothing to give back.
+const lostUnseen = deliver(bought, closed('lost'))
+check('a loss whose opening was never seen still withdraws access', lostUnseen.status === 'charged_back' && !lostUnseen.entitled, lostUnseen)
+check('a win whose opening was never seen changes nothing', same(deliver(bought, closed('won')), bought))
+
+{
+  // A dispute for a charge this platform never sold: nothing to find, nothing to write, and no
+  // exception — once no payment notice could still be on its way, it is acknowledged.
+  let step: ReturnType<typeof settle> | null = null
+  let threwHere = false
+  try {
+    step = settle(null, OPENED, STRIPE_RETRY_SECONDS)
+  } catch {
+    threwHere = true
+  }
+  check('a dispute on an unknown charge does not throw', !threwHere)
+  eq('and does nothing', step?.act, 'nothing')
+  eq('nor does its close', settle(null, closed('lost'), STRIPE_RETRY_SECONDS).act, 'nothing')
+  // Inside the window it may be a dispute that overtook its sale, and is asked for again.
+  eq('a dispute with no order yet is sent back to Stripe while its sale may still land', settle(null, OPENED, 60).act, 'retry')
+}
+
+console.log('refunds, in whatever order Stripe sends them')
+
+const refunded = deliver(bought, FULL_REFUND)
+check('a full refund takes the lesson back', refunded.status === 'refunded' && !refunded.entitled, refunded)
+check('a redelivered refund changes nothing', same(deliver(refunded, FULL_REFUND), refunded))
+check('a late payment notice after a refund does not grant it again', same(deliver(refunded, PAID), refunded))
+
+const partly = deliver(bought, PARTIAL_REFUND)
+check('a partial refund keeps access and leaves the order paid', same(partly, bought))
+eq('and with no order yet, there is nothing to wait for', settle(null, PARTIAL_REFUND, 60).act, 'nothing')
+const partlyThenFully = deliver(partly, FULL_REFUND)
+check('refunding the rest later does take it back', partlyThenFully.status === 'refunded' && !partlyThenFully.entitled)
+
+{
+  // The refund overtakes its own payment notice. Acknowledging it would lose it, and the
+  // notice arriving next would grant a lesson that has already been paid back.
+  const early = deliver(checkoutStarted, FULL_REFUND)
+  eq('a refund that arrives before its sale is sent back to Stripe', early.retried, 1)
+  check('rather than acknowledged with nothing written', early.status === 'pending' && !early.entitled)
+  const landed = deliver(early, PAID)
+  check('the payment notice then lands', landed.status === 'paid' && landed.entitled)
+  const retried = deliver(landed, FULL_REFUND)
+  check('and the refund, delivered again, finds the order and takes the lesson back', retried.status === 'refunded' && !retried.entitled, retried)
+  check('after which another copy of the payment notice changes nothing', same(deliver(retried, PAID), retried))
+  eq('a refund with no order once its sale could no longer be coming is acknowledged', settle(null, FULL_REFUND, STRIPE_RETRY_SECONDS).act, 'nothing')
+}
+
+{
+  // Refunded during an inquiry: the refund is the truth, and closing the inquiry afterwards
+  // must not hand back a lesson that was paid back.
+  const refundedDuringInquiry = deliver(disputed, FULL_REFUND)
+  eq('a refund during a dispute marks the order refunded', refundedDuringInquiry.status, 'refunded')
+  check('a closed inquiry does not undo the refund', same(deliver(refundedDuringInquiry, closed('warning_closed')), refundedDuringInquiry))
+  check('nor does a won dispute', same(deliver(refundedDuringInquiry, closed('won')), refundedDuringInquiry))
+  check('a dispute on an order already refunded changes nothing', same(deliver(refunded, OPENED), refunded))
+}
 
 /* ------------------------------------------------------------------ done */
 
@@ -191,5 +333,5 @@ if (failures) {
   console.error(`${NL}${failures} check(s) failed`)
   process.exitCode = 1
 } else {
-  console.log('✓ fees round correctly and paid content stays shut without an entitlement')
+  console.log('✓ fees round correctly, paid content stays shut without an entitlement, and money going back takes it once')
 }
