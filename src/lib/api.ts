@@ -267,7 +267,7 @@ export const decideProject = (id: string, decision: 'approved' | 'needs_changes'
  *
  * A notification about your own action was written by the reducer that performed it, in this
  * browser, and is already in local state. What the server holds is the rest: the review
- * decision, the answer to a mentor application — the things somebody else did to you, which
+ * decision, a course request answered — the things somebody else did to you, which
  * no reducer of yours ever ran to hear about.
  */
 export const listNotifications = () => call<{ notifications: Notification[] }>('/api/notifications')

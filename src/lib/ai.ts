@@ -171,7 +171,7 @@ export const KB: Entry[] = [
     id: 'choose-mentor',
     match: /\b(which mentor|choose a mentor|worth (it|paying)|is it worth|pick a (lesson|mentor)|price)\b|какого наставника|выбрать наставника|стоит ли (платить|брать)|цена урока|қай тәлімгер|тұра ма/i,
     en: {
-      text: 'Read what the lesson actually asks you to hand in, not what it promises to teach. The tasks tell you the level far more honestly than the summary does.\n\nA lesson worth paying for has work in it that a person will read. If the whole thing marks itself, you are buying material, which is fine — just know that is what it is. If it asks for something written or built, you are buying somebody’s attention, and that is the part that is hard to get anywhere else.\n\nEvery mentor here was checked by a named reviewer before they could publish. That is a floor, not a recommendation.',
+      text: 'Read what the lesson actually asks you to hand in, not what it promises to teach. The tasks tell you the level far more honestly than the summary does.\n\nA lesson worth paying for has work in it that a person will read. If the whole thing marks itself, you are buying material, which is fine — just know that is what it is. If it asks for something written or built, you are buying somebody’s attention, and that is the part that is hard to get anywhere else.\n\nAnyone can teach here and nobody vets them first, so the lesson itself is your only evidence. Judge the tasks, not the byline.',
       question: 'Look at the tasks in the lesson you are considering: how many need a human to read them?',
       followUps: ['How does paying work?', 'Can I see a lesson before buying?', 'How do I become a mentor?'],
     },
@@ -189,9 +189,9 @@ export const KB: Entry[] = [
     id: 'become-mentor',
     match: /\b(become a mentor|teach here|sell (a|my) lesson|apply to teach|how do i teach)\b|стать наставником|преподавать|продавать урок|подать заявку|тәлімгер болу|сабақ сату/i,
     en: {
-      text: 'Register as a student first, then apply from **Teach on S7**. The application asks for your legal name, what you have taught, and at least one document, and a named reviewer approves or rejects it on the record.\n\nApproval lets you write and publish. Selling needs one more thing: a connected payout account, checked both when you publish a priced lesson and again when somebody tries to buy it — an account that gets restricted later stops sales rather than taking money it cannot forward.\n\nYour first lesson does not have to be long. It has to have something in it worth reading.',
+      text: 'Register first, then open **Settings**, find **Teach on S7** and press **Start teaching**. There is no application, no documents and nobody to approve you: the authoring tools appear at once, and publishing a free lesson needs nothing more. As a mentor you write the lesson, set its price, and read what students hand in and write back feedback.\n\nSelling is the one thing with a gate: a Stripe payout account with charges enabled, checked both when you publish a priced lesson and again when somebody tries to buy it — an account that gets restricted later stops sales rather than taking money it cannot forward.\n\nYour first lesson does not have to be long. It has to have something in it worth reading.',
       question: 'What is the one thing you know well enough to review somebody else doing?',
-      followUps: ['What documents do I need?', 'How does the payout split work?', 'How long does approval take?'],
+      followUps: ['Can I publish a free lesson?', 'What do I need to sell a lesson?', 'How does the payout split work?'],
     },
   },
   {

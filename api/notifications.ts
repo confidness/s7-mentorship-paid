@@ -5,8 +5,8 @@
  * PATCH  mark some of it read.
  *
  * Nothing here creates a notification. They are written where the thing they announce
- * happens — `api/projects.ts` when a mentor decides, `api/admin/mentor-applications.ts`
- * when an application is answered — because a notification that can be written on its own
+ * happens — `api/projects.ts` when a mentor decides, `api/requests.ts` when a course
+ * request is answered — because a notification that can be written on its own
  * is a notification that can be written about an event that never occurred.
  */
 
