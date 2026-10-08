@@ -167,7 +167,8 @@ times. See [Languages](docs/i18n.md).
 ## Stack
 
 React 18, TypeScript, Vite, Tailwind CSS v4, React Router, Motion, lucide-react,
-`@paper-design/shaders-react`, and Three.js for one optional scene that is loaded lazily. Vercel
+`@paper-design/shaders-react`, Three.js for one optional scene that is loaded lazily, and three
+backgrounds written in WebGL2 by hand. Vercel
 functions for the server, Supabase for Auth, Postgres and Storage, Stripe for money. No state
 library, no chart library, no syntax-highlighting library — the charts are hand-drawn SVG and
 the editor is a textarea with a highlighted overlay.
@@ -179,7 +180,8 @@ the editor is a textarea with a highlighted overlay.
 - [Payments](docs/payments.md): prices, the fee, Checkout, Connect, entitlements and refunds.
 - [The AI mentor](docs/ai-mentor.md): the two brains, the course advisor and the teaching rule.
 - [Languages](docs/i18n.md): how a string is stored, and how to add one.
-- [Design](docs/design.md): theme and skin, the brutal look, motion and accessibility.
+- [Design](docs/design.md): theme and skin, the backgrounds, the brutal look, motion and
+  accessibility.
 - [Deployment](docs/deployment.md): Vercel, environment variables, the database, the webhook.
 - [Stripe webhooks runbook](docs/runbooks/stripe-webhooks.md)
 - [Supabase migrations runbook](docs/runbooks/supabase-migrations.md)

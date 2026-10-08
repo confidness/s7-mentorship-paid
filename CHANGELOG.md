@@ -12,6 +12,16 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Added
 
+- A background behind every page, in three looks written for WebGL2 by hand: silk (the
+  default), a floating sculpture, and liquid glass, each one shader painted in the skin's own
+  colours. Auto picks one per skin — atelier gets the sculpture, streak the glass, editorial,
+  terminal and poster none, and brutal keeps its liquid metal — and **Settings → Appearance →
+  Background** lets a person choose another or switch it off, stored per browser. One canvas
+  serves the whole app across navigation, at thirty frames a second at most, with a quality
+  ladder that only steps down, one still frame under reduced motion, and nothing drawn in a
+  hidden tab or without WebGL2. Text that sits on it was measured at AA under every skin, theme
+  and look. Each look is its own chunk, fetched when first shown; the first download grew by about 2 kB gzipped.
+
 - Continuous integration: `npm ci`, typecheck, lint, `npm run check` and `npm run build` on
   every push to `main` and every pull request.
 - A public front door at `/welcome`, in all three languages: what the platform is, the loop,
@@ -58,6 +68,10 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Changed
 
+- `html` carries the canvas colour and `body` is transparent, so the background layer behind
+  the page shows through instead of being painted over.
+- The liquid metal is drawn only while brutal is left on Auto, and the atelier sign-in scene
+  only when the background is switched off: never two moving backgrounds on one screen.
 - `README.md` is now a front door: a short pitch, a quickstart, the product's argument, and a
   map of the documentation. The long how-to content moved into `docs/`.
 - Facts in the README that had drifted from the code were corrected: the number of test files,
