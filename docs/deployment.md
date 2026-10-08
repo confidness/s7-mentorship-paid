@@ -36,6 +36,12 @@ is for a deployment that takes real accounts and real payments.
      tried in order and the first that answers is used, which survives a free id going paid
      without notice. Setting it pins one model, tried alone and never substituted.
    - `ANTHROPIC_API_KEY` — an alternative to the above, used when no OpenRouter key is set.
+   - `AI_DAILY_LIMIT` — optional; how many questions one signed-in account may put to the model
+     per UTC day, default `40`. Registration is open, so without a cap any account can loop and
+     run up the provider bill. A whole number from 1 to 100000; blank, zero, negative or
+     anything else is ignored and the default applies. `GET /api/mentor` reports the limit in
+     force. To switch the model off, remove the keys; a limit of zero is not how. The counter
+     needs `0012_ai_usage.sql` applied; see [the AI mentor](ai-mentor.md#a-daily-allowance).
    - `ANTHROPIC_WORKSPACE_ID` — only if that key was created at the organisation level rather
      than inside a workspace. Anthropic refuses such a key with a 400 until a workspace is
      named; **Send a test question** in Settings says so in as many words when it happens.
@@ -45,17 +51,21 @@ is for a deployment that takes real accounts and real payments.
    written against. See the [migrations runbook](runbooks/supabase-migrations.md) for how, and
    for what each file does.
 
+   Two of them change what the running code does if they are missing. Without
+   `0011_disputes.sql` the order statuses a dispute needs do not exist, so a dispute event
+   fails and Stripe retries it. Without `0012_ai_usage.sql` the AI mentor's daily limit does
+   not exist: the route warns once in its log and answers without a cap.
+
    Optionally, mark yourself an admin with
    `update profiles set is_admin = true where id = '<your-user-id>';`, which is deliberately a
    database operation: nothing the client can post sets that flag. An admin can read every
    order, entitlement and lesson through row level security. There is no admin screen.
 5. Point a Stripe webhook at `https://<your-deployment>/api/webhook`, subscribed to
    `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-   `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded` and
-   `account.updated`. Dispute handling is being added to the webhook: when it lands, also
-   subscribe to `charge.dispute.created` and `charge.dispute.closed`. Subscribing early is
-   harmless, since an event the webhook does not act on is acknowledged and not retried.
-   Copy the endpoint's signing secret into `STRIPE_WEBHOOK_SECRET`.
+   `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`,
+   `charge.dispute.created`, `charge.dispute.closed` and `account.updated`. Without the two
+   dispute events a chargeback returns the money to the student's bank and leaves them the
+   lesson. Copy the endpoint's signing secret into `STRIPE_WEBHOOK_SECRET`.
    Locally: `stripe listen --forward-to localhost:3000/api/webhook`, with the functions served
    by `vercel dev`. See the [webhook runbook](runbooks/stripe-webhooks.md).
 6. Enable Stripe Connect (Express) so mentors can be paid.

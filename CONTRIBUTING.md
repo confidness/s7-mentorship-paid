@@ -26,10 +26,10 @@ browser's `localStorage`, sign-in matches an email against local users and check
 and the AI mentor answers from its built-in knowledge base. That is a demo, not a security
 boundary. It is how most interface work is done.
 
-One catch. `.env.example` fills the two `VITE_SUPABASE_` lines with placeholders, and a
-placeholder is not empty, so the app counts it as a configured backend and every sign-in goes
-to a project that does not exist. For local mode, delete those two lines from `.env.local`, or
-skip the copy altogether.
+The Supabase lines in `.env.example` are empty on purpose. The app counts a backend as
+configured as soon as the URL and anon key are non-empty, so a placeholder there would send every
+sign-in to a project that does not exist. Keep them empty for local mode, and do not paste
+example values into them.
 
 To work on anything behind the server — sign-in, payments, publishing, progress sync — you need
 your own Supabase project and, for money, a Stripe account in test mode:

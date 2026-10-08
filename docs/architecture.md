@@ -120,7 +120,7 @@ submitted in the browser they are reviewing in.
 | Route | Runtime | Acts as | What it does |
 | --- | --- | --- | --- |
 | `api/checkout.ts` | Node | service role | Creates a Stripe Checkout Session and a pending order. Price from the database. |
-| `api/webhook.ts` | Node | service role | Verifies Stripe's signature, grants and withdraws entitlements, syncs Connect accounts. |
+| `api/webhook.ts` | Node | service role | Verifies Stripe's signature, then decides each event against the order's current status (`settle`): grants and withdraws entitlements for payments, full refunds and disputes, and syncs Connect accounts. |
 | `api/lesson-content.ts` | Node | service role | The paywall. Sends tasks and a material link only to someone entitled. |
 | `api/lessons.ts` | Node | service role | The catalogue, and authoring: save, publish, delete. Checks Stripe before a priced publish. |
 | `api/connect/onboard.ts` | Node | service role | Creates an Express account and returns an onboarding link. |
@@ -129,7 +129,7 @@ submitted in the browser they are reviewing in.
 | `api/projects.ts` | Node | caller; service role for a mentor's decision | Projects and their reviews. |
 | `api/requests.ts` | Node | caller; service role to withdraw or answer | The demand board. |
 | `api/notifications.ts` | Node | caller | The inbox: list, mark read. |
-| `api/mentor.ts` | Edge | none (identifies the caller, then calls a model) | The AI mentor. See [ai-mentor](ai-mentor.md). |
+| `api/mentor.ts` | Edge | caller, for the daily quota only | The AI mentor: identifies the caller, spends one unit of their daily allowance through `consume_ai_quota`, then calls a model. See [ai-mentor](ai-mentor.md). |
 | `api/payments-health.ts` | Edge | none | Says whether the Stripe keys are present, never what they are. |
 
 The service role is used by the routes in the top half of that table because they write rows

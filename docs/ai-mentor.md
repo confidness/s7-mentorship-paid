@@ -50,14 +50,44 @@ that spends a key for any caller on the internet is the same bill by a slower ro
 failure is the same 401 every other route gives, and the client treats any failure here as a
 reason to fall back to the knowledge base.
 
-`GET /api/mentor` is a health check. It says whether a key is configured, which provider, and
-which model (or `auto` for the built-in list), and never a secret. **Settings → Server
-features** reads it.
+`GET /api/mentor` is a health check. It says whether a key is configured, which provider,
+which model (or `auto` for the built-in list), and the daily limit in force, and never a
+secret. **Settings → Server features** reads it.
 
-The question is capped at 2000 characters, the catalogue at twenty lines of 300 characters, and
-the reply at 700 tokens. The client waits 12 seconds for the model before falling back, and
-after a 501 (no key configured) stops asking for a minute, so an unconfigured deployment does
-not make every question wait on a request that cannot succeed.
+A single call is bounded too: the question is capped at 2000 characters, the catalogue at
+twenty lines of 300 characters, and the reply at 700 tokens. The client waits 12 seconds for
+the model before falling back, and after a 501 (no key configured) stops asking for a minute,
+so an unconfigured deployment does not make every question wait on a request that cannot
+succeed.
+
+## A daily allowance
+
+Signing in is not enough of a limit. Registration is open, so an account costs nothing, and a
+signed-in loop can run the provider bill up as fast as the provider answers. The per-call caps
+bound one request, not the total.
+
+Every question about to reach a model spends one unit of the signed-in account's UTC-day
+allowance. The count is kept in Postgres by `consume_ai_quota` (`0012_ai_usage.sql`), because a
+serverless function keeps no memory between invocations and a counter held there would reset on
+every cold start. The function is `security definer` and takes the account from `auth.uid()`,
+so nobody can spend another account's allowance, and the route calls it through the caller's own
+client, not the service role. The check and the increment are one statement, so two requests
+arriving together cannot both pass on the last unit.
+
+The unit is spent after every check that would have turned the request away for free (no key, a
+malformed body, an oversized question), and before the provider is called, so a refusal never
+costs the student part of their day.
+
+- **The limit** is `AI_DAILY_LIMIT`, default 40. Blank, zero, negative or non-integer values fall
+  back to 40, as does anything over 100000.
+- **Over the limit** the route answers 429 with `limited` set and does not call the provider.
+  The client answers from its built-in knowledge base and says the daily limit was reached and
+  that it resets at 00:00 UTC, so the student has used up their allowance of the model and not
+  their access to help.
+- **If the migration is not applied** the route fails open, with one warning in the log per
+  instance, so that deploying the code before the migration does not take the mentor down.
+- **Any other database error** answers 503 and the client falls back to the knowledge base. A
+  broken database does not lift the cap.
 
 ## Providers
 

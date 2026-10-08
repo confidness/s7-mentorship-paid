@@ -16,7 +16,7 @@ removed, once it was clear a mentor, as a self-declared capability, should not h
 original files still say what they said. The new ones say what changed and why.
 
 **A new migration is the next number.** Look at the highest file in the folder and add one. If
-two branches both add `0011`, whichever merges second renumbers.
+two branches both add `0013`, whichever merges second renumbers.
 
 ## Applying
 
@@ -38,6 +38,13 @@ select tablename, policyname from pg_policies where schemaname = 'public' order 
 
 A table from a migration being present says that migration ran; a policy that a later migration
 drops being absent says the later one ran.
+
+### Enum values
+
+`0011` adds values to the `order_status` enum with `alter type ... add value if not exists`.
+Postgres will not let a value added in a transaction be used in the same transaction, so a
+migration that adds one must not also use it; `0011` only adds them, and the code that uses
+them is the webhook.
 
 ### Storage policies
 
@@ -80,6 +87,8 @@ notice after running `0001`.
 | `0008_demand.sql` | The demand board: `course_requests`, `course_request_votes` and `request_fulfilments`. |
 | `0009_reputation.sql` | Public numbers the author cannot write: the `lesson_stats` and `mentor_reputation` views, and `learning_path` on student profiles. |
 | `0010_self_declared_mentors.sql` | Removes the last uses of `is_mentor()` as authority: no browser-written feedback, mentors see the queue and not drafts, price and currency are no longer browser-writable. |
+| `0011_disputes.sql` | Chargebacks: adds `disputed` and `charged_back` to the order statuses, and an index on `orders.stripe_payment_intent`, which refunds and disputes look their order up by. |
+| `0012_ai_usage.sql` | The AI mentor's daily allowance: an `ai_usage` table with one row per account per UTC day, and `consume_ai_quota`, the only way to write it. |
 
 The folder is the source of truth. If a file exists that is not in this table, read its header
 comment and add a line.

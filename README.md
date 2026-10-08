@@ -8,21 +8,23 @@
 ![Stripe](https://img.shields.io/badge/Stripe-Checkout%20%2B%20Connect-635BFF?logo=stripe&logoColor=white)
 ![Languages](https://img.shields.io/badge/languages-en%20%7C%20ru%20%7C%20kk-informational)
 
-A marketplace for mentoring. A verified mentor writes a lesson, prices it, and reviews by hand
-what a student hands in. The platform runs identity, payment and access; it does not teach.
+A marketplace for mentoring. A mentor writes a lesson, prices it, and reads by hand what a
+student hands in. Anyone may teach; only an account Stripe has verified may sell. The platform
+runs identity, payment and access; it does not teach.
 
 ## Quickstart
 
 ```
 nvm use      # Node 22, from .nvmrc
 npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
-That is all of it. With no backend configured the app runs fully local: accounts, progress and
-lessons live in the browser, and the AI mentor answers from its built-in knowledge base. To
-connect Supabase and Stripe, see [CONTRIBUTING](CONTRIBUTING.md) and
-[Deployment](docs/deployment.md).
+That is all of it. The example file leaves Supabase empty, and with no backend configured the
+app runs fully local: accounts, progress and lessons live in the browser, and the AI mentor
+answers from its built-in knowledge base. To connect Supabase and Stripe, fill in
+`.env.local` and see [CONTRIBUTING](CONTRIBUTING.md) and [Deployment](docs/deployment.md).
 
 ### Checks
 
@@ -36,8 +38,9 @@ npm run build     production bundle
 `test/flow.test.ts` drives register → submit → review → approve → XP → unlock against a course
 fixture it builds itself, because a check that depends on product content breaks every time the
 content changes. `test/mentor.test.ts` runs the real AI handler against a stubbed provider and
-asserts what leaves and what comes back, without needing a key. `test/monetization.test.ts`
-covers the fee arithmetic and the paywall's own decision function. `test/progress.test.ts`
+asserts what leaves and what comes back, without needing a key, including the daily limit.
+`test/monetization.test.ts` covers the fee arithmetic, the paywall's own decision function and
+the webhook's decision table for payments, refunds and disputes. `test/progress.test.ts`
 asserts that progress syncs safely with no database, and `test/discovery.test.ts` and
 `test/demand.test.ts` cover the offline course search and the demand board.
 `scripts/check-api-imports.mjs` loads every function under `api/` the way Vercel does.
@@ -106,9 +109,12 @@ copy. Editing `localStorage`, or calling the endpoint directly with a valid sess
 same 402. The lock icon in the interface is a courtesy; deleting it from the DOM reveals
 nothing. `test/monetization.test.ts` asserts exactly this.
 
-Webhook deliveries are idempotent, keyed on the Checkout Session id, and a refund withdraws the
-entitlement again. The rest — the fee, payouts, the order of a purchase, and what is not handled
-yet — is in [Payments](docs/payments.md).
+Webhook deliveries are idempotent. Stripe retries on purpose, and every event is decided
+against the order's current status, so a redelivery changes nothing and a late payment notice
+never reopens an order whose money has gone back. A full refund withdraws the entitlement
+again, and so does a dispute while the bank decides; a partial refund does not. The rest — the
+fee, payouts, the order of a purchase, and what is not automated — is in
+[Payments](docs/payments.md).
 
 ## The loop
 
@@ -149,8 +155,9 @@ scored task hands the points back, so nothing on the leaderboard was typed in by
 answers with a course that already has an audience.
 
 **The AI mentor.** It helps a student choose a course from the real catalogue, and get unstuck.
-It answers from a model when a key is configured and from a built-in knowledge base otherwise.
-See [the AI mentor](docs/ai-mentor.md).
+It answers from a model when a key is configured and from a built-in knowledge base otherwise,
+and each account has a daily allowance of questions that reach a model. See
+[the AI mentor](docs/ai-mentor.md).
 
 **Three languages.** Kazakh, Russian and English, switchable from the header at any moment —
 nothing reloads and nothing is lost. Over a thousand interface strings, each written three

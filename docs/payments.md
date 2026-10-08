@@ -23,8 +23,9 @@ copy. Editing `localStorage`, or calling the endpoint directly with a valid sess
 same 402. The lock icon in the interface is a courtesy; deleting it from the DOM reveals
 nothing. `test/monetization.test.ts` asserts exactly this.
 
-Webhook deliveries are idempotent, keyed on the Checkout Session id — Stripe retries on
-purpose, and a redelivery must not grant a second entitlement or count the revenue twice.
+Webhook deliveries are idempotent — Stripe retries on purpose, and a redelivery must not grant a
+second entitlement or count the revenue twice. Orders are keyed on the Checkout Session id, and
+every event is decided against the order's current status; see [Orders](#orders-and-their-statuses).
 
 A free lesson is open to anyone who can see it. That sounds obvious and was not: the row level
 security policy required an entitlement to submit, entitlements exist only for something
@@ -48,6 +49,33 @@ somebody paid for, and so a lesson priced at zero could never be handed in at al
 
 The webhook can arrive a few seconds after the redirect. A student who returns before it has
 landed sees the lesson locked and gets it on the next refresh.
+
+## Orders and their statuses
+
+An order is one purchase, and its status is what the webhook decides against.
+
+| Status | Meaning | Access |
+| --- | --- | --- |
+| `pending` | Checkout started, no payment notice yet. An abandoned session stays here. | none |
+| `paid` | Stripe confirmed the money. | granted |
+| `failed` | An asynchronous payment failed, or the session expired unpaid. A later notice that the session is paid still moves it to `paid`. | none |
+| `refunded` | The charge was refunded in full. | withdrawn |
+| `disputed` | The student's bank is contesting the payment and has not decided. | withdrawn until it decides |
+| `charged_back` | The dispute was lost. | stays shut |
+
+Every event is decided by an exported pure function, `settle(currentStatus, notice, ageSeconds)`,
+against the order's current status, and the status write is conditional on that status still
+holding. Two things follow. A redelivery changes nothing, because the order is already where the
+event would put it. And a payment notice never reopens an order whose money has gone back: a
+late `checkout.session.completed` that arrives after a refund does not re-grant the lesson.
+
+A dispute that is won returns the order to `paid` and re-grants access. So does an inquiry that
+closes with `warning_closed`. A dispute that is lost leaves the order `charged_back`.
+
+A refund or a dispute can reach the webhook before the payment notice for the same order. The
+webhook answers 409 so that Stripe retries, by which time the payment notice has usually landed.
+Once the event is three days old, which is the end of Stripe's live retry window, it is
+acknowledged with a warning instead, so the retries stop.
 
 ## The fee
 
@@ -78,16 +106,29 @@ taking money, and the gate is Stripe's own verification of the person behind the
 
 ## Refunds
 
-A refund marks the order `refunded` and withdraws the entitlement again, so paid content does
-not stay unlocked after the money has gone back. The handler acts on `charge.refunded`, which
-Stripe sends for a partial refund as well as a full one, and it does not distinguish them: any
-refund withdraws access.
+A full refund marks the order `refunded` and withdraws the entitlement again, so paid content
+does not stay unlocked after the money has gone back. `charge.refunded` fires for a partial
+refund as well, and the webhook tells them apart by the charge's `refunded` flag: only a full
+refund withdraws access, and a partial refund changes nothing.
 
-## What is not handled
+Refunds are issued from the Stripe dashboard, not from this application. The dashboard is where
+you choose, per refund, whether to reverse the transfer to the mentor.
 
-Chargebacks. As of this writing the webhook does not react to `charge.dispute.created` or
-`charge.dispute.closed`, so a student who disputes a payment keeps their entitlement. Handling
-for both is being added; see the [roadmap](../ROADMAP.md).
+## Disputes
+
+`charge.dispute.created` moves the order to `disputed` and withdraws access until the bank
+decides. `charge.dispute.closed` settles it: won, or an inquiry closed with `warning_closed`,
+returns the order to `paid` and re-grants access; lost leaves it `charged_back`, which stays
+shut. The mechanics, and the 409 for an event that beats its payment notice, are under
+[Orders](#orders-and-their-statuses).
+
+## What is not automated
+
+**Transfer reversals.** The sale is a destination charge: the mentor's share is transferred
+when the student pays. When a dispute is lost, the platform bears the whole sale plus the dispute
+fee, because the transfer to the mentor is not taken back automatically. If policy says the
+mentor should bear it, an operator reverses the transfer from the Stripe dashboard. The same
+applies to a refund, where reversing the transfer is a choice made on the refund itself.
 
 ## Operating it
 

@@ -42,6 +42,10 @@ These are the places where a mistake costs someone money, access or privacy:
   Lesson material is reachable only through a signed link the server mints after checking
   entitlement. The `mentor-docs` bucket was created for identity documents by the retired
   application desk; it is private, admin-read only, and nothing should ever make it public.
+- **The AI mentor's key and its daily limit.** `api/mentor.ts` spends a provider key on behalf
+  of a signed-in account and counts the day in Postgres (`consume_ai_quota`). Any way to reach
+  the provider without a signed-in account, to spend another account's allowance, or to spend
+  past the limit.
 - **Secrets reaching the client bundle.** Anything with a `VITE_` prefix is inlined into the
   JavaScript every visitor downloads. A secret that gains the prefix, or a build that carries
   a server-side value into `src/`, is a vulnerability.

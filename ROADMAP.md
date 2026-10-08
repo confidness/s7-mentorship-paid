@@ -1,14 +1,14 @@
 # Roadmap
 
-What is being done, what is planned, and what is not yet decided. Everything here is a plan, not
-a promise and not a description of the code as it stands. Order within a section is not a
-ranking. For what has already changed, see the [CHANGELOG](CHANGELOG.md).
+What is being done, what is planned, and what is not yet decided. Now, Next and Later are plans,
+not promises and not a description of the code as it stands. Done lists what has shipped. Order
+within a section is not a ranking. For the full history, see the [CHANGELOG](CHANGELOG.md).
 
 ## Now
 
-- **Chargeback handling in the Stripe webhook.** `charge.refunded` is handled; a dispute is
-  not, so a student who disputes a payment keeps their entitlement. The webhook is being taught
-  `charge.dispute.created` and `charge.dispute.closed`. See [payments](docs/payments.md).
+- **Assignment hand-ins on the server.** Answers to mentor-written lessons, and the mentor's
+  review of them, live in the student's browser today. `lesson_submissions` exists in `0001`,
+  but nothing writes it, so a mentor can only see a hand-in in the browser it was made in.
 
 ## Next
 
@@ -32,6 +32,15 @@ ranking. For what has already changed, see the [CHANGELOG](CHANGELOG.md).
 - **Bundles of lessons**, sold as one purchase.
 - **Mentor office hours with booking.**
 - **Certificates, with a public page where anyone can verify one.**
+
+## Done
+
+- **Chargeback handling in the Stripe webhook.** A dispute withdraws access while the bank
+  decides, and the outcome settles it. Only a full refund withdraws access; a partial one does
+  not. Reversing the mentor's transfer after a lost dispute is still done by hand in the Stripe
+  dashboard, because who carries a chargeback is a policy before it is code. See
+  [payments](docs/payments.md).
+- **A daily limit on AI mentor questions per account.** See [the AI mentor](docs/ai-mentor.md).
 
 ## Open questions
 

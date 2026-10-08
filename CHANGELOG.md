@@ -24,6 +24,14 @@ the day it happened, so that it reads as milestones; they are not releases anyon
   decision records for the mentor PIN, the retired curriculum and open teaching; and runbooks
   for Stripe webhooks and Supabase migrations.
 - `.editorconfig` and `.nvmrc` (Node 22, the version the project is verified on).
+- Chargeback handling in the Stripe webhook. A dispute withdraws access while the bank decides,
+  a won dispute (or an inquiry closed with a warning) gives it back, and a lost one leaves the
+  order `charged_back` and the lesson shut. Orders gain the statuses `disputed` and
+  `charged_back` (`0011`), and the webhook subscribes to `charge.dispute.created` and
+  `charge.dispute.closed`.
+- A per-account daily limit on AI mentor questions, 40 a UTC day unless `AI_DAILY_LIMIT` says
+  otherwise, counted in Postgres (`0012`). Over the limit the model is not called and the
+  built-in knowledge base answers, saying so.
 
 ### Changed
 
@@ -32,7 +40,24 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 - Facts in the README that had drifted from the code were corrected: the number of test files,
   the number of interface strings, the bundle size claim, the `admin` pages directory that does
   not exist, the migrations that a deployment needs, and the description of how mentors start
-  teaching.
+  teaching. The pitch no longer calls every mentor verified: anyone may teach, and only an
+  account Stripe has verified may sell.
+- `.env.example` leaves the Supabase variables empty, with example values in the comments, so
+  that `cp .env.example .env.local` keeps the app fully local. A placeholder URL counted as a
+  configured backend and sent every sign-in to a project that does not exist.
+
+### Fixed
+
+- A late payment notice could re-grant a lesson that had been refunded.
+- A refund that arrived before its payment notice was acknowledged and silently lost. It is now
+  sent back to Stripe to be retried, until the event is three days old.
+- A partial refund revoked access. Only a full refund does.
+
+### Security
+
+- Any signed-in account could loop the AI mentor to run up the provider bill. Each account now
+  has a daily allowance, spent in the database by a function that takes the account from the
+  session and not from the request.
 
 ## [1.0.0] - 2026-09-27
 

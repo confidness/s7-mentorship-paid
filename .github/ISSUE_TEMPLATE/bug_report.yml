@@ -48,7 +48,7 @@ body:
       options:
         - Sign-in and registration
         - Lessons and submissions
-        - Mentor applications and review
+        - Teaching, lessons and review
         - Payments and Stripe Connect
         - AI mentor
         - Languages and translation
