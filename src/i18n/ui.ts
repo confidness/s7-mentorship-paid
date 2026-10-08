@@ -2038,6 +2038,11 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   answered_by_the_model: { en: 'Answered by the model', ru: 'Ответила модель', kk: 'Модель жауап берді' },
   answered_offline: { en: 'Matched without the model', ru: 'Подобрано без модели', kk: 'Модельсіз таңдалды' },
+  ai_daily_limit_reached: {
+    en: 'Daily AI limit reached, so this was matched without the model. It resets at 00:00 UTC.',
+    ru: 'Дневной лимит вопросов к AI исчерпан, поэтому ответ подобран без модели. Лимит обновится в 00:00 UTC.',
+    kk: 'AI-ға арналған күндік сұрақ лимиті таусылды, сондықтан жауап модельсіз таңдалды. Лимит UTC бойынша 00:00-де жаңарады.',
+  },
   pass_the_auto_check_on_the_code_tab_first: {
     en: 'Pass the auto check on the Code tab first — the challenge builds on a working sketch.',
     ru: 'Сначала пройди автопроверку на вкладке «Код» — испытание строится на рабочем скетче.',

@@ -7,7 +7,7 @@
  * standing where the real endpoint does, recording exactly what it was handed.
  */
 
-import handler, { parseReply } from '../api/mentor.ts'
+import handler, { parseReply, dailyLimitFromEnv, DEFAULT_AI_DAILY_LIMIT } from '../api/mentor.ts'
 
 declare const process: { env: Record<string, string | undefined>; exitCode?: number }
 
@@ -53,13 +53,49 @@ const authOk = () =>
   })
 
 /**
+ * The daily allowance is a second Supabase round trip, made through the caller's own client.
+ *
+ * It has to be answered by every stub below, or its body — `{"daily_limit":40}`, which parses as
+ * JSON — would be recorded as a call to the model. `quotaMode` is what the database says:
+ * a unit left, no unit left, a migration not yet applied (said in Postgres's words and in
+ * PostgREST's), or a database that is simply broken.
+ */
+type QuotaMode = 'allow' | 'deny' | 'no-function-postgrest' | 'no-function-postgres' | 'broken'
+let quotaMode: QuotaMode = 'allow'
+let rpcCalls: { headers: Headers; body: Record<string, unknown> }[] = []
+
+const isRpcCall = (url: string) => url.includes('/rest/v1/rpc/consume_ai_quota')
+
+const rpcJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+
+function rpcReply(init?: RequestInit): Response {
+  rpcCalls.push({ headers: new Headers(init?.headers), body: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown> })
+  switch (quotaMode) {
+    case 'allow':
+      return rpcJson(true)
+    case 'deny':
+      return rpcJson(false)
+    case 'no-function-postgrest':
+      return rpcJson({ code: 'PGRST202', details: 'Searched for the function public.consume_ai_quota', hint: null, message: 'Could not find the function public.consume_ai_quota(daily_limit) in the schema cache' }, 404)
+    case 'no-function-postgres':
+      return rpcJson({ code: '42883', details: null, hint: null, message: 'function public.consume_ai_quota(integer) does not exist' }, 404)
+    case 'broken':
+      return rpcJson({ code: 'XX000', details: null, hint: null, message: 'internal error' }, 500)
+  }
+}
+
+/** Anything addressed to Supabase rather than to a model. Null means the call is not one of theirs. */
+const supabaseReply = (url: string, init?: RequestInit): Response | null => (isAuthCall(url) ? authOk() : isRpcCall(url) ? rpcReply(init) : null)
+
+/**
  * Replies differently to each successive call, which is how a model fallthrough becomes visible.
  * Each entry is one upstream attempt, in order; the last one repeats if the code asks again.
  */
 function stubSequence(replies: { status?: number; text?: string; raw?: unknown }[]) {
   calls = []
   globalThis.fetch = (async (url: string, init: RequestInit) => {
-    if (isAuthCall(String(url))) return authOk()
+    const supabase = supabaseReply(String(url), init)
+    if (supabase) return supabase
     const body = JSON.parse(String(init.body)) as Record<string, unknown>
     calls.push({ url: String(url), method: init.method, headers: init.headers as Record<string, string>, body })
     const reply = replies[Math.min(calls.length - 1, replies.length - 1)]
@@ -76,7 +112,8 @@ function stubSequence(replies: { status?: number; text?: string; raw?: unknown }
 function stubAnthropic(reply: { status?: number; text?: string; raw?: unknown }) {
   captured = null
   globalThis.fetch = (async (url: string, init: RequestInit) => {
-    if (isAuthCall(String(url))) return authOk()
+    const supabase = supabaseReply(String(url), init)
+    if (supabase) return supabase
     captured = {
       url: String(url),
       method: init.method,
@@ -224,8 +261,9 @@ async function run() {
 
   // The model is unreachable; Supabase still is, or the reply would be 401 and this would be
   // checking the wrong thing.
-  globalThis.fetch = (async (url: string) => {
-    if (isAuthCall(String(url))) return authOk()
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
+    const supabase = supabaseReply(String(url), init)
+    if (supabase) return supabase
     throw new Error('network down')
   }) as unknown as typeof fetch
   check('network failure is 502', (await post(ASK)).status === 502)
@@ -365,6 +403,158 @@ async function run() {
 }
 
 /**
+ * The daily allowance, which is what stands between an open registration form and the provider's bill.
+ *
+ * The handler is the real one; Supabase and the provider are stubs. What is being checked is the
+ * order of things — the count is spent before the model is reached, an account over the line never
+ * reaches it, and a deployment that has not run the migration yet keeps working.
+ */
+async function dailyLimit() {
+  console.log('AI mentor daily limit')
+  process.env.ANTHROPIC_API_KEY = 'test-key-not-a-real-one'
+  delete process.env.OPENROUTER_API_KEY
+  delete process.env.AI_DAILY_LIMIT
+
+  // --- the pure half: what the environment may say ---------------------------------------------
+  check('the default is forty', DEFAULT_AI_DAILY_LIMIT === 40, DEFAULT_AI_DAILY_LIMIT)
+  check('unset falls back to the default', dailyLimitFromEnv(undefined) === DEFAULT_AI_DAILY_LIMIT)
+  check('blank falls back to the default', dailyLimitFromEnv('') === DEFAULT_AI_DAILY_LIMIT && dailyLimitFromEnv('   ') === DEFAULT_AI_DAILY_LIMIT)
+  check('a whole number is taken as written', dailyLimitFromEnv('25') === 25 && dailyLimitFromEnv(' 7' + NL) === 7)
+  for (const bad of ['nonsense', '2.5', '0', '-3', '1e999', 'NaN', '100001', '999999999999']) {
+    check(`a bad AI_DAILY_LIMIT falls back: ${JSON.stringify(bad)}`, dailyLimitFromEnv(bad) === DEFAULT_AI_DAILY_LIMIT, dailyLimitFromEnv(bad))
+  }
+
+  // --- under the limit: the model is called, and the count was spent first ------------------------
+  quotaMode = 'allow'
+  rpcCalls = []
+  stubAnthropic({ text: GOOD })
+  let res = await post(ASK)
+  let out = (await res.json()) as Record<string, unknown>
+  check('under the limit the provider is called', captured !== null)
+  check('and the answer arrives', res.status === 200 && String(out.text).includes('питание'), { status: res.status, out })
+  check('and it is not flagged as limited', out.limited === undefined, out)
+  check('exactly one unit is spent per question', rpcCalls.length === 1, rpcCalls.length)
+  check('the default limit is what the database is asked to enforce', rpcCalls[0]?.body.daily_limit === 40, rpcCalls[0]?.body)
+  // The whole point of running it as the caller: auth.uid() inside the function is this token's
+  // owner, so the request has to carry the student's own bearer token and not a service key.
+  check('the count is spent as the caller, not as the server', rpcCalls[0]?.headers.get('authorization') === 'Bearer stub-token', rpcCalls[0]?.headers.get('authorization'))
+  check('no user id is sent for the function to trust', !JSON.stringify(rpcCalls[0]?.body).includes('stub-user-id'), rpcCalls[0]?.body)
+
+  // --- over the limit: the model is never reached ---------------------------------------------------
+  quotaMode = 'deny'
+  rpcCalls = []
+  stubSequence([{ text: GOOD }])
+  res = await post(ASK)
+  out = (await res.json()) as Record<string, unknown>
+  check('over the limit is a 429', res.status === 429, res.status)
+  check('over the limit the provider is NOT called', calls.length === 0, calls.length)
+  check('the reply is flagged for the client', out.limited === true && out.error === 'daily_limit', out)
+  check('the reply says what the limit was', out.limit === 40, out)
+  check('the reply carries no model text to mistake for an answer', out.text === undefined, out)
+
+  // The same through OpenRouter, which is a different branch with its own loop of candidates.
+  process.env.OPENROUTER_API_KEY = 'or-test-key'
+  stubSequence([{ raw: { choices: [{ message: { content: GOOD } }] } }])
+  res = await post(ASK)
+  check('over the limit on openrouter calls nothing either', res.status === 429 && calls.length === 0, { status: res.status, calls: calls.length })
+  delete process.env.OPENROUTER_API_KEY
+
+  // --- the limit that is configured is the limit that is enforced --------------------------------------
+  quotaMode = 'allow'
+  process.env.AI_DAILY_LIMIT = ' 5' + NL
+  rpcCalls = []
+  stubAnthropic({ text: GOOD })
+  await post(ASK)
+  check('AI_DAILY_LIMIT reaches the database', rpcCalls[0]?.body.daily_limit === 5, rpcCalls[0]?.body)
+
+  for (const bad of ['lots', '0', '-1', '12.5']) {
+    process.env.AI_DAILY_LIMIT = bad
+    rpcCalls = []
+    stubAnthropic({ text: GOOD })
+    res = await post(ASK)
+    check(`an invalid AI_DAILY_LIMIT (${bad}) is the default, not a lockout`, rpcCalls[0]?.body.daily_limit === 40 && res.status === 200, { sent: rpcCalls[0]?.body, status: res.status })
+  }
+  delete process.env.AI_DAILY_LIMIT
+
+  // --- a request that was going to be refused anyway costs nothing ---------------------------------------
+  rpcCalls = []
+  stubAnthropic({ text: GOOD })
+  await postAnonymous(ASK)
+  check('an anonymous request spends no unit', rpcCalls.length === 0, rpcCalls.length)
+  await post({ question: '   ' })
+  check('an empty question spends no unit', rpcCalls.length === 0, rpcCalls.length)
+  await post({ question: 'x'.repeat(2001) })
+  check('an oversized question spends no unit', rpcCalls.length === 0, rpcCalls.length)
+  delete process.env.ANTHROPIC_API_KEY
+  res = await post(ASK)
+  check('no key is still 501', res.status === 501, res.status)
+  check('and an unconfigured mentor spends no unit', rpcCalls.length === 0, rpcCalls.length)
+  process.env.ANTHROPIC_API_KEY = 'test-key-not-a-real-one'
+  const hb = (await (await handler(new Request('https://example.test/api/mentor', { method: 'GET' }))).json()) as Record<string, unknown>
+  check('the health check spends no unit', rpcCalls.length === 0, rpcCalls.length)
+  check('the health check reports the limit in force', hb.dailyLimit === 40, hb)
+  process.env.AI_DAILY_LIMIT = 'nonsense'
+  const hb2 = (await (await handler(new Request('https://example.test/api/mentor', { method: 'GET' }))).json()) as Record<string, unknown>
+  check('and shows the default when the variable is unusable', hb2.dailyLimit === 40, hb2)
+  delete process.env.AI_DAILY_LIMIT
+
+  // --- the migration has not been applied yet: fail open, say so once ---------------------------------------
+  // Deploying the code before the SQL must not take the mentor down. PostgREST says PGRST202 while
+  // its schema cache has no such function; Postgres itself says 42883.
+  const warned: unknown[][] = []
+  const realWarn = console.warn
+  console.warn = (...args: unknown[]) => void warned.push(args)
+  try {
+    for (const mode of ['no-function-postgrest', 'no-function-postgres', 'no-function-postgrest'] as const) {
+      quotaMode = mode
+      stubSequence([{ text: GOOD }])
+      res = await post(ASK)
+      out = (await res.json()) as Record<string, unknown>
+      check(`a missing quota function (${mode}) fails open`, res.status === 200 && calls.length === 1 && String(out.text).includes('питание'), { status: res.status, calls: calls.length })
+      check(`and is not flagged as limited (${mode})`, out.limited === undefined, out)
+    }
+  } finally {
+    console.warn = realWarn
+  }
+  check('the missing migration is logged once, not per question', warned.length === 1, warned.length)
+  check('and the log says what to apply', String(warned[0]?.[0]).includes('0012_ai_usage'), warned[0])
+
+  // --- any other database failure does not lift the cap ------------------------------------------------------------
+  // Fail-open is for one known gap, not for every error: a broken database must not turn the limit
+  // off for whoever notices. The client treats the 503 like any failure and uses the knowledge base.
+  const realError = console.error
+  const errored: unknown[][] = []
+  console.error = (...args: unknown[]) => void errored.push(args)
+  try {
+    quotaMode = 'broken'
+    stubSequence([{ text: GOOD }])
+    res = await post(ASK)
+    out = (await res.json()) as Record<string, unknown>
+    check('an unexpected database error is a 503', res.status === 503, res.status)
+    check('and the provider is not called', calls.length === 0, calls.length)
+    check('and it is not mistaken for the daily limit', out.limited === undefined, out)
+    check('and it is logged', errored.length === 1, errored.length)
+
+    // The Supabase call itself throwing — a dropped connection, say — is the same.
+    quotaMode = 'allow'
+    calls = []
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      if (isAuthCall(String(url))) return authOk()
+      if (isRpcCall(String(url))) throw new Error('connection reset')
+      calls.push({ url: String(url), headers: {}, body: JSON.parse(String(init.body)) as Record<string, unknown> })
+      return { ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text: GOOD }] }) }
+    }) as unknown as typeof fetch
+    res = await post(ASK)
+    check('a quota call that throws is a 503 and reaches no provider', res.status === 503 && calls.length === 0, { status: res.status, calls: calls.length })
+  } finally {
+    console.error = realError
+  }
+
+  quotaMode = 'allow'
+  console.log(failures === 0 ? '✓ the allowance is spent before the model, and a spent account never reaches it' : `${failures} failed`)
+}
+
+/**
  * The client half of the same question: when the model answers, nothing may replace it.
  *
  * The two brains produce the same shape on purpose, so a mix-up would be invisible in the UI.
@@ -413,6 +603,40 @@ async function clientSide() {
   globalThis.fetch = (async () => ({ ok: true, status: 200, json: async () => ({ text: '' }) })) as unknown as typeof fetch
   r = await askMentor('anything', {})
   check('empty model text falls back instead of showing blank', r.text.length > 0 && r.fromModel !== true, r)
+
+  // The failure that is told apart from the rest: the day's allowance. The knowledge base still
+  // answers, and the reply says why it was not the model.
+  globalThis.fetch = (async () => ({ ok: false, status: 429, json: async () => ({ error: 'daily_limit', limited: true, limit: 40 }) })) as unknown as typeof fetch
+  r = await askMentor('explain how the ultrasonic sensor works', {})
+  check('over the limit, the knowledge base answers', r.text.length > 0, r)
+  check('and the reply is flagged as limited', r.limited === true, r)
+  check('and it is not mislabelled as the model', r.fromModel !== true, r)
+
+  // A 429 from anywhere but this route's own flag is an ordinary failure, not a spent allowance.
+  globalThis.fetch = (async () => ({ ok: false, status: 429, json: async () => ({}) })) as unknown as typeof fetch
+  r = await askMentor('explain how the ultrasonic sensor works', {})
+  check('a bare 429 still falls back', r.text.length > 0 && r.fromModel !== true, r)
+  check('but it is not blamed on the daily limit', r.limited !== true, r)
+  globalThis.fetch = (async () => ({
+    ok: false,
+    status: 429,
+    json: async () => {
+      throw new Error('not json')
+    },
+  })) as unknown as typeof fetch
+  r = await askMentor('explain how the ultrasonic sensor works', {})
+  check('a 429 with no body falls back without a flag', r.text.length > 0 && r.limited !== true, r)
+
+  // Neither of the other fallbacks is a limit.
+  globalThis.fetch = (async () => ({ ok: false, status: 502, json: async () => ({}) })) as unknown as typeof fetch
+  r = await askMentor('explain how the ultrasonic sensor works', {})
+  check('an outage is not flagged as the daily limit', r.limited !== true, r)
+
+  // The line the panel prints has to exist in all three languages, or one of them reads a bare key.
+  const { UI } = (await import('../src/i18n/ui.ts')) as typeof import('../src/i18n/ui.ts')
+  const line = UI['ai_daily_limit_reached']
+  check('the daily limit line exists in en, ru and kk', Boolean(line?.en && line?.ru && line?.kk), line)
+  check('and each language says something different', new Set([line?.en, line?.ru, line?.kk]).size === 3, line)
 
   await knowledgeBase()
 
@@ -484,4 +708,4 @@ async function knowledgeBase() {
   console.log(`  ${KB.length} knowledge base topics, all three languages`)
 }
 
-void run().then(clientSide)
+void run().then(dailyLimit).then(clientSide)

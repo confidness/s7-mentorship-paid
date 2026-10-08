@@ -140,7 +140,7 @@ export default function AiMentorPanel({ context, height = 'h-[32rem]' }: { conte
                   {/* Which brain answered. Useful when the key is missing and the offline base steps in. */}
                   <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-ink-500">
                     <Sparkles size={10} aria-hidden="true" />
-                    {m.reply?.fromModel ? t('answered_by_the_model') : t('answered_offline')}
+                    {m.reply?.fromModel ? t('answered_by_the_model') : m.reply?.limited ? t('ai_daily_limit_reached') : t('answered_offline')}
                   </p>
                 </div>
                 {m.reply?.askFor && (

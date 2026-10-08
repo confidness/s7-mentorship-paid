@@ -13,7 +13,7 @@
    Declaring just the one thing it reads keeps the dependency list unchanged. */
 declare const process: { env: Record<string, string | undefined> }
 
-import { fail, requireUser } from './_lib/server.js'
+import { fail, requireUser, type Caller } from './_lib/server.js'
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001'
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
@@ -49,6 +49,71 @@ function modelUnavailable(status: number, detail: string) {
 
 /** Long enough for an explanation and a short snippet, short enough to stay quick and cheap. */
 const MAX_TOKENS = 700
+
+/**
+ * Questions one account may put to the model in a UTC day, when AI_DAILY_LIMIT gives no usable number.
+ *
+ * MAX_TOKENS and the input cap bound one call, not the total, and registration is open — so
+ * without a count, an account is a free key to the provider's bill. Forty is a long study
+ * session for a person and a short afternoon for a script.
+ */
+export const DEFAULT_AI_DAILY_LIMIT = 40
+
+/**
+ * Reads AI_DAILY_LIMIT from the environment, falling back to the default.
+ *
+ * Same rule as PLATFORM_FEE_BPS: a value nobody meant is ignored rather than trusted. Zero and
+ * negatives fall back too — a limit of zero would turn the model off for everyone while the
+ * health check still said it was configured, and removing the key is the honest way to do that.
+ * The ceiling keeps the number inside a Postgres integer and far above any human day.
+ */
+export function dailyLimitFromEnv(raw: string | undefined): number {
+  const trimmed = raw?.trim()
+  if (!trimmed) return DEFAULT_AI_DAILY_LIMIT
+  const n = Number(trimmed)
+  if (!Number.isInteger(n) || n < 1 || n > 100_000) return DEFAULT_AI_DAILY_LIMIT
+  return n
+}
+
+/** Whether the missing-migration warning has been written by this instance already. */
+let warnedQuotaMissing = false
+
+/**
+ * Spends one unit of the caller's day, or says there is none left.
+ *
+ * The count lives in Postgres (supabase/migrations/0012_ai_usage.sql) because a function that
+ * remembers nothing between invocations cannot keep one, and it runs through the caller's own
+ * client on purpose: `consume_ai_quota` reads `auth.uid()`, so an account can only ever spend
+ * its own allowance, and no service role is involved.
+ *
+ * 'ok' means go ahead. It is also what comes back when the function does not exist yet, which
+ * is the one deliberate fail-open here: deploying this code before the migration is applied
+ * must not take the mentor down, and the unmetered window is exactly as long as the gap
+ * between the two. Postgres reports a missing function as 42883, PostgREST as PGRST202 while
+ * its schema cache has not seen the new one. Every other error is 'unavailable', not 'ok' —
+ * an outage that happens to be the database is no reason to lift the cap, and the knowledge
+ * base answers either way.
+ */
+async function spendQuota(db: Caller['db'], limit: number): Promise<'ok' | 'limited' | 'unavailable'> {
+  try {
+    const { data, error } = await db.rpc('consume_ai_quota', { daily_limit: limit })
+    if (!error) return data === true ? 'ok' : 'limited'
+    if (error.code === '42883' || error.code === 'PGRST202') {
+      // Once per instance, not per question: this would otherwise be a line in the log for
+      // every student until somebody runs the migration.
+      if (!warnedQuotaMissing) {
+        warnedQuotaMissing = true
+        console.warn('consume_ai_quota is missing, so the AI mentor is running without a daily limit. Apply supabase/migrations/0012_ai_usage.sql.')
+      }
+      return 'ok'
+    }
+    console.error('AI quota check failed:', error.code, error.message)
+    return 'unavailable'
+  } catch (error) {
+    console.error('AI quota check threw:', error)
+    return 'unavailable'
+  }
+}
 
 const LANGUAGE = { kk: 'Kazakh', ru: 'Russian', en: 'English' } as const
 type Locale = keyof typeof LANGUAGE
@@ -142,6 +207,9 @@ export default async function handler(req: Request): Promise<Response> {
         // Whether one is set, never what it is. It separates "the variable never arrived" from
         // "it arrived and Anthropic still refuses it", which need different things done to them.
         workspace: Boolean(process.env.ANTHROPIC_WORKSPACE_ID?.trim()),
+        // The number actually in force after validation, so a typo in AI_DAILY_LIMIT shows up
+        // here as the default instead of as a mystery.
+        dailyLimit: dailyLimitFromEnv(process.env.AI_DAILY_LIMIT),
       },
       200,
     )
@@ -160,8 +228,9 @@ export default async function handler(req: Request): Promise<Response> {
    * The failure is deliberately the same 401 every other route gives, and the client already
    * treats any failure here as a reason to fall back to the local knowledge base.
    */
+  let caller: Caller
   try {
-    await requireUser(req)
+    caller = await requireUser(req)
   } catch (error) {
     return fail(error)
   }
@@ -185,6 +254,23 @@ export default async function handler(req: Request): Promise<Response> {
   const question = typeof body.question === 'string' ? body.question.trim() : ''
   if (!question) return json({ error: 'bad_request' }, 400)
   if (question.length > 2000) return json({ error: 'too_long' }, 413)
+
+  /**
+   * One unit per question that is about to reach a provider, and not a moment sooner.
+   *
+   * It sits after every check that would have turned the request away for free — no key, a
+   * malformed body, an oversized question — so a refusal never costs the student part of their
+   * day. And it is spent before the call, not after: counting afterwards lets a burst of
+   * parallel requests all pass the check before any of them has been recorded.
+   *
+   * Over the line the provider is not called. The reply is a 429 carrying `limited`, and the
+   * client answers from its built-in knowledge base and says why, so the student has used up
+   * their allowance of the model and not their access to help.
+   */
+  const limit = dailyLimitFromEnv(process.env.AI_DAILY_LIMIT)
+  const quota = await spendQuota(caller.db, limit)
+  if (quota === 'limited') return json({ error: 'daily_limit', limited: true, limit }, 429)
+  if (quota === 'unavailable') return json({ error: 'quota_unavailable' }, 503)
 
   const locale: Locale = body.locale === 'kk' || body.locale === 'ru' ? body.locale : 'en'
 

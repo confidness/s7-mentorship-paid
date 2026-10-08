@@ -42,6 +42,12 @@ export interface AiReply {
   followUps: string[]
   /** Whether a model answered, or the offline knowledge base did. Shown next to the reply. */
   fromModel?: boolean
+  /**
+   * Set when the knowledge base answered because this account had used its day of model
+   * questions, as opposed to the model being unconfigured or down. The panel says so, because
+   * "answered without the model" reads as a fault and this one is not.
+   */
+  limited?: boolean
   /** Ids of courses to render as cards under the answer. Advice you can act on in one click. */
   recommendations?: string[]
   /**
@@ -232,12 +238,18 @@ const MODEL_TIMEOUT_MS = 12_000
 let offlineUntil = 0
 const OFFLINE_RETRY_MS = 60_000
 
+/** What the server said: an answer, or that this account is out of questions for today. */
+type ModelAnswer = { reply: Omit<AiReply, 'id'> } | { limited: true } | null
+
 /**
  * Asks the server-side model. Returns null on anything at all — no key configured, rate limit,
  * offline, slow — and the caller falls back to the local knowledge base. The student should never
  * see an error where a hint belongs.
+ *
+ * The one failure that is told apart is the daily allowance. The fallback answers it like any
+ * other, but the panel then says the day is used up rather than that the model is unavailable.
  */
-async function askModel(question: string, ctx: AskContext): Promise<Omit<AiReply, 'id'> | null> {
+async function askModel(question: string, ctx: AskContext): Promise<ModelAnswer> {
   if (Date.now() < offlineUntil) return null
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), MODEL_TIMEOUT_MS)
@@ -270,9 +282,14 @@ async function askModel(question: string, ctx: AskContext): Promise<Omit<AiReply
       offlineUntil = Date.now() + OFFLINE_RETRY_MS
       return null
     }
+    if (res.status === 429) {
+      // Only the route's own flag counts. A 429 from anywhere else on the way is just a failure.
+      const body = (await res.json().catch(() => null)) as { limited?: unknown } | null
+      return body?.limited === true ? { limited: true } : null
+    }
     if (!res.ok) return null
     const data = (await res.json()) as Omit<AiReply, 'id'>
-    return data?.text ? data : null
+    return data?.text ? { reply: data } : null
   } catch {
     return null
   } finally {
@@ -379,8 +396,9 @@ export function askMentorLocal(question: string, ctx: AskContext = {}): Promise<
  * base does, with the same shape and the same teaching rule. Neither path can fail visibly.
  */
 export async function askMentor(question: string, ctx: AskContext = {}): Promise<AiReply> {
-  const fromModel = await askModel(question, ctx)
-  if (fromModel) {
+  const answer = await askModel(question, ctx)
+  if (answer && 'reply' in answer) {
+    const fromModel = answer.reply
     /**
      * Keep only the ids that exist.
      *
@@ -393,7 +411,8 @@ export async function askMentor(question: string, ctx: AskContext = {}): Promise
     const recommendations = (fromModel.recommendations ?? []).filter((id) => known.has(id))
     return { ...fromModel, recommendations, id: `ai-${++counter}-${Date.now()}`, fromModel: true }
   }
-  return askMentorLocal(question, ctx)
+  const local = await askMentorLocal(question, ctx)
+  return answer ? { ...local, limited: true } : local
 }
 
 /** Keys into the UI dictionary — the prompts are translated at render time, like every other label. */
