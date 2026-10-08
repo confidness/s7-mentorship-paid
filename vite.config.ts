@@ -1,6 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import vercel from './vercel.json'
 
 /**
  * Libraries that change on a different clock from the app, each in a file of its own.
@@ -23,8 +24,42 @@ const VENDOR: [RegExp, string][] = [
   [/\/node_modules\/lucide-react\//, 'icons'],
 ]
 
+/**
+ * Fails the build when an inline script has no hash in the Content-Security-Policy.
+ *
+ * vercel.json allows the theme script in index.html by the sha256 of its exact text, so
+ * editing even a comment inside it changes the hash. Report-only, that costs a report on
+ * every page view; enforced, the theme would stop applying before first paint and the site
+ * would flash the wrong palette. Checked against the HTML as built, which is what is served.
+ */
+function inlineScriptsInPolicy(): Plugin {
+  const policy = vercel.headers
+    .flatMap((rule) => rule.headers)
+    .filter((h) => h.key.startsWith('Content-Security-Policy'))
+    .map((h) => h.value)
+    .join(' ')
+
+  return {
+    name: 's7:inline-scripts-in-policy',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      async handler(html) {
+        for (const [, body] of html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+          if (!body.trim()) continue
+          const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body)))
+          const hash = `'sha256-${btoa(String.fromCharCode(...digest))}'`
+          if (!policy.includes(hash)) {
+            throw new Error(`An inline script in index.html is not in the CSP in vercel.json. Add ${hash} to script-src.`)
+          }
+        }
+      },
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), inlineScriptsInPolicy()],
   build: {
     rollupOptions: {
       output: {
