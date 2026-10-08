@@ -1,0 +1,41 @@
+name: Feature request
+description: Something the platform should do that it does not.
+title: 'Feature: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the problem, not the solution. A request that says who is stuck and why is
+        easier to weigh than one that names a screen. Read the [roadmap](https://github.com/confidness/s7-mentorship-paid/blob/main/ROADMAP.md)
+        first; what you want may already be planned, or deliberately not.
+
+        Do not paste keys or real student data.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem, and who has it
+      description: Who is trying to do what, and what stops them today.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What you would change. It is fine to leave this open if you only know the problem.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: side
+    attributes:
+      label: Which side of the marketplace
+      options:
+        - Student
+        - Mentor
+        - Admin
+        - Both
+    validations:
+      required: false

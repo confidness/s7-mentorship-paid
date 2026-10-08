@@ -1,0 +1,77 @@
+name: Bug report
+description: Something does not work the way it should.
+title: 'Bug: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste keys, `.env` values or real student data.** This repository is public.
+        That covers Supabase keys (the service-role key above all), Stripe secret and webhook
+        keys, AI provider keys, access tokens, and anything that identifies a real student or
+        mentor. Describe the shape of the data instead, or blank the values out.
+
+        A security problem is not an issue. Report it privately through
+        [a security advisory](https://github.com/confidness/s7-mentorship-paid/security/advisories/new).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, in plain words. An error message or a console line helps; paste it with the values blanked out.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What to click or call, in order, starting from a signed-out browser if that matters.
+      placeholder: |
+        1. Register a new account
+        2. Open a paid lesson
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Sign-in and registration
+        - Lessons and submissions
+        - Mentor applications and review
+        - Payments and Stripe Connect
+        - AI mentor
+        - Languages and translation
+        - Other
+    validations:
+      required: false
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Interface language in use
+      options:
+        - English
+        - Russian
+        - Kazakh
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Commit SHA or deployment URL
+      description: The commit you are running, or the URL of the deployment where you saw it.
+      placeholder: 'e.g. 15ff792, or https://your-deployment.vercel.app'
+    validations:
+      required: false
