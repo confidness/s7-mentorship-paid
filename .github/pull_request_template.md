@@ -5,7 +5,8 @@
 
 ## How it was checked
 
-- [ ] `npx tsc --noEmit`
+- [ ] `npm run typecheck`
+- [ ] `npm run lint` (no errors)
 - [ ] `npm run check`
 - [ ] `npm run build`
 - [ ] Clicked through the screens this touches, in more than one language if it has text

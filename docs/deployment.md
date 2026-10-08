@@ -73,6 +73,26 @@ is for a deployment that takes real accounts and real payments.
 8. Sign in as a mentor and open **Settings → Server features**. It reports, for each endpoint,
    whether it is deployed and whether its key is set — without ever revealing the value, and
    **Send a test question** spends one real request to tell a good key from a rejected one.
+9. Point an uptime monitor at `https://<your-deployment>/api/health`. It answers 200 with
+   `db: 'ok'` when the database answers, 503 with `db: 'down'` when it does not, and 200 with
+   `db: 'unconfigured'` when no Supabase keys are set — so a monitor should check the body as
+   well as the status. `payments-health` checks configuration, not uptime.
+10. Once the production domain is known, make `og:image` in `index.html` an absolute URL
+    (`https://<your-domain>/og.png`). Most link previews ignore a relative one.
+
+## Security headers
+
+`vercel.json` sends `nosniff`, a strict referrer policy, `X-Frame-Options: DENY`, a
+permissions policy that switches off the camera, microphone, location, payment and USB, and
+HSTS for two years without `preload`. The content security policy ships as
+`Content-Security-Policy-Report-Only`: it reports in the browser console and blocks nothing.
+Walk the app with the console open — sign-in, a lesson with material, checkout, the shader and
+3D skins, realtime notifications — and when it is quiet, rename the header to
+`Content-Security-Policy`. Vercel preview deployments inject their toolbar from `vercel.live`
+and will report it; a custom Supabase domain must be added to `connect-src` and `img-src`.
+
+The one inline script, in `index.html`, is allowed by its hash. `vite.config.ts` fails the
+build if that script changes and the hash in `vercel.json` does not, and prints the new one.
 
 ## Checking the keys before you deploy
 

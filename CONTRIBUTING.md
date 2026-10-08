@@ -48,12 +48,13 @@ in particular is a root password.
 ## Before you open a pull request
 
 ```
-npx tsc --noEmit
+npm run typecheck
+npm run lint
 npm run check
 npm run build
 ```
 
-Continuous integration runs the same three, so a failure there is one you can reproduce.
+Continuous integration runs the same four, so a failure there is one you can reproduce.
 
 `npm run check` bundles the test files with esbuild and runs each with bare node, then runs
 `scripts/check-api-imports.mjs`, which loads every function under `api/` the way Vercel does.

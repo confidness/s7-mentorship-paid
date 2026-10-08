@@ -131,6 +131,7 @@ submitted in the browser they are reviewing in.
 | `api/notifications.ts` | Node | caller | The inbox: list, mark read. |
 | `api/mentor.ts` | Edge | caller, for the daily quota only | The AI mentor: identifies the caller, spends one unit of their daily allowance through `consume_ai_quota`, then calls a model. See [ai-mentor](ai-mentor.md). |
 | `api/payments-health.ts` | Edge | none | Says whether the Stripe keys are present, never what they are. |
+| `api/health.ts` | Node | anon, no session | One cheap query that proves the database answers. 200 with `db: 'ok'` or `'unconfigured'`, 503 when it does not answer. Reads nothing anon could not. |
 
 The service role is used by the routes in the top half of that table because they write rows
 that no browser may write, or read rows that no student may read (`custom_tasks` carries the

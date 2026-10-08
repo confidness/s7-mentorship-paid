@@ -28,7 +28,10 @@ jobs:
         run: npm ci
 
       - name: Types
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Tests and API import check
         run: npm run check

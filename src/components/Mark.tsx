@@ -1,5 +1,5 @@
 /**
- * The S7 Robotics mark: two 270° arcs that meet tangentially and read as a rotated S,
+ * The S7 mark: two 270° arcs that meet tangentially and read as a rotated S,
  * sitting on the white disc the brand uses.
  *
  * Drawn rather than imported as a bitmap so it stays crisp at 20px, needs no asset request

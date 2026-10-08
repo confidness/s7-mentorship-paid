@@ -29,7 +29,8 @@ answers from its built-in knowledge base. To connect Supabase and Stripe, fill i
 ### Checks
 
 ```
-npx tsc --noEmit  types
+npm run typecheck types
+npm run lint      ESLint; errors fail, warnings are a list to work down
 npm run check     six test files, esbuild-bundled and run with bare node, then
                   scripts/check-api-imports.mjs
 npm run build     production bundle

@@ -12,8 +12,24 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Added
 
-- Continuous integration: `npm ci`, `tsc --noEmit`, `npm run check` and `npm run build` on every
-  push to `main` and every pull request.
+- Continuous integration: `npm ci`, typecheck, lint, `npm run check` and `npm run build` on
+  every push to `main` and every pull request.
+- A public front door at `/welcome`, in all three languages: what the platform is, the loop,
+  what a student and a mentor each get, and what the server enforces. A signed-out visitor who
+  opens `/` lands there; deep links still go to sign-in. No counts, quotes or logos.
+- Each screen loads when it is first opened, and React, Supabase, Motion and the icons are
+  split into their own long-cached chunks. The JavaScript fetched before first paint went from
+  322 kB to 239 kB gzipped, and mentor screens never reach a student. The liquid-metal shader
+  loads only under the skin that draws it.
+- Security headers: `nosniff`, referrer policy, frame denial, a permissions policy, HSTS, and a
+  content security policy in report-only mode. The build fails if the inline script's hash
+  drifts from the one the policy allows.
+- A favicon and app icons drawn from the brand mark, a web manifest, `robots.txt`, and an Open
+  Graph card for shared links.
+- A skip link, focus moved to the page on navigation, and a tab title for every screen.
+- ESLint (flat config, typescript-eslint, React hooks) with `npm run lint`, and
+  `npm run typecheck`. `esbuild`, which the checks already ran on, is now a declared dependency.
+- `GET /api/health`, for uptime monitors: one query that proves the database answers.
 - CodeQL analysis of the JavaScript and TypeScript, on push, on pull request and weekly.
 - Dependabot for npm and GitHub Actions, weekly, with minor and patch updates grouped.
 - Issue forms for bug reports and feature requests, a pull request template, and `CODEOWNERS`.
@@ -45,9 +61,16 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 - `.env.example` leaves the Supabase variables empty, with example values in the comments, so
   that `cp .env.example .env.local` keeps the app fully local. A placeholder URL counted as a
   configured backend and sent every sign-in to a project that does not exist.
+- Thirty-six interface strings that only the retired mentor-application screens used were
+  removed.
 
 ### Fixed
 
+- The lesson page ran a hook after an early return, so React would throw if a lesson locked or
+  unlocked while it was open.
+- The AI mentor's built-in answers, the sign-in page and the welcome notification still told
+  people to apply to teach, and that a reviewer checks every mentor. Neither has been true
+  since `0006`.
 - A late payment notice could re-grant a lesson that had been refunded.
 - A refund that arrived before its payment notice was acknowledged and silently lost. It is now
   sent back to Stripe to be retried, until the event is three days old.
