@@ -2085,4 +2085,170 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     ru: 'Обе безопасно откатываются — платформа работает и без них, наставник просто отвечает из офлайн-базы.',
     kk: 'Екеуі де қауіпсіз шегінеді — платформа онсыз да жұмыс істейді, тәлімгер офлайн базадан жауап береді.',
   },
+
+  /* ---------------------------------------------------------------- landing */
+  /*
+   * The public front door at /welcome. Every sentence here has to be true of the code as it
+   * stands — there are no counts, quotes or logos, because there is nothing honest to put in
+   * them yet. Addressed as ты / сен, like the sign-in screen a visitor goes to next.
+   */
+  landing_document_title: {
+    en: '{brand} — a mentor reads what you hand in',
+    ru: '{brand} — наставник читает то, что ты сдаёшь',
+    kk: '{brand} — тапсырған жұмысыңды тәлімгер оқиды',
+  },
+  landing_kicker: { en: 'A marketplace for mentoring', ru: 'Маркетплейс наставничества', kk: 'Тәлімгерлік маркетплейсі' },
+  landing_headline: {
+    en: 'A mentor writes the lesson, prices it, and reads what you hand in.',
+    ru: 'Наставник пишет урок, назначает цену и сам читает то, что ты сдаёшь.',
+    kk: 'Тәлімгер сабақ жазады, бағасын өзі қояды және тапсырған жұмысыңды өзі оқиды.',
+  },
+  landing_lede: {
+    en: 'A person, not an autograder. Anyone can teach here: the platform runs accounts, payments and access, and leaves the teaching to mentors.',
+    ru: 'Живой человек, а не автопроверка. Преподавать здесь может каждый: платформа отвечает за аккаунты, оплату и доступ, а учат наставники.',
+    kk: 'Автоматты тексеру емес — нағыз адам. Мұнда кез келген адам сабақ бере алады: платформа аккаунттарға, төлемге және қолжетімділікке жауап береді, ал оқытатын — тәлімгерлер.',
+  },
+
+  landing_how_title: { en: 'How it works', ru: 'Как это устроено', kk: 'Бұл қалай жұмыс істейді' },
+  landing_how_lede: {
+    en: 'One loop, from a published lesson to a decision on the work.',
+    ru: 'Один цикл — от опубликованного урока до решения по работе.',
+    kk: 'Бір цикл — жарияланған сабақтан жұмыс бойынша шешімге дейін.',
+  },
+  landing_step_publish_title: { en: 'A mentor publishes a lesson', ru: 'Наставник публикует урок', kk: 'Тәлімгер сабақ жариялайды' },
+  landing_step_publish_body: {
+    en: 'Their own material as a PDF or Word file, and up to ten tasks. Free, or at a price they set.',
+    ru: 'Свой материал в PDF или Word и до десяти заданий. Бесплатно или по своей цене.',
+    kk: 'Өз материалы PDF немесе Word файлында және онға дейін тапсырма. Тегін немесе өзі қойған бағамен.',
+  },
+  landing_step_open_title: { en: 'A student opens it', ru: 'Ученик открывает урок', kk: 'Оқушы сабақты ашады' },
+  landing_step_open_body: {
+    en: 'Paying first if it has a price. Access opens when Stripe confirms the payment.',
+    ru: 'Если урок платный — сначала оплата. Доступ откроется, когда Stripe подтвердит платёж.',
+    kk: 'Сабақ ақылы болса, алдымен төлейді. Stripe төлемді растағанда қолжетімділік ашылады.',
+  },
+  landing_step_submit_title: { en: 'The student hands it in', ru: 'Ученик сдаёт работу', kk: 'Оқушы жұмысын тапсырады' },
+  landing_step_submit_body: {
+    en: 'Multiple-choice questions mark themselves. Code and written answers go to the mentor.',
+    ru: 'Тесты проверяются сами. Код и развёрнутые ответы уходят наставнику.',
+    kk: 'Тесттер өздігінен тексеріледі. Код пен жазбаша жауаптар тәлімгерге жіберіледі.',
+  },
+  landing_step_review_title: { en: 'The mentor reads it', ru: 'Наставник читает работу', kk: 'Тәлімгер жұмысты оқиды' },
+  landing_step_review_body: {
+    en: 'Not a script: they read it themselves and write feedback in their own words.',
+    ru: 'Сам, а не скрипт, — и пишет отзыв своими словами.',
+    kk: 'Скрипт емес, өзі оқиды және пікірін өз сөзімен жазады.',
+  },
+  landing_step_decide_title: { en: 'Approve, or send back', ru: 'Одобрить или вернуть на доработку', kk: 'Мақұлдау немесе түзетуге қайтару' },
+  landing_step_decide_body: {
+    en: 'Approval earns XP. Work sent back can be fixed and handed in again, and XP already earned is never counted twice.',
+    ru: 'За одобренную работу начисляется XP. Возвращённую работу можно исправить и сдать снова — уже полученный XP повторно не начисляется.',
+    kk: 'Мақұлданған жұмысқа XP беріледі. Қайтарылған жұмысты түзетіп, қайта тапсыруға болады — алынған XP екі рет есептелмейді.',
+  },
+
+  landing_students_title: { en: 'For students', ru: 'Ученикам', kk: 'Оқушыларға' },
+  landing_students_lede: {
+    en: 'Learn from someone who actually reads your work.',
+    ru: 'Учись у того, кто правда читает твою работу.',
+    kk: 'Жұмысыңды шынымен оқитын адамнан үйрен.',
+  },
+  landing_students_pay_title: { en: 'Pay per lesson', ru: 'Оплата за урок', kk: 'Әр сабақ үшін төлем' },
+  landing_students_pay_body: {
+    en: 'No subscription. Pay once and the lesson stays yours.',
+    ru: 'Без подписки. Платишь один раз — урок остаётся у тебя.',
+    kk: 'Жазылым жоқ. Бір рет төлейсің — сабақ сенде қалады.',
+  },
+  landing_students_free_title: { en: 'Free lessons are open', ru: 'Бесплатные уроки открыты', kk: 'Тегін сабақтар ашық' },
+  landing_students_free_body: {
+    en: 'An account is all they need: open one, do the tasks, hand the work in for review.',
+    ru: 'Нужен только аккаунт: открываешь урок, выполняешь задания, сдаёшь работу на проверку.',
+    kk: 'Тек аккаунт керек: сабақты ашасың, тапсырмаларды орындайсың, жұмысты тексеруге тапсырасың.',
+  },
+  landing_students_mentor_title: { en: 'A mentor reads your work', ru: 'Работу читает наставник', kk: 'Жұмысыңды тәлімгер оқиды' },
+  landing_students_mentor_body: {
+    en: 'Feedback comes from the person who wrote the lesson, under their own name — not from an autograder.',
+    ru: 'Отзыв пишет автор урока под своим именем, а не автопроверка.',
+    kk: 'Пікірді автоматты тексеру емес, сабақтың авторы өз атымен жазады.',
+  },
+  landing_students_resubmit_title: { en: 'Resubmitting is free', ru: 'Пересдача бесплатна', kk: 'Қайта тапсыру тегін' },
+  landing_students_resubmit_body: {
+    en: 'You pay for the lesson, not for each attempt — and buying a lesson you already own is refused.',
+    ru: 'Ты платишь за урок, а не за каждую попытку. А второй раз купить урок, который уже у тебя есть, не получится.',
+    kk: 'Сен әр талпыныс үшін емес, сабақ үшін төлейсің. Ал өзіңде бар сабақты екінші рет сатып алу мүмкін емес.',
+  },
+  landing_students_ai_title: { en: 'An AI mentor that will not do it for you', ru: 'AI-наставник, который не сделает за тебя', kk: 'Сенің орныңа жасамайтын AI-тәлімгер' },
+  landing_students_ai_body: {
+    en: 'Hints and questions back, never the finished answer. Ask where to start and it chooses only from courses that are actually published.',
+    ru: 'Подсказки и встречные вопросы — но не готовое решение. А если спросить, с чего начать, он выберет только из курсов, которые действительно опубликованы.',
+    kk: 'Кеңес пен қарсы сұрақ береді, бірақ дайын шешім бермейді. Неден бастау керегін сұрасаң, тек шынымен жарияланған курстардан таңдайды.',
+  },
+
+  landing_mentors_title: { en: 'For mentors', ru: 'Наставникам', kk: 'Тәлімгерлерге' },
+  landing_mentors_lede: { en: 'Teach what you know, at your own price.', ru: 'Преподавай то, что знаешь, по своей цене.', kk: 'Білетініңді өз бағаңмен үйрет.' },
+  landing_mentors_open_title: { en: 'Teach without asking permission', ru: 'Преподавай без разрешений', kk: 'Сабақ беруге рұқсат керек емес' },
+  landing_mentors_open_body: {
+    en: 'There is no application and nobody to approve you. Publish under your own name; a free lesson needs nothing else.',
+    ru: 'Никаких заявок и одобрений. Публикуй под своим именем — бесплатному уроку больше ничего не нужно.',
+    kk: 'Өтінім де, мақұлдау да жоқ. Өз атыңмен жарияла — тегін сабаққа басқа ештеңе қажет емес.',
+  },
+  landing_mentors_price_title: { en: 'Your price, or free', ru: 'Своя цена — или бесплатно', kk: 'Өз бағаң немесе тегін' },
+  landing_mentors_price_body: {
+    en: 'You set the price of each lesson. Students pay through Stripe Checkout.',
+    ru: 'Цену каждого урока назначаешь ты. Ученики платят через Stripe Checkout.',
+    kk: 'Әр сабақтың бағасын өзің қоясың. Оқушылар Stripe Checkout арқылы төлейді.',
+  },
+  landing_mentors_share_title: { en: 'Keep {n}% of every sale', ru: 'Тебе — {n}% с каждой продажи', kk: 'Әр сатылымның {n}%-ы — сенікі' },
+  landing_mentors_share_body: {
+    en: 'The platform takes {fee}%. Payouts reach your bank through Stripe Connect.',
+    ru: 'Комиссия платформы — {fee}%. Выплаты приходят на твой счёт через Stripe Connect.',
+    kk: 'Платформа комиссиясы — {fee}%. Төлемақы шотыңа Stripe Connect арқылы түседі.',
+  },
+  landing_mentors_gate_title: {
+    en: 'Sell once Stripe has verified your payout account',
+    ru: 'Продавай, когда Stripe подтвердит счёт для выплат',
+    kk: 'Stripe төлем шотыңды растаған соң сат',
+  },
+  landing_mentors_gate_body: {
+    en: 'A priced lesson needs a Stripe Connect account that accepts charges. It is checked when you publish, and again whenever someone buys.',
+    ru: 'Платному уроку нужен аккаунт Stripe Connect, который принимает платежи. Это проверяется при публикации и ещё раз при каждой покупке.',
+    kk: 'Ақылы сабаққа төлем қабылдайтын Stripe Connect аккаунты керек. Бұл жариялау кезінде және әр сатып алу кезінде қайта тексеріледі.',
+  },
+  landing_mentors_cta_note: {
+    en: 'Everyone signs up as a student. Teaching is switched on afterwards, in {settings} → {section}.',
+    ru: 'Все регистрируются как ученики. Преподавание включается потом: {settings} → {section}.',
+    kk: 'Барлығы оқушы ретінде тіркеледі. Оқыту кейін қосылады: {settings} → {section}.',
+  },
+
+  landing_trust_title: { en: 'Enforced by the server', ru: 'Это гарантирует сервер', kk: 'Мұны сервер қамтамасыз етеді' },
+  landing_trust_lede: {
+    en: 'The interface is a courtesy. These rules hold even for someone who skips it and calls the server directly.',
+    ru: 'Интерфейс — просто удобство. Эти правила действуют, даже если обойти его и обратиться к серверу напрямую.',
+    kk: 'Интерфейс — тек ыңғайлылық үшін. Бұл ережелер оны айналып өтіп, серверге тікелей жүгінгенде де сақталады.',
+  },
+  landing_trust_paywall_title: { en: 'The paywall is the server, not the page', ru: 'Доступ закрывает сервер, а не страница', kk: 'Қолжетімділікті бет емес, сервер жабады' },
+  landing_trust_paywall_body: {
+    en: 'Tasks and material go only to the author, or to a student when the lesson is free or bought. Deleting the lock icon reveals nothing, and quiz answer keys never reach a student at all.',
+    ru: 'Задания и материалы получает только автор — или ученик, если урок бесплатный или куплен. Удалив значок замка, ничего не увидишь, а ответы к тестам ученику не приходят вовсе.',
+    kk: 'Тапсырмалар мен материал тек авторға немесе сабақ тегін не сатып алынған болса, оқушыға беріледі. Құлып белгішесін өшірсең де ештеңе ашылмайды, ал тест жауаптары оқушыға мүлде жіберілмейді.',
+  },
+  landing_trust_price_title: { en: 'Prices come from the database', ru: 'Цена берётся из базы', kk: 'Баға дерекқордан алынады' },
+  landing_trust_price_body: {
+    en: 'Checkout reads the price itself. A request cannot name its own amount, so a forty-dollar lesson cannot be bought for a cent.',
+    ru: 'Сервер сам читает цену при оплате. Запрос не может назвать свою сумму — урок за сорок долларов не купить за цент.',
+    kk: 'Төлем кезінде сервер бағаны өзі оқиды. Сұраныс өз сомасын айта алмайды — қырық долларлық сабақты бір центке сатып алу мүмкін емес.',
+  },
+  landing_trust_access_title: { en: 'Access follows the payment', ru: 'Доступ — только после оплаты', kk: 'Қолжетімділік — тек төлемнен кейін' },
+  landing_trust_access_body: {
+    en: 'Students pay and mentors are paid through Stripe. A paid lesson opens only on a signed notice from Stripe that the money arrived, never on the say-so of a browser, and a refund closes it again.',
+    ru: 'Ученики платят, а наставники получают выплаты через Stripe. Платный урок открывается только по подписанному уведомлению Stripe о поступившей оплате, а не по слову браузера, и закрывается при возврате денег.',
+    kk: 'Оқушылар Stripe арқылы төлейді, тәлімгерлер төлемақыны да сол арқылы алады. Ақылы сабақ ақша түскені туралы Stripe-тың қол қойылған хабарламасы бойынша ғана ашылады, браузердің сөзімен емес, ал ақша қайтарылса, қайта жабылады.',
+  },
+
+  landing_languages_title: { en: 'Kazakh, Russian, English', ru: 'Казахский, русский, английский', kk: 'Қазақша, орысша, ағылшынша' },
+  landing_languages_body: {
+    en: 'Every screen is written in all three. Switch at any moment — nothing reloads, nothing is lost, and notifications change language with you.',
+    ru: 'Каждый экран написан на трёх языках. Переключай когда угодно: ничего не перезагружается и не теряется, а уведомления меняют язык вместе с тобой.',
+    kk: 'Әр экран үш тілде жазылған. Кез келген сәтте ауыстыр: ештеңе қайта жүктелмейді, ештеңе жоғалмайды, ал хабарламалар сенімен бірге тілін өзгертеді.',
+  },
+  landing_code_on_github: { en: 'Code on GitHub', ru: 'Код на GitHub', kk: 'GitHub-тағы код' },
 }

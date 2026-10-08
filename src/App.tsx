@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import { useApp } from './lib/store'
 
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import Assigned, { AssignedLesson } from './pages/student/Assigned'
 import MentorLessons, { LessonSubmissions } from './pages/mentor/MentorLessons'
 import LessonBuilder from './pages/mentor/LessonBuilder'
@@ -42,10 +43,16 @@ import Payouts from './pages/mentor/Payouts'
  * sense when teaching was a status granted after review — now that anyone can switch it on,
  * a mentor is simply somebody who also publishes, and locking them out of the catalogue
  * would mean they could not take a course on the platform they teach on.
+ *
+ * Signed out, the bare address and a deep link are different visitors. Somebody typing the
+ * domain or following it from a search has not been told what this is yet, so `/` goes to
+ * the front door. Somebody following a link to one lesson already knows, and wants that
+ * lesson — they still go straight to sign-in, exactly as before.
  */
 function Protected({ mentor, children }: { mentor?: boolean; children: ReactNode }) {
   const { user } = useApp()
   const location = useLocation()
+  if (!user && location.pathname === '/') return <Navigate to="/welcome" replace />
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
   if (mentor && user.role !== 'mentor') return <Navigate to="/" replace />
   return <>{children}</>
@@ -53,11 +60,14 @@ function Protected({ mentor, children }: { mentor?: boolean; children: ReactNode
 
 export default function App() {
   const { user } = useApp()
+  const home = user?.role === 'mentor' ? '/m' : '/'
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to={user.role === 'mentor' ? '/m' : '/'} replace /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to={user.role === 'mentor' ? '/m' : '/'} replace /> : <Login register />} />
+      {/* Public, and only while signed out: anybody signed in is sent home from all three. */}
+      <Route path="/welcome" element={user ? <Navigate to={home} replace /> : <Landing />} />
+      <Route path="/login" element={user ? <Navigate to={home} replace /> : <Login />} />
+      <Route path="/register" element={user ? <Navigate to={home} replace /> : <Login register />} />
 
       <Route
         element={

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
 import { Button, Field, inputClass } from '../components/ui'
@@ -80,7 +80,10 @@ export default function Login({ register: startOnRegister }: { register?: boolea
       <section className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
         {/* atelier-only: floats behind the copy, not in front of it */}
         <AtelierSceneGate />
-        <Logo />
+        {/* The way back to what this is, for somebody who arrived here first. */}
+        <Link to="/welcome" className="self-start">
+          <Logo />
+        </Link>
         <h1 className="mt-14 flex min-h-[19rem] max-w-xl flex-col justify-start text-[46px] leading-[1.05] font-bold tracking-[-0.035em] text-ink-900 xl:text-[58px]">{t('one_platform_from_first_led')}<span className="bg-gradient-to-r from-brand-500 to-accent-500 bg-clip-text text-transparent">{t('to_national_final')}</span>
         </h1>
         <p className="mt-6 max-w-md text-[17px] leading-relaxed text-ink-600">
@@ -127,10 +130,10 @@ export default function Login({ register: startOnRegister }: { register?: boolea
         <div className="flex flex-1 items-center justify-center py-6">
         <div className="card specular relative w-full max-w-md p-6 sm:p-8">
           <div className="relative mb-7 lg:hidden">
-            <span className="inline-flex items-center gap-2.5">
+            <Link to="/welcome" className="inline-flex items-center gap-2.5">
               <Mark size={40} className="rounded-full" />
               <span className="text-lg font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
-            </span>
+            </Link>
           </div>
 
           <h2 className="relative text-[26px] font-bold tracking-[-0.03em] text-ink-900">
