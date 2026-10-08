@@ -1,40 +1,52 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { lazy, type ReactNode } from 'react'
 import Layout from './components/Layout'
 import { useApp } from './lib/store'
 
+// Eager: the first screen anyone signed out sees, and the one that renders outside the
+// layout's Suspense boundary. Login already shares most of its weight with the chrome, so
+// splitting it off would add a round trip before the first paint to save a few kilobytes.
 import Login from './pages/Login'
+// Eager for the same reason: the front door a signed-out visitor lands on at `/`.
 import Landing from './pages/Landing'
-import Assigned, { AssignedLesson } from './pages/student/Assigned'
-import MentorLessons, { LessonSubmissions } from './pages/mentor/MentorLessons'
-import LessonBuilder from './pages/mentor/LessonBuilder'
-import EventBuilder from './pages/mentor/EventBuilder'
 import NotFound from './pages/NotFound'
 
-import Dashboard from './pages/student/Dashboard'
-import Courses from './pages/student/Courses'
-import CourseDetail from './pages/student/CourseDetail'
-import LessonPage from './pages/student/Lesson'
-import MyLearning from './pages/student/MyLearning'
-import Projects from './pages/student/Projects'
-import Requests from './pages/student/Requests'
-import ProjectDetail from './pages/student/ProjectDetail'
-import Achievements from './pages/student/Achievements'
-import Gallery from './pages/student/Gallery'
-import Competition from './pages/student/Competition'
-import AIMentor from './pages/student/AIMentor'
-import Profile from './pages/student/Profile'
-import StudentSettings from './pages/student/Settings'
+// Everything else loads when it is first opened. A student never needs the lesson builder,
+// a mentor reviewing work never needs the course advisor, and nobody needs every screen
+// before they can see the first. Layout keeps its chrome up while a screen arrives.
+const Assigned = lazy(() => import('./pages/student/Assigned'))
+const AssignedLesson = lazy(() => import('./pages/student/Assigned').then((m) => ({ default: m.AssignedLesson })))
+const MentorLessons = lazy(() => import('./pages/mentor/MentorLessons'))
+const LessonSubmissions = lazy(() => import('./pages/mentor/MentorLessons').then((m) => ({ default: m.LessonSubmissions })))
+const LessonBuilder = lazy(() => import('./pages/mentor/LessonBuilder'))
+const EventBuilder = lazy(() => import('./pages/mentor/EventBuilder'))
 
-import MentorDashboard from './pages/mentor/Dashboard'
-import MentorStudents from './pages/mentor/Students'
-import MentorGroups from './pages/mentor/Groups'
-import MentorReviews from './pages/mentor/Reviews'
-import ReviewDetail from './pages/mentor/ReviewDetail'
-import MentorProjects from './pages/mentor/Projects'
-import MentorAnalytics from './pages/mentor/Analytics'
-import { MentorCourses, MentorCompetition, MentorSettings } from './pages/mentor/Misc'
-import Payouts from './pages/mentor/Payouts'
+const Dashboard = lazy(() => import('./pages/student/Dashboard'))
+const Courses = lazy(() => import('./pages/student/Courses'))
+const CourseDetail = lazy(() => import('./pages/student/CourseDetail'))
+const LessonPage = lazy(() => import('./pages/student/Lesson'))
+const MyLearning = lazy(() => import('./pages/student/MyLearning'))
+const Projects = lazy(() => import('./pages/student/Projects'))
+const Requests = lazy(() => import('./pages/student/Requests'))
+const ProjectDetail = lazy(() => import('./pages/student/ProjectDetail'))
+const Achievements = lazy(() => import('./pages/student/Achievements'))
+const Gallery = lazy(() => import('./pages/student/Gallery'))
+const Competition = lazy(() => import('./pages/student/Competition'))
+const AIMentor = lazy(() => import('./pages/student/AIMentor'))
+const Profile = lazy(() => import('./pages/student/Profile'))
+const StudentSettings = lazy(() => import('./pages/student/Settings'))
+
+const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard'))
+const MentorStudents = lazy(() => import('./pages/mentor/Students'))
+const MentorGroups = lazy(() => import('./pages/mentor/Groups'))
+const MentorReviews = lazy(() => import('./pages/mentor/Reviews'))
+const ReviewDetail = lazy(() => import('./pages/mentor/ReviewDetail'))
+const MentorProjects = lazy(() => import('./pages/mentor/Projects'))
+const MentorAnalytics = lazy(() => import('./pages/mentor/Analytics'))
+const MentorCourses = lazy(() => import('./pages/mentor/Misc').then((m) => ({ default: m.MentorCourses })))
+const MentorCompetition = lazy(() => import('./pages/mentor/Misc').then((m) => ({ default: m.MentorCompetition })))
+const MentorSettings = lazy(() => import('./pages/mentor/Misc').then((m) => ({ default: m.MentorSettings })))
+const Payouts = lazy(() => import('./pages/mentor/Payouts'))
 
 /**
  * Signed in, and for `/m` also teaching.

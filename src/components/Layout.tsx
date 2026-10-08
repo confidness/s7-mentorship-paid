@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell, BookOpen, CalendarClock, ChevronRight, Compass, ClipboardCheck, FilePlus2, FolderKanban, GraduationCap, LayoutDashboard, LogOut, Menu,
@@ -7,7 +7,7 @@ import {
 import { useApp } from '../lib/store'
 import { notificationsFor, profileOf, resolveVars } from '../lib/selectors'
 import { levelFor } from '../lib/gamification'
-import { Avatar, Badge, ProgressBar } from './ui'
+import { Avatar, Badge, ProgressBar, Skeleton } from './ui'
 import ThemeToggle from './ThemeToggle'
 import LocaleToggle from './LocaleToggle'
 import type { LucideIcon } from 'lucide-react'
@@ -82,6 +82,22 @@ export function Logo({ compact }: { compact?: boolean }) {
 /** True when the reader is anywhere inside this entry's section, not only on its own page. */
 function covers(item: NavItem, pathname: string) {
   return (item.covers ?? []).some((path) => pathname === path || pathname.startsWith(path + '/'))
+}
+
+/**
+ * What stands in for a screen while its code is on its way.
+ *
+ * Screens load on first visit now, so there is a moment with chrome and no page. The shapes
+ * say "a page goes here" without words, and the short delay keeps them from flickering on a
+ * fast connection, where the code usually arrives before anyone could read them.
+ */
+function PageFallback() {
+  return (
+    <div aria-hidden="true" className="animate-rise space-y-4" style={{ animationDelay: '150ms' }}>
+      <Skeleton className="h-8 w-1/3" />
+      <Skeleton className="h-48 w-full" />
+    </div>
+  )
 }
 
 function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
@@ -381,7 +397,11 @@ export default function Layout() {
           {/* Replaces `.animate-rise` on every page root: the same movement in one place, and
               the outgoing screen can leave rather than vanish. */}
           <PageTransition routeKey={location.pathname}>
-            <Outlet />
+            {/* Inside the chrome and inside the transition, so the sidebar and header stay
+                put while a screen's code loads, and the screen still makes its one entrance. */}
+            <Suspense fallback={<PageFallback />}>
+              <Outlet />
+            </Suspense>
           </PageTransition>
         </main>
       </div>
