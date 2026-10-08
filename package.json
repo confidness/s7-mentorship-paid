@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "preview": "vite preview",
     "check": "esbuild test/flow.test.ts test/mentor.test.ts test/monetization.test.ts test/progress.test.ts test/discovery.test.ts test/demand.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/flow.test.mjs && node node_modules/.cache/mentor.test.mjs && node node_modules/.cache/monetization.test.mjs && node node_modules/.cache/progress.test.mjs && node node_modules/.cache/discovery.test.mjs && node node_modules/.cache/demand.test.mjs && node scripts/check-api-imports.mjs"
   },
@@ -23,13 +25,20 @@
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.169.0",
     "@vitejs/plugin-react": "^4.3.3",
+    "esbuild": "0.21.5",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.71.1",
     "vite": "^5.4.10"
   }
 }

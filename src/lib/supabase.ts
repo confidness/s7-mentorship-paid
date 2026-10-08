@@ -57,7 +57,7 @@ export async function uploadPrivate(bucket: 'lesson-materials' | 'mentor-docs', 
   const userId = auth.user?.id
   if (!userId) throw new Error('Sign in to upload.')
 
-  const safeName = file.name.replace(/[^\w.\-]+/g, '_').slice(-80)
+  const safeName = file.name.replace(/[^\w.-]+/g, '_').slice(-80)
   const path = `${userId}/${Date.now()}-${safeName}`
 
   const { error } = await db.storage.from(bucket).upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
