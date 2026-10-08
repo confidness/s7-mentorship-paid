@@ -39,4 +39,14 @@ for (const file of walk(join(root, 'api')).filter((f) => f.endsWith('.ts') && !f
     console.log(`✗ ${rel}\n  ${error.message.split('\n')[0]}`)
   }
 }
+// Vercel Hobby deploys at most twelve functions, and a thirteenth fails the whole deploy with
+// an error that names no file. Every .ts under api/ outside _lib/ is one function.
+const LIMIT = 12
+const functions = walk(join(root, 'api')).filter((f) => f.endsWith('.ts') && !f.includes('_lib')).length
+if (functions > LIMIT) {
+  failed++
+  console.log(`✗ ${functions} functions under api/, over the ${LIMIT} a Vercel Hobby deployment allows. Fold one into an existing route.`)
+} else {
+  console.log(`✓ ${functions} of ${LIMIT} functions`)
+}
 if (failed) process.exit(1)

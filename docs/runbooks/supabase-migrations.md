@@ -89,6 +89,7 @@ notice after running `0001`.
 | `0010_self_declared_mentors.sql` | Removes the last uses of `is_mentor()` as authority: no browser-written feedback, mentors see the queue and not drafts, price and currency are no longer browser-writable. |
 | `0011_disputes.sql` | Chargebacks: adds `disputed` and `charged_back` to the order statuses, and an index on `orders.stripe_payment_intent`, which refunds and disputes look their order up by. |
 | `0012_ai_usage.sql` | The AI mentor's daily allowance: an `ai_usage` table with one row per account per UTC day, and `consume_ai_quota`, the only way to write it. |
+| `0013_lesson_submissions.sql` | Lesson hand-ins on the server: adds `needs_changes` to the submission statuses, takes every write right on `lesson_submissions` away from the browser (`api/lesson-content.ts` writes them after its own checks), indexes hand-ins by student, and stops a browser inserting `assignment` XP. |
 
 The folder is the source of truth. If a file exists that is not in this table, read its header
 comment and add a line.

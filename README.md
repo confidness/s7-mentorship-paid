@@ -126,10 +126,10 @@ fee, payouts, the order of a purchase, and what is not automated — is in
 5. **Approve** pays the XP and notifies the student. **Request changes** sends it back, and
    resubmitting does not re-pay what was already earned.
 
-A project's review runs through the server, so the mentor and the student need not share a
-browser. The answers handed in to a mentor-written lesson do not yet: they are stored in the
-student's browser, and a mentor sees them only there. See
-[Architecture](docs/architecture.md#data-layer).
+Both halves run through the server, so the mentor and the student need not share a browser:
+projects since `0003`, and answers to mentor-written lessons since `0013`. The server marks the
+multiple-choice questions against a key the student's copy never contains, and a lesson is paid
+at most once. See [Architecture](docs/architecture.md#data-layer).
 
 A lesson from a built-in track, if anyone adds one back, runs through four sections — theory,
 code, task, challenge. There used to be two more, components and wiring, which assumed the

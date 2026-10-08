@@ -109,11 +109,23 @@ was removed entirely in `0005` and the decision is written with the service role
 append-only for everyone. Notifications that cross from one account to another are in
 `notifications` (`0004`), written by the routes that cause them and read by `api/notifications.ts`.
 
-**Still local:** the answers a student hands in to a mentor-written lesson and the mentor's
-review of them (the `lesson_submissions` table exists from `0001` and no route reads or writes
-it), groups, competitions and teams, and the notifications a reducer writes for its own user.
-Until the first of those moves, a mentor reviewing a lesson hand-in can only see what was
-submitted in the browser they are reviewing in.
+Answers to mentor-written lessons, and the author's verdict on them, are in Postgres from
+`0013_lesson_submissions.sql`. `api/lesson-content.ts` serves them: `GET ?submissions=1` lists
+what the caller may see (their own hand-ins, plus those on lessons they wrote), `POST` hands
+answers in, and `PATCH` is the author's decision. They share a file with the lesson content
+because that file alone reads the answer key, and the deployment has no room for another
+function. The server marks multiple-choice answers against the key and the client shows what
+comes back, so a lesson made only of quizzes settles and pays the moment it is handed in, even
+though the browser's copy has no key. Anything written by hand waits for the author, who can
+approve and award XP up to the lesson's points, or send it back for another go; a lesson is
+paid at most once. The rules are pure functions in `src/lib/submissions.ts`, used by both the
+reducers and the route. `0013` takes every write right on hand-ins away from the browser and
+makes assignment XP something only the server pays. Without Supabase the app marks and reviews
+locally exactly as before.
+
+**Still local:** groups, competitions and teams, and the notifications a reducer writes for its
+own user. Project approval XP is also still paid only in the reviewing mentor's browser, so it
+does not reach the student's ledger — see the [roadmap](../ROADMAP.md).
 
 ## Server routes
 
@@ -121,7 +133,7 @@ submitted in the browser they are reviewing in.
 | --- | --- | --- | --- |
 | `api/checkout.ts` | Node | service role | Creates a Stripe Checkout Session and a pending order. Price from the database. |
 | `api/webhook.ts` | Node | service role | Verifies Stripe's signature, then decides each event against the order's current status (`settle`): grants and withdraws entitlements for payments, full refunds and disputes, and syncs Connect accounts. |
-| `api/lesson-content.ts` | Node | service role | The paywall. Sends tasks and a material link only to someone entitled. |
+| `api/lesson-content.ts` | Node | caller; service role to read the answer key and to write hand-ins, verdicts, XP and notifications | The paywall: sends tasks and a material link only to someone entitled. Also lesson hand-ins: `GET ?submissions=1`, `POST` to hand in (marked on the server), `PATCH` for the author's decision. |
 | `api/lessons.ts` | Node | service role | The catalogue, and authoring: save, publish, delete. Checks Stripe before a priced publish. |
 | `api/connect/onboard.ts` | Node | service role | Creates an Express account and returns an onboarding link. |
 | `api/connect/status.ts` | Node | service role | Asks Stripe whether the account may take charges, and caches the answer. |
@@ -130,8 +142,12 @@ submitted in the browser they are reviewing in.
 | `api/requests.ts` | Node | caller; service role to withdraw or answer | The demand board. |
 | `api/notifications.ts` | Node | caller | The inbox: list, mark read. |
 | `api/mentor.ts` | Edge | caller, for the daily quota only | The AI mentor: identifies the caller, spends one unit of their daily allowance through `consume_ai_quota`, then calls a model. See [ai-mentor](ai-mentor.md). |
-| `api/payments-health.ts` | Edge | none | Says whether the Stripe keys are present, never what they are. |
-| `api/health.ts` | Node | anon, no session | One cheap query that proves the database answers. 200 with `db: 'ok'` or `'unconfigured'`, 503 when it does not answer. Reads nothing anon could not. |
+| `api/health.ts` | Node | anon, no session | One cheap query that proves the database answers: 200 with `db: 'ok'` or `'unconfigured'`, 503 when it does not. With `?payments=1`, whether the Stripe keys are present, never what they are (200 or 501). Reads nothing anon could not. |
+
+There are twelve functions, which is all a Vercel Hobby deployment allows; a thirteenth fails
+every deploy. `scripts/check-api-imports.mjs` counts them and fails `npm run check` past the
+limit, so a new endpoint has to join an existing route, as the payments check and lesson
+hand-ins did.
 
 The service role is used by the routes in the top half of that table because they write rows
 that no browser may write, or read rows that no student may read (`custom_tasks` carries the
@@ -150,5 +166,5 @@ rules apply to everything under `api/`:
   times out.
 
 `scripts/check-api-imports.mjs` loads each function the way Vercel does and fails on either
-mistake. It is the last step of `npm run check`. Edge functions (`mentor`, `payments-health`)
+mistake. It is the last step of `npm run check`. Edge functions (`mentor`)
 are bundled, which is why they were not affected by the first rule.

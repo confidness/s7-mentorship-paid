@@ -51,10 +51,13 @@ is for a deployment that takes real accounts and real payments.
    written against. See the [migrations runbook](runbooks/supabase-migrations.md) for how, and
    for what each file does.
 
-   Two of them change what the running code does if they are missing. Without
+   Three of them change what the running code does if they are missing. Without
    `0011_disputes.sql` the order statuses a dispute needs do not exist, so a dispute event
    fails and Stripe retries it. Without `0012_ai_usage.sql` the AI mentor's daily limit does
-   not exist: the route warns once in its log and answers without a cap.
+   not exist: the route warns once in its log and answers without a cap. Without
+   `0013_lesson_submissions.sql` sending a hand-in back for changes fails, because the status
+   does not exist, and the browser keeps write rights on hand-ins and assignment XP that only
+   the route should have.
 
    Optionally, mark yourself an admin with
    `update profiles set is_admin = true where id = '<your-user-id>';`, which is deliberately a
@@ -76,7 +79,7 @@ is for a deployment that takes real accounts and real payments.
 9. Point an uptime monitor at `https://<your-deployment>/api/health`. It answers 200 with
    `db: 'ok'` when the database answers, 503 with `db: 'down'` when it does not, and 200 with
    `db: 'unconfigured'` when no Supabase keys are set — so a monitor should check the body as
-   well as the status. `payments-health` checks configuration, not uptime.
+   well as the status. `?payments=1` on the same URL checks Stripe configuration, not uptime.
 10. Once the production domain is known, make `og:image` in `index.html` an absolute URL
     (`https://<your-domain>/og.png`). Most link previews ignore a relative one.
 
@@ -111,6 +114,6 @@ in, and the interface does not pretend they are signed in before they are.
 ## Which functions run where
 
 Most functions run on the Node runtime, because they use the Supabase and Stripe SDKs.
-`api/mentor.ts` and `api/payments-health.ts` run on the edge. The rules that keep Node
+`api/mentor.ts` runs on the edge. The rules that keep Node
 functions loadable on Vercel are in [architecture](architecture.md#runtime-notes) and are
 checked by `npm run check`.

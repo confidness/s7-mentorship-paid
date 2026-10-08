@@ -29,7 +29,14 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 - A skip link, focus moved to the page on navigation, and a tab title for every screen.
 - ESLint (flat config, typescript-eslint, React hooks) with `npm run lint`, and
   `npm run typecheck`. `esbuild`, which the checks already ran on, is now a declared dependency.
-- `GET /api/health`, for uptime monitors: one query that proves the database answers.
+- `GET /api/health`, for uptime monitors: one query that proves the database answers. It also
+  answers the Stripe configuration question with `?payments=1`, which replaces
+  `api/payments-health.ts` and keeps the deployment at the twelve functions Vercel Hobby allows.
+  `npm run check` now fails past twelve.
+- Answers to mentor-written lessons, and the author's verdict, live in Postgres instead of the
+  student's browser (`0013`). The server marks multiple choice against the key and pays XP, the
+  author sees hand-ins from any device and can approve or send them back, and both sides are
+  notified.
 - CodeQL analysis of the JavaScript and TypeScript, on push, on pull request and weekly.
 - Dependabot for npm and GitHub Actions, weekly, with minor and patch updates grouped.
 - Issue forms for bug reports and feature requests, a pull request template, and `CODEOWNERS`.
@@ -71,6 +78,8 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 - The AI mentor's built-in answers, the sign-in page and the welcome notification still told
   people to apply to teach, and that a reviewer checks every mentor. Neither has been true
   since `0006`.
+- Multiple-choice questions on a lesson fetched from the server could not mark themselves: the
+  student's copy has no answer key, so every answer read as wrong. The server marks them now.
 - A late payment notice could re-grant a lesson that had been refunded.
 - A refund that arrived before its payment notice was acknowledged and silently lost. It is now
   sent back to Stripe to be retried, until the event is three days old.
@@ -78,6 +87,10 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Security
 
+- An author could hand in answers to their own free lesson and then grade them; an author could
+  rewrite a computed quiz score and edit feedback and awarded XP after the student had read
+  them; and any account could insert `assignment` XP for itself in any amount. `0013` closes
+  all three: hand-ins and verdicts are written only by the route, after its own checks.
 - Any signed-in account could loop the AI mentor to run up the provider bill. Each account now
   has a daily allowance, spent in the database by a function that takes the account from the
   session and not from the request.

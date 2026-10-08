@@ -6,6 +6,12 @@
  *
  * For an uptime monitor, which wants one URL and a status code and nothing else.
  *
+ * GET ?payments=1  200 / 501 { ok, configured, checkout, webhook }
+ *
+ * Whether Stripe is wired up, for Settings → Server features. This used to be its own function,
+ * `api/payments-health.ts`; it lives here because a Vercel Hobby deployment is allowed twelve
+ * functions and a thirteenth fails every deploy. It reads two variables and names neither.
+ *
  * It asks as nobody: the anon key and no session. Every policy in the schema is written for
  * `authenticated`, so row level security shows the anon role no rows at all — the query
  * proves PostgREST and Postgres answer, and there is nothing it could return even if the
@@ -22,6 +28,7 @@ import { env, fail, json, requireMethod } from './_lib/server.js'
 async function handler(req: Request): Promise<Response> {
   try {
     requireMethod(req, 'GET')
+    if (new URL(req.url).searchParams.has('payments')) return payments()
     const time = new Date().toISOString()
     const url = env('SUPABASE_URL')
     const anonKey = env('SUPABASE_ANON_KEY')
@@ -44,6 +51,18 @@ async function handler(req: Request): Promise<Response> {
   } catch (error) {
     return fail(error)
   }
+}
+
+/**
+ * Reports whether payments are configured. Names no secret and returns no value from one —
+ * ServerStatus only needs to know whether a key is present.
+ */
+function payments(): Response {
+  const checkout = Boolean(env('STRIPE_SECRET_KEY'))
+  const webhook = Boolean(env('STRIPE_WEBHOOK_SECRET'))
+  const configured = checkout && webhook
+  // Which half is missing is the useful part when this is red.
+  return json({ ok: configured, configured, checkout, webhook }, configured ? 200 : 501)
 }
 
 /** Node runtime: the Supabase SDK is not edge-compatible. */

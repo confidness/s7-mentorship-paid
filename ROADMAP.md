@@ -6,9 +6,14 @@ within a section is not a ranking. For the full history, see the [CHANGELOG](CHA
 
 ## Now
 
-- **Assignment hand-ins on the server.** Answers to mentor-written lessons, and the mentor's
-  review of them, live in the student's browser today. `lesson_submissions` exists in `0001`,
-  but nothing writes it, so a mentor can only see a hand-in in the browser it was made in.
+- **Project approval XP on the server.** A project's review is on the server, but the XP for
+  an approved project is still paid only in the reviewing mentor's browser, and the database
+  refuses an `approval` row from a browser anyway, so it never reaches the student. Lesson
+  hand-ins already pay from the server; projects should do the same.
+- **Hand-in loose ends.** Editing a lesson after answers have arrived re-mints its question
+  ids, so earlier answers no longer line up with their questions. Approving overwrites the
+  earlier "changes requested" feedback instead of keeping a thread as projects do. The learning
+  path counts a hand-in that was sent back as done.
 
 ## Next
 
@@ -41,6 +46,9 @@ within a section is not a ranking. For the full history, see the [CHANGELOG](CHA
   dashboard, because who carries a chargeback is a policy before it is code. See
   [payments](docs/payments.md).
 - **A daily limit on AI mentor questions per account.** See [the AI mentor](docs/ai-mentor.md).
+- **Assignment hand-ins on the server.** Answers to mentor-written lessons, and the author's
+  verdict, are in Postgres (`0013`), marked by the server and readable from any device.
+- **A public front door** at `/welcome`, before anyone is asked for an account.
 
 ## Open questions
 

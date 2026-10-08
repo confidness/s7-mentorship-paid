@@ -121,7 +121,7 @@ export default function ServerStatus() {
       .catch(() => {})
     // Payments replaced the mentor PIN: what matters now is whether Stripe is wired up,
     // since that is what decides if a paid lesson can actually be sold.
-    void probe('/api/payments-health').then((h) => alive && setPayments(h))
+    void probe('/api/health?payments=1').then((h) => alive && setPayments(h))
     return () => {
       alive = false
     }

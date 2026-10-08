@@ -129,7 +129,7 @@ Work down this list. Each step rules out the one before it.
    - 200 but the order is still `pending`: the session was not `paid` yet. An asynchronous
      method sends `async_payment_succeeded` when it settles.
 
-   `GET /api/payments-health` reports whether the Stripe secret key and the webhook secret are
+   `GET /api/health?payments=1` reports whether the Stripe secret key and the webhook secret are
    present (it never returns their values).
 
 3. **Resend the event** from the dashboard, or with `stripe events resend`. Because the writes
