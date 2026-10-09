@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
 import { useAppliedBackdrop } from '../lib/backdrop'
@@ -35,49 +35,86 @@ class Quiet extends Component<{ children: ReactNode }, { failed: boolean }> {
   }
 }
 
-let webgl: boolean | undefined
-function hasWebGL() {
-  if (webgl === undefined) {
-    try {
-      const canvas = document.createElement('canvas')
-      const context = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null
-      webgl = !!context
-      context?.getExtension('WEBGL_lose_context')?.loseContext()
-    } catch {
-      webgl = false
-    }
+/**
+ * Whether this browser can draw the world: not asked yet, yes, or no.
+ *
+ * Asking means making a WebGL context, and the first one a page makes waits for the GPU to wake
+ * — a long task on a slow machine, two seconds in a software renderer. So the gate asks once,
+ * after the first paint, and nothing asks while a page is rendering. The front door's stage
+ * needs an answer sooner, to lay out without a jump, so until then it takes a browser that has
+ * WebGL at all at its word, and is told if the answer turns out to be no.
+ */
+type WebGLAnswer = 'unasked' | 'yes' | 'no'
+let webgl: WebGLAnswer = 'unasked'
+const listeners = new Set<() => void>()
+
+function askWebGL() {
+  if (webgl !== 'unasked') return
+  try {
+    const canvas = document.createElement('canvas')
+    const context = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null
+    webgl = context ? 'yes' : 'no'
+    context?.getExtension('WEBGL_lose_context')?.loseContext()
+  } catch {
+    webgl = 'no'
   }
-  return webgl
+  listeners.forEach((listener) => listener())
 }
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener)
+  return () => void listeners.delete(listener)
+}
+const useWebGL = () => useSyncExternalStore(subscribe, () => webgl)
 
 /**
  * True once the first screen has painted and the browser has had a moment to itself.
  *
- * The world is the heaviest thing the app loads — three, the renderer, a shader compile — and
- * it is the default, so everybody pays for it. Fetched in the same breath as the first screen
- * it would compete with that screen's own code for the network and the main thread; started
- * from an idle callback it arrives once the page is already usable, with the CSS sky standing
- * in until then. Two frames, because the first runs before the paint and the second after it.
- * Safari has no idle callback, so there it waits a beat instead.
+ * The world is the heaviest thing the app loads — three, the renderer, a context, a shader
+ * compile — and it is the default, so everybody pays for it. Fetched in the same breath as the
+ * first screen it would compete with that screen's own code for the network and the main
+ * thread; started from an idle callback after the first contentful paint it arrives once the
+ * page is already usable, with the CSS sky standing in until then. Safari has no idle callback,
+ * so there it waits a beat instead.
+ *
+ * Paint timing is not recorded for a page that loaded in a background tab, and not every
+ * browser has it, so two animation frames stand in a few seconds later: they only run once the
+ * tab is shown, and where paint timing works it has long since won.
  */
 function useAfterFirstPaint() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    let started = false
     let frame = 0
     let idle = 0
     let timer = 0
+    let observer: PerformanceObserver | undefined
     const go = () => setReady(true)
-    frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(() => {
-        if (typeof window.requestIdleCallback === 'function') idle = window.requestIdleCallback(go, { timeout: 2000 })
-        else timer = window.setTimeout(go, 300)
+    const start = () => {
+      if (started) return
+      started = true
+      observer?.disconnect()
+      if (typeof window.requestIdleCallback === 'function') idle = window.requestIdleCallback(go, { timeout: 2000 })
+      else timer = window.setTimeout(go, 300)
+    }
+    if (typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes?.includes('paint')) {
+      observer = new PerformanceObserver((list) => {
+        if (list.getEntriesByName('first-contentful-paint').length) start()
       })
-    })
+      // Buffered, so a paint that happened before this effect ran is reported at once.
+      observer.observe({ type: 'paint', buffered: true })
+    }
+    const fallback = window.setTimeout(() => {
+      frame = requestAnimationFrame(() => (frame = requestAnimationFrame(start)))
+    }, 3000)
     return () => {
+      started = true
+      observer?.disconnect()
       cancelAnimationFrame(frame)
       if (idle) window.cancelIdleCallback?.(idle)
       window.clearTimeout(timer)
+      window.clearTimeout(fallback)
     }
   }, [])
 
@@ -141,6 +178,7 @@ export default function OrbitSceneGate() {
   const reduced = usePrefersReducedMotion()
   const { pathname } = useLocation()
   const painted = useAfterFirstPaint()
+  const canDraw = useWebGL()
   const { mode, station } = vantage(pathname)
   const stage = useStage(look === 'orbit' && mode === 'front', pathname)
   const [hidden, setHidden] = useState(false)
@@ -155,7 +193,12 @@ export default function OrbitSceneGate() {
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
 
-  if (look !== 'orbit' || !painted || !hasWebGL()) return null
+  // Asked here, after the paint and only when the world is wanted — never during a render.
+  useEffect(() => {
+    if (painted && look === 'orbit') askWebGL()
+  }, [painted, look])
+
+  if (look !== 'orbit' || !painted || canDraw !== 'yes') return null
 
   return <Layer theme={theme} mode={mode} station={station} still={reduced || hidden} lowPower={lowPower} reduced={reduced} stage={stage} />
 }
@@ -171,7 +214,8 @@ export default function OrbitSceneGate() {
  */
 export function OrbitStage() {
   const look = useAppliedBackdrop()
-  if (look !== 'orbit' || !hasWebGL()) return null
+  const canDraw = useWebGL()
+  if (look !== 'orbit' || canDraw === 'no' || typeof WebGLRenderingContext === 'undefined') return null
   return <div aria-hidden="true" data-orbit-stage className="orbit-stage" />
 }
 
