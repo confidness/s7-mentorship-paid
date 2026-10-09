@@ -2190,11 +2190,18 @@
   animation: sheet-up 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/*
+ * Once, and over at once. The count matters as much as the duration: an endless animation cut
+ * to a hundredth of a millisecond still runs, every frame landing on a different moment of it,
+ * which turns a slow turn — the orbit mark's ring, the menu bar's sweep, a spinner — into a
+ * flicker. Ended, each sits still in its resting state.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
