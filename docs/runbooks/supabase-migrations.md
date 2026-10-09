@@ -22,7 +22,7 @@ two branches both add `0013`, whichever merges second renumbers.
 
 All at once, which is the way to do it. Open
 <https://github.com/confidness/s7-mentorship-paid/raw/main/supabase/all-migrations.sql>, select
-everything (it is about 1,500 lines — check the end reads `needs_changes');`), paste it into
+everything (it is about 1,500 lines — check the end reads `p.id = u.id));`), paste it into
 Supabase → SQL Editor and press Run. A file preview that shows only the first part of a long file
 is the way this goes wrong: the editor then reports a syntax error near `;` partway through
 `0001`, and changes nothing.
@@ -105,6 +105,7 @@ notice after running `0001`.
 | `0011_disputes.sql` | Chargebacks: adds `disputed` and `charged_back` to the order statuses, and an index on `orders.stripe_payment_intent`, which refunds and disputes look their order up by. |
 | `0012_ai_usage.sql` | The AI mentor's daily allowance: an `ai_usage` table with one row per account per UTC day, and `consume_ai_quota`, the only way to write it. |
 | `0013_lesson_submissions.sql` | Lesson hand-ins on the server: adds `needs_changes` to the submission statuses, takes every write right on `lesson_submissions` away from the browser (`api/lesson-content.ts` writes them after its own checks), indexes hand-ins by student, and stops a browser inserting `assignment` XP. |
+| `0014_backfill_profiles.sql` | A profile for every account created before 0001's trigger existed. Without one, sign-in works but progress, projects, hand-ins, notifications and the AI allowance all fail their foreign key for that account. |
 
 The folder is the source of truth. If a file exists that is not in this table, read its header
 comment and add a line.

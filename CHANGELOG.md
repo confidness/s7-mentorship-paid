@@ -94,6 +94,11 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Fixed
 
+- Accounts created before the migrations ran had a login but no profile, because the trigger
+  that makes one only sees sign-ups after it exists. Sign-in worked, so it went unnoticed, while
+  every write tied to the profile — progress, projects, hand-ins, notifications, the AI allowance —
+  failed for them. `0014_backfill_profiles.sql` makes the missing rows, and the migration bundle's
+  closing check now includes "every account has a profile".
 - With a server configured, a new browser, a private window or cleared site data opened the
   sign-in page on "Create the first account — nobody has signed up yet", because it counted the
   accounts saved in that browser rather than on the server. A returning person read it as the

@@ -51,7 +51,8 @@ out.push(
   "union all select 'demand board (0008)', to_regclass('public.course_requests') is not null",
   "union all select 'chargebacks (0011)', exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'order_status' and e.enumlabel = 'charged_back')",
   "union all select 'AI mentor daily limit (0012)', to_regprocedure('public.consume_ai_quota(integer)') is not null",
-  "union all select 'lesson hand-ins sent back (0013)', exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'submission_status' and e.enumlabel = 'needs_changes');",
+  "union all select 'lesson hand-ins sent back (0013)', exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'submission_status' and e.enumlabel = 'needs_changes')",
+  "union all select 'every account has a profile (0014)', not exists (select 1 from auth.users u where not exists (select 1 from public.profiles p where p.id = u.id));",
   '',
 )
 const bundle = out.join('\n')
