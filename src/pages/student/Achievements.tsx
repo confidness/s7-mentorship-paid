@@ -21,10 +21,12 @@ export function AchievementBadge({ achievement, unlocked, compact }: { achieveme
   const Icon = ICONS[achievement.icon] ?? Trophy
   const body = (
     <div className={`flex flex-col items-center p-3 text-center transition ${unlocked ? 'fill ring-1 rim' : 'grayscale'}`}>
-      <span className={`grid place-items-center bg-gradient-to-b text-white shadow-[0_8px_18px_-10px_rgb(11_18_32/0.8)] ${TIER_RING[achievement.tier]} ${compact ? 'h-11 w-11' : 'h-14 w-14'}`}>
+      <span className={`icon-tile grid place-items-center bg-gradient-to-b text-white shadow-[0_8px_18px_-10px_rgb(11_18_32/0.8)] ${TIER_RING[achievement.tier]} ${compact ? 'h-11 w-11' : 'h-14 w-14'}`}>
         {unlocked ? <Icon size={compact ? 18 : 24} aria-hidden="true" /> : <Lock size={compact ? 16 : 20} aria-hidden="true" />}
       </span>
-      <span className={`mt-2 font-bold text-ink-900 ${compact ? 'text-[11px] leading-tight' : 'text-sm'}`}>{achievement.name}</span>
+      {/* Compact tiles sit four to a narrow column; a long Russian or Kazakh name has to be
+          allowed to break, or it runs into its neighbour. */}
+      <span className={`mt-2 font-bold text-ink-900 ${compact ? 'w-full text-[11px] leading-tight hyphens-auto [overflow-wrap:anywhere]' : 'text-sm'}`}>{achievement.name}</span>
       {!compact && <span className="mt-1 text-xs leading-relaxed text-ink-500">{unlocked ? achievement.description : achievement.hint}</span>}
       {!compact && (
         <span className="mt-2">

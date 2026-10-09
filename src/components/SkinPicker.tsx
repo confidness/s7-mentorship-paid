@@ -23,6 +23,7 @@ interface Swatch {
 }
 
 const SWATCHES: Record<SkinChoice, Swatch> = {
+  orbit: { canvas: 'radial-gradient(circle at 70% 25%, #3d7bff 0%, #1d1a6b 45%, #04060f 80%)', surface: 'rgba(140, 170, 255, 0.28)', accent: '#7fe7ff', border: 'rgba(160, 185, 255, 0.45)', radius: 14 },
   plain: { canvas: '#f4f6fa', surface: '#ffffff', accent: '#4f46e5', border: '#e2e8f0', radius: 8 },
   editorial: { canvas: '#f7f6f3', surface: '#ffffff', accent: '#111111', border: '#eaeaea', radius: 5 },
   atelier: { canvas: '#eceef1', surface: '#ffffff', accent: '#14161a', border: 'transparent', radius: 14 },

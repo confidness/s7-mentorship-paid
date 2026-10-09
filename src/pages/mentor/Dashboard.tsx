@@ -217,7 +217,7 @@ export default function MentorDashboard() {
                       <Avatar name={r.user.name} initials={r.user.avatar} size={32} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-ink-900">{r.user.name}</span>
-                        <span className="block text-xs text-amber-700">Last active {r.profile ? relativeTime(r.profile.lastActiveDate) : 'unknown'}</span>
+                        <span className="block text-xs text-amber-700">{t('last_active', { when: r.profile ? relativeTime(r.profile.lastActiveDate) : '—' })}</span>
                       </span>
                     </Link>
                   </li>
@@ -235,7 +235,7 @@ export default function MentorDashboard() {
                 .slice(0, 3)
                 .map((r, i) => (
                   <li key={r.user.id} className="flex items-center gap-3">
-                    <span className={`grid h-7 w-7 shrink-0 place-items-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
+                    <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-[var(--ui-radius-sm)] text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'fill text-ink-500'}`}>{i + 1}</span>
                     <Avatar name={r.user.name} initials={r.user.avatar} size={28} />
                     <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">{r.user.name}</span>
                     <span className="shrink-0 text-xs font-bold text-ink-600 tabular-nums">{localizeLevelName(levelFor(profileOf(state, r.user.id)?.xp ?? 0).level.name)}</span>

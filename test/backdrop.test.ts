@@ -28,7 +28,7 @@ const bytes = (c: RGB | null) => (c ? c.map((v) => Math.round(v * 255)).join(','
 const color = (name: string, input: string | null | undefined, expected: string | null) => eq(name, bytes(parseColor(input)), expected)
 
 // Every skin, spelled out rather than imported, so adding an eleventh fails here until it is given a look.
-const SKINS = ['plain', 'editorial', 'atelier', 'brutal', 'terminal', 'marketplace', 'academy', 'streak', 'cinema', 'poster']
+const SKINS = ['orbit', 'plain', 'editorial', 'atelier', 'brutal', 'terminal', 'marketplace', 'academy', 'streak', 'cinema', 'poster']
 
 /* ------------------------------------------------------------------ colour */
 

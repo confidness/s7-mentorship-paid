@@ -21,6 +21,8 @@ export const isBackdropChoice = (value: unknown): value is BackdropChoice => (BA
 /**
  * What Auto draws under each skin, chosen by rendering every skin in both themes and looking.
  *
+ * - orbit → off: it brings its own world, drawn by OrbitSceneGate, and nothing here draws
+ *   over it.
  * - plain → silk: the default should be quiet, and silk is the quietest of the three.
  * - editorial → off: warm paper meant to read like a printed page. Silk on bone came out as
  *   grey smudges, and anything behind the type turns the document back into an app.
@@ -37,6 +39,7 @@ export const isBackdropChoice = (value: unknown): value is BackdropChoice => (BA
  * - poster → off: ink on paper has no depth, and the skin says so in its own comment.
  */
 export const AUTO: Record<SkinChoice, Look> = {
+  orbit: 'off',
   plain: 'silk',
   editorial: 'off',
   atelier: 'sculpture',

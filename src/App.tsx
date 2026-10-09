@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { lazy, type ReactNode } from 'react'
 import Layout from './components/Layout'
 import Backdrop from './components/Backdrop'
+import OrbitSceneGate from './components/OrbitSceneGate'
 import { useApp } from './lib/store'
 
 // Eager: the first screen anyone signed out sees, and the one that renders outside the
@@ -78,8 +79,10 @@ export default function App() {
   return (
     <>
       {/* Outside the routes, so one canvas and one WebGL context serve every page and survive
-          every navigation between them. */}
+          every navigation between them. At most one of the two draws: the orbit world under
+          the orbit skin on Auto, a look from backdrop/ otherwise. */}
       <Backdrop />
+      <OrbitSceneGate />
       <Routes>
         {/* Public, and only while signed out: anybody signed in is sent home from all three. */}
         <Route path="/welcome" element={user ? <Navigate to={home} replace /> : <Landing />} />
