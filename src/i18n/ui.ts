@@ -610,6 +610,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   backdrop_sculpture: { en: 'Sculpture', ru: 'Скульптура', kk: 'Мүсін' },
   backdrop_glass: { en: 'Glass', ru: 'Стекло', kk: 'Шыны' },
   backdrop_metal: { en: 'Liquid metal', ru: 'Жидкий металл', kk: 'Сұйық металл' },
+  backdrop_orbit: { en: '3D scene', ru: '3D-сцена', kk: '3D-сахна' },
   backdrop_off: { en: 'Off', ru: 'Выключен', kk: 'Өшірулі' },
   n_people_took_this: { en: '{n} took this', ru: 'Прошли: {n}', kk: 'Өтті: {n}' },
   n_people_started_this: { en: '{n} started', ru: 'Начали: {n}', kk: 'Бастады: {n}' },

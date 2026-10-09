@@ -137,32 +137,45 @@ console.log('which look, under which skin')
 
 for (const skin of SKINS) {
   const look = AUTO[skin as keyof typeof AUTO]
-  check(`${skin} has an Auto look`, ['silk', 'sculpture', 'glass', 'metal', 'off'].includes(look), { skin, look })
+  check(`${skin} has an Auto look`, ['silk', 'sculpture', 'glass', 'metal', 'orbit', 'off'].includes(look), { skin, look })
 }
 eq('there is no Auto look for a skin that does not exist', Object.keys(AUTO).length, SKINS.length)
 eq('plain gets silk', AUTO.plain, 'silk')
 eq('atelier gets the sculpture', AUTO.atelier, 'sculpture')
 eq('brutal keeps its liquid metal', AUTO.brutal, 'metal')
 check('only brutal gets the metal', SKINS.every((skin) => (AUTO[skin as keyof typeof AUTO] === 'metal') === (skin === 'brutal')))
+eq('orbit brings its own world', AUTO.orbit, 'orbit')
+check('only orbit gets the orbit world', SKINS.every((skin) => (AUTO[skin as keyof typeof AUTO] === 'orbit') === (skin === 'orbit')))
 
 eq('Auto under brutal is the metal', resolveBackdrop('auto', 'brutal'), 'metal')
 eq('an explicit choice replaces the metal under brutal', resolveBackdrop('silk', 'brutal'), 'silk')
 eq('Off under brutal is off, not the metal', resolveBackdrop('off', 'brutal'), 'off')
 eq('Auto under an unknown skin is what plain gets', resolveBackdrop('auto', 'nonsense'), 'silk')
 
+eq('Auto under orbit is its world', resolveBackdrop('auto', 'orbit'), 'orbit')
+check('and the root Backdrop draws nothing there', !drawsHere(resolveBackdrop('auto', 'orbit')))
+for (const look of ['silk', 'sculpture', 'glass'] as const) {
+  eq(`${look} chosen under orbit replaces the world`, resolveBackdrop(look, 'orbit'), look)
+  check(`and the root Backdrop draws ${look} there`, drawsHere(resolveBackdrop(look, 'orbit')))
+}
+eq('Off under orbit is off, not the world: the skin keeps its CSS sky', resolveBackdrop('off', 'orbit'), 'off')
+
 for (const skin of SKINS) {
   for (const choice of BACKDROP_CHOICES) {
     const look = resolveBackdrop(choice, skin)
     if (choice !== 'auto') eq(`${choice} holds under ${skin}`, look, choice)
-    // The three things that can draw a moving background, and the rule that gates each.
+    // The four things that can draw a moving background, and the rule that gates each.
     const metal = look === 'metal'
+    const orbitWorld = look === 'orbit'
     const backdrop = drawsHere(look)
     const atelierScene = skin === 'atelier' && look === 'off'
-    check(`at most one moving background for ${choice} under ${skin}`, [metal, backdrop, atelierScene].filter(Boolean).length <= 1, { choice, skin, look })
+    check(`at most one moving background for ${choice} under ${skin}`, [metal, orbitWorld, backdrop, atelierScene].filter(Boolean).length <= 1, { choice, skin, look })
+    check(`the orbit world never runs under ${skin} with ${choice}`, !orbitWorld || (skin === 'orbit' && choice === 'auto'), { choice, skin, look })
   }
 }
 
 check('metal is not something a person can pick', !isBackdropChoice('metal'))
+check('nor is the orbit world: it comes with its skin', !isBackdropChoice('orbit'))
 check('nor is garbage', !isBackdropChoice('sparkles') && !isBackdropChoice(null) && !isBackdropChoice(undefined))
 check('every listed choice is one', BACKDROP_CHOICES.every(isBackdropChoice))
 eq('Auto is the first choice, and the default', BACKDROP_CHOICES[0], 'auto')

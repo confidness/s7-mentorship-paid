@@ -14,13 +14,15 @@ import { t } from '../i18n'
  * something the page does not draw. Off is the page's own canvas, drawn live.
  *
  * Auto says which look it stands for under the skin that is on, since that is the one
- * question the word "auto" leaves open.
+ * question the word "auto" leaves open. Under orbit that is the skin's own 3D world, which
+ * any other choice here replaces.
  */
 const NAME: Record<Look, string> = {
   silk: 'backdrop_silk',
   sculpture: 'backdrop_sculpture',
   glass: 'backdrop_glass',
   metal: 'backdrop_metal',
+  orbit: 'backdrop_orbit',
   off: 'backdrop_off',
 }
 
@@ -78,6 +80,14 @@ function Preview({ look, dark }: { look: Look; dark: boolean }) {
   if (look === 'metal') {
     const [a, b] = dark ? ['#1b1b21', '#6f7790'] : ['#aaaaac', '#ffffff']
     return <span aria-hidden="true" className={frame} style={{ background: `linear-gradient(115deg, ${a} 10%, ${b} 45%, ${a} 60%, ${b} 85%)` }} />
+  }
+  // The orbit world is the skin's own, drawn live behind this very page; its swatch in the
+  // skin picker is the same sky, so the two read as one thing.
+  if (look === 'orbit') {
+    const sky = dark
+      ? 'radial-gradient(circle at 62% 38%, #7fe7ff 0 3%, transparent 9%), radial-gradient(circle at 70% 25%, #3d7bff 0%, #1d1a6b 45%, #04060f 80%)'
+      : 'radial-gradient(circle at 62% 38%, #1560ec 0 3%, transparent 9%), radial-gradient(circle at 70% 25%, #8fb1ff 0%, #c4b2ff 40%, #eef1fb 80%)'
+    return <span aria-hidden="true" className={frame} style={{ background: sky }} />
   }
   return (
     <span aria-hidden="true" className={frame}>

@@ -1,6 +1,7 @@
 import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useAppliedSkin, useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
+import { useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
+import { useAppliedBackdrop } from '../lib/backdrop'
 import { sectionIndex } from './nav'
 
 /**
@@ -12,10 +13,14 @@ import { sectionIndex } from './nav'
  * canvas survives the navigation. A canvas per page would restart the world on every click
  * and pay for a new WebGL context each time.
  *
- * Same discipline as the other two scenes: it self-gates by skin, freezes for reduced motion
- * and a hidden tab, is `aria-hidden` and takes no pointer events. Anything that goes wrong in
- * WebGL — no context, a lost chunk — leaves the stylesheet's own gradient showing, never the
- * crash screen.
+ * Whether it runs is not decided here. `resolveBackdrop` answers that for every background at
+ * once, and says `orbit` only under the orbit skin with the background on Auto: a look chosen
+ * in settings replaces the world, and Off leaves the skin's CSS sky. The root Backdrop reads
+ * the same answer, so the two can never both draw.
+ *
+ * Same discipline as the other scenes: it freezes for reduced motion and a hidden tab, is
+ * `aria-hidden` and takes no pointer events. Anything that goes wrong in WebGL — no context,
+ * a lost chunk — leaves the stylesheet's own sky showing, never the crash screen.
  */
 const Scene = lazy(() => import('./OrbitScene'))
 
@@ -54,7 +59,7 @@ function hasWebGL() {
 const VEIL = { hero: { light: 0, dark: 0 }, app: { light: 0.36, dark: 0.26 } } as const
 
 export default function OrbitSceneGate() {
-  const skin = useAppliedSkin()
+  const look = useAppliedBackdrop()
   const theme = useAppliedTheme()
   const reduced = usePrefersReducedMotion()
   const { pathname } = useLocation()
@@ -70,7 +75,7 @@ export default function OrbitSceneGate() {
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
 
-  if (skin !== 'orbit' || !hasWebGL()) return null
+  if (look !== 'orbit' || !hasWebGL()) return null
 
   const mode = pathname === '/login' || pathname === '/register' ? 'hero' : 'app'
   // A page outside the five sections — one course, one lesson — takes the vantage of the
