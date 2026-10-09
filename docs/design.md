@@ -9,13 +9,19 @@ the background, sits on top of them.
 | Skin (`data-skin` on `<html>`) | what the interface is made of | per browser, `s7-skin` |
 | Background (`data-backdrop` on `<html>`) | auto, silk, sculpture, glass, or off | per browser, `s7-backdrop` |
 
+The default skin is `orbit`, and it brings a background of its own: a 3D world the interface
+floats over as frosted glass. How it and the three backgrounds take turns is under
+[Backgrounds](#what-each-skin-gets).
+
 Light or dark is the device's setting, and only the device's. There is no switch in the
 interface: the operating system already has one, people change it there — at sunset, on a
 schedule, for their eyes — and a site that keeps its own copy ends up in daylight colours at
 midnight. `index.html` applies the theme and the stored skin in a small inline script before the
 page renders, so there is no flash, and `followSystemTheme` in `src/lib/theme.ts` keeps the theme
 in step if the device changes while the page is open. A choice an older build stored under
-`s7-theme` is ignored and cleared.
+`s7-theme` is ignored and cleared. The same script moves a stored `plain` to `orbit`, once
+(`s7-skin-rev` = 2): the settings page used to write `plain` back on sight, so a `plain` from
+before orbit records a visit, not a choice. A `plain` picked after that is kept.
 
 A skin defines both themes, so someone who wants the editorial skin at night gets the editorial
 skin at night, not a different one. Every colour is a token in `src/index.css`. No component
@@ -29,20 +35,76 @@ shadow set (diffuse, a hard offset, or none).
 
 ## The skins
 
-The default is `plain`, and it is deliberately unremarkable: a neutral interface that gets out
-of the way. A product should not make a statement on somebody's first visit; the opinionated
-skins are a choice, taken in **Settings**.
+The default is `orbit`, the platform's own world: a live 3D scene behind every page with the
+interface as frosted glass over it (below). `plain` is still here and still deliberately
+unremarkable, a neutral interface that gets out of the way, for anyone who would rather; it and
+the other opinionated skins are a choice, taken in **Settings**.
 
-There are ten, in two families, and the split is where they came from. The first five are design
-disciplines: `plain`, `editorial`, `atelier`, `brutal`, `terminal`. The second five were read off
-the platforms this product competes with, whose visual languages are each a bet about what sells
-a course: `marketplace`, `academy`, `streak`, `cinema`, `poster`. The picker keeps the groups
-apart, and draws each option as three squares in that skin's own palette, with its real radius
-and border, rather than a screenshot that goes stale the first time a colour moves.
+There are eleven, in two families, and the split is where they came from. The first six are made
+here: `orbit`, the house world, then five design disciplines: `plain`, `editorial`, `atelier`,
+`brutal`, `terminal`. The second five were read off the platforms this product competes with,
+whose visual languages are each a bet about what sells a course: `marketplace`, `academy`,
+`streak`, `cinema`, `poster`. The picker keeps the groups apart, and draws each option as three
+squares in that skin's own palette, with its real radius and border, rather than a screenshot
+that goes stale the first time a colour moves.
+
+## Orbit, the default
+
+The interface floats over a world: the S7 mark drawn as a lit tube — the same two 270° arcs as
+`Mark.tsx` — inside three tilted orbits, each carrying a satellite, over a turning galaxy and a
+circuit floor, under a nebula sky. Glow is additive shells and sprites, not a bloom pass,
+because this sits behind every page and has to stay cheap. Brand blue is the middle of both
+palettes, with violet and cyan either side; the light theme draws the same things as tinted dust
+on a pale sky rather than light on black.
+
+Everything over it is glass: translucent sheets that blur what is behind them, a hairline of
+light along the menu bar's edge, capsule controls, and one gradient, brand blue into violet, for
+the thing to press. The stylesheet's rule is that every sheet is opaque enough to carry its
+text's contrast on its own; the blur is a finish, not a crutch.
+
+The camera has a vantage per section of the app, taken from `nav.ts`, so moving between sections
+glides it across the room, and signing in flies it from the sign-in framing to the catalogue.
+`vantage()` decides where it stands for any path: sign-in and registration put the mark beside
+the form, the front door puts it to the right of the headline, every page inside the app takes
+its section's station, and a page in no section — one course, one lesson, a missing address —
+takes the station of the section it is reached from, or the catalogue's. On an upright screen
+the front door's words run the full width, so the page leaves a stage under its buttons
+(`OrbitStage`) and the camera is aimed at it, measured, and tilts with the scroll so the mark
+moves with its stage.
+
+It is one canvas, mounted once beside the routes in `App.tsx`, so the world survives every
+navigation. `OrbitSceneGate.tsx` is the light half and the only thing that imports
+`OrbitScene.tsx`; three and the renderer live in a lazy chunk. Because orbit is the default the
+gate is careful about when: it waits for the first contentful paint and an idle moment, asks
+once whether WebGL works (the first context a page makes waits for the GPU, which can be a long
+task), then fetches the scene and fades it in over 600 ms after its first frame. Until then,
+and wherever WebGL is missing, the CSS sky stands in: two soft radial glows on the canvas colour.
+Reduced motion is a composed still frame on demand, a hidden tab draws nothing, and phones and
+machines with four cores or fewer get fewer particles and a cheaper sky.
+
+## The menu bar
+
+One floating bar across the top replaces the sidebar and header. Five sections do not need a
+column of their own, and a column cost every page 280 pixels of width to hold five words. The
+bar carries the mark, the five sections, the XP ring, the bell and the account menu; the
+language is in the account menu, and there is no theme control anywhere. On a phone the sections
+move to a dock at the thumb with "more", which opens a sheet with the rest.
+
+The section you are in is marked by one capsule that slides to it, and a fainter one follows the
+pointer, so the bar answers a hover before a click. The section tabs inside a page use the same
+sliding marker. Both are measured off the items and moved with a CSS transition rather than
+Motion's layout animations, which the trimmed Motion bundle leaves out. Under the ruled skins
+the marker is a raised fill in the skin's own radius and shadow; orbit adds its light.
+
+The skip link is the first thing Tab reaches, `<main>` takes focus on every navigation, and each
+tab of the browser is named after its page from the same `nav.ts` the bar draws. The bell and
+account panels open from the keyboard, close on Escape — handing focus back to their button —
+and close when focus moves past them.
 
 ## Backgrounds
 
-Every page is drawn on something, and there are three things it can be. Each is one fragment
+Every page is drawn on something. Two skins bring their own — orbit its 3D world, brutal its
+liquid metal — and every skin can be given one of three looks instead. Each look is one fragment
 shader on one full-screen triangle, written for WebGL2 by hand in `src/components/backdrop/`,
 with no library, no texture and nothing fetched.
 
@@ -65,12 +127,14 @@ their own `brand-500`, so for them it is their `brand-600`, not plain's indigo.
 ### What each skin gets
 
 The choice is in **Settings → Appearance → Background**, next to the skins: Auto, Silk,
-Sculpture, Glass or Off. A choice other than Auto holds under every skin. Auto was decided by
-rendering all ten skins in both themes under each look, and looking:
+Sculpture, Glass or Off. A choice other than Auto holds under every skin, and the Auto tile says
+what Auto means under the skin that is on — "3D scene" under orbit. Auto was decided by
+rendering the skins in both themes under each look, and looking:
 
 | Skin | Auto | Why |
 | --- | --- | --- |
-| plain | silk | The default should be quiet, and silk is the quietest. |
+| orbit | its 3D world | The skin is glass over a scene; the scene is its background, the way the metal is brutal's. |
+| plain | silk | The quiet skin gets the quietest look. |
 | editorial | off | Silk on warm bone came out as grey smudges; a page that reads like print wants nothing behind the type. |
 | atelier | sculpture | "Everything floats", made literal, under the same wide, low light the skin's shadows describe. |
 | brutal | liquid metal | Its palette was read off that shader, which stays its own. |
@@ -81,10 +145,14 @@ rendering all ten skins in both themes under each look, and looking:
 | cinema | silk | A dark house with a velvet curtain in it. |
 | poster | off | Ink on paper has no depth, and the skin says so. |
 
-Two moving backgrounds never share a screen. The liquid metal is drawn only when brutal is on
-Auto; choosing any look under brutal replaces it. The atelier sign-in scene is drawn only when
-the background is switched off; otherwise the sculpture is the 3D. Both rules come from the
-same function, `resolveBackdrop`, and `test/backdrop.test.ts` checks every skin and choice.
+Two moving backgrounds never share a screen. The orbit world is drawn only when orbit is on
+Auto; Silk, Sculpture or Glass under orbit replaces it, and Off draws neither and leaves the
+skin's CSS sky. The liquid metal is drawn only when brutal is on Auto; choosing any look under
+brutal replaces it. The atelier sign-in scene is drawn only when the background is switched off;
+otherwise the sculpture is the 3D. All of it is one answer from one pure function,
+`resolveBackdrop` in `backdrop/looks.ts`, which the root Backdrop, the orbit gate and the metal
+each read to decide whether the look is theirs, and `test/backdrop.test.ts` checks every skin
+against every choice: at most one moving background, and the world only under orbit on Auto.
 
 ### What it promises
 
@@ -112,7 +180,7 @@ same function, `resolveBackdrop`, and `test/backdrop.test.ts` checks every skin 
   picks up where it was rather than jumping ahead.
 - **No WebGL2, nothing drawn.** `html` carries the canvas colour and `body` is transparent, so
   without WebGL2, before the first frame, or after a lost context, the page is simply its own
-  colour. A restored context draws again. The canvas fades in over 600 ms after its first frame.
+  colour — under orbit, its CSS sky, a fixed layer between the canvas colour and the scenes. A restored context draws again. The canvas fades in over 600 ms after its first frame.
 - **Small.** The gate in the first download is about 2 kB; each look is its own chunk, fetched
   the first time it is shown, and Off fetches none.
 
@@ -147,6 +215,12 @@ Two rules for anyone adding a page. Never give `body` or a page's root a backgro
 over the backdrop. And keep text that sits on the canvas inside the element the page marks as
 calm — the app's `<main>` already is.
 
+The orbit world was not part of that measurement and does not read the calm zone. It keeps
+text legible its own way: a veil of canvas colour over the scene — none on sign-in, where the
+words sit beside the mark, about a third inside the app and a little less on the front door —
+and glass under everything denser than a heading. Treat its contrast as unmeasured until
+somebody repeats the measurement with it in.
+
 ## Brutalist, on a liquid-metal field
 
 This is the `brutal` skin, and it is the one the product was first built in.
@@ -172,8 +246,9 @@ own shadow when pressed.
 
 The `atelier` skin can show a Three.js scene behind the sign-in page on wide screens, when the
 background is switched off; on Auto the sculpture is atelier's 3D, on every page. `three`
-and `@react-three/fiber` are genuinely heavy next to everything else the interface ships, so the
-scene is loaded lazily, and only for that skin on a screen wide enough to show it. The gate that
+and `@react-three/fiber` are genuinely heavy next to everything else the interface ships — about
+217 kB gzipped, in one lazy chunk this scene shares with the orbit world — so the scene is
+loaded lazily, and only for that skin on a screen wide enough to show it. The gate that
 decides this lives in a module that does not itself import `three` (`AtelierSceneGate.tsx`);
 `AtelierScene.tsx` carries the import, and nothing else should render the scene directly. Like
 the shader, it freezes under reduced motion and in a hidden tab, and it is `aria-hidden`.
@@ -204,3 +279,8 @@ is the wrong colour for a fill under white text; use a solid token that stays da
 
 Interactive things built from `div`s need a keyboard path, controls need labels, and `aria-*`
 needs a real id behind it.
+
+Under `prefers-reduced-motion` every CSS animation runs once and is over at once. Cutting only
+the duration is not enough: an endless animation cut to a hundredth of a millisecond still runs,
+landing on a different moment every frame, and a slow turn becomes a flicker. Under
+`prefers-reduced-transparency` the orbit skin's sheets are solid.

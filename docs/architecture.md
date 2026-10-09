@@ -31,7 +31,8 @@ src/
     ui.ts           the interface strings, each { en, ru, kk }
     content.ts      merges a translation pack over the English canonical
     ai.ru.ts        the knowledge base in Russian; ai.kk.ts is its Kazakh twin
-  components/       design system (ui.tsx), layout chrome, motion primitives, the shader
+  components/       design system (ui.tsx), the menu bar (menubar.tsx, nav.ts), motion
+                    primitives, the backgrounds and the 3D scenes
   pages/            student/* and mentor/* screens, one file per screen, plus Login
 api/                Vercel functions: checkout, webhook, lesson content, lessons, mentor,
                     progress, projects, requests, notifications, Connect

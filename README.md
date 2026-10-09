@@ -160,15 +160,15 @@ It answers from a model when a key is configured and from a built-in knowledge b
 and each account has a daily allowance of questions that reach a model. See
 [the AI mentor](docs/ai-mentor.md).
 
-**Three languages.** Kazakh, Russian and English, switchable from the header at any moment —
-nothing reloads and nothing is lost. Over a thousand interface strings, each written three
-times. See [Languages](docs/i18n.md).
+**Three languages.** Kazakh, Russian and English, switchable at any moment from the account
+menu, or the corner of the front door and sign-in — nothing reloads and nothing is lost. Over a
+thousand interface strings, each written three times. See [Languages](docs/i18n.md).
 
 ## Stack
 
 React 18, TypeScript, Vite, Tailwind CSS v4, React Router, Motion, lucide-react,
-`@paper-design/shaders-react`, Three.js for one optional scene that is loaded lazily, and three
-backgrounds written in WebGL2 by hand. Vercel
+`@paper-design/shaders-react`, Three.js for the default skin's world and one optional scene,
+both loaded lazily after the first paint, and three backgrounds written in WebGL2 by hand. Vercel
 functions for the server, Supabase for Auth, Postgres and Storage, Stripe for money. No state
 library, no chart library, no syntax-highlighting library — the charts are hand-drawn SVG and
 the editor is a textarea with a highlighted overlay.
@@ -180,8 +180,8 @@ the editor is a textarea with a highlighted overlay.
 - [Payments](docs/payments.md): prices, the fee, Checkout, Connect, entitlements and refunds.
 - [The AI mentor](docs/ai-mentor.md): the two brains, the course advisor and the teaching rule.
 - [Languages](docs/i18n.md): how a string is stored, and how to add one.
-- [Design](docs/design.md): theme and skin, the backgrounds, the brutal look, motion and
-  accessibility.
+- [Design](docs/design.md): theme and skin, the orbit world, the menu bar, the backgrounds,
+  the brutal look, motion and accessibility.
 - [Deployment](docs/deployment.md): Vercel, environment variables, the database, the webhook.
 - [Stripe webhooks runbook](docs/runbooks/stripe-webhooks.md)
 - [Supabase migrations runbook](docs/runbooks/supabase-migrations.md)
