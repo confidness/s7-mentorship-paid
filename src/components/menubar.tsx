@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FocusEvent, type RefObject } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Bell, BookOpen, CalendarClock, ChevronDown, FilePlus2, LogOut, Sparkles, User as UserIcon } from 'lucide-react'
 import { useApp } from '../lib/store'
@@ -35,8 +35,8 @@ export function useEscape(open: boolean, close: () => void) {
  * `backdrop-filter`, which traps `position: fixed` descendants inside it, so that button would
  * now only cover the bar — and a listener on the document is simpler than a portal anyway.
  */
-function useDismiss(root: RefObject<HTMLElement>, open: boolean, close: () => void) {
-  useEscape(open, close)
+function useDismiss(root: RefObject<HTMLElement>, open: boolean, close: () => void, escape: () => void) {
+  useEscape(open, escape)
   useEffect(() => {
     if (!open) return
     const onDown = (e: PointerEvent) => {
@@ -47,12 +47,29 @@ function useDismiss(root: RefObject<HTMLElement>, open: boolean, close: () => vo
   }, [root, open, close])
 }
 
+/**
+ * A button and its panel, for a pointer and a keyboard alike.
+ *
+ * Escape from inside the panel gives focus back to the button that opened it; otherwise the
+ * focused row unmounts and focus falls to the top of the page. Tabbing out past the last row
+ * closes it, so a panel a keyboard has left does not stay open over the page. Only a move to
+ * something else that takes focus counts: a press on the panel's own text moves focus nowhere.
+ */
 function usePopover() {
   const root = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
   const close = useCallback(() => setOpen(false), [])
-  useDismiss(root, open, close)
-  return { root, open, setOpen, close }
+  const escape = useCallback(() => {
+    if (root.current?.contains(document.activeElement)) trigger.current?.focus()
+    setOpen(false)
+  }, [])
+  useDismiss(root, open, close, escape)
+  const onBlur = (e: FocusEvent<HTMLElement>) => {
+    const next = e.relatedTarget as Node | null
+    if (next && !e.currentTarget.contains(next)) close()
+  }
+  return { root, trigger, open, setOpen, close, onBlur }
 }
 
 /* ------------------------------------------------------------------ the rail */
@@ -174,14 +191,15 @@ export function LevelCard() {
 
 export function NotificationBell() {
   const { state, user, readNotifications } = useApp()
-  const { root, open, setOpen } = usePopover()
+  const { root, trigger, open, setOpen, onBlur } = usePopover()
   const navigate = useNavigate()
   const items = useMemo(() => (user ? notificationsFor(state, user.id) : []), [state, user])
   const unread = items.filter((n) => !n.read).length
 
   return (
-    <div ref={root} className="relative">
+    <div ref={root} onBlur={onBlur} className="relative">
       <button
+        ref={trigger}
         onClick={() => setOpen((o) => !o)}
         className="tool relative grid h-10 w-10 place-items-center rounded-[var(--ui-radius-sm)] fill text-ink-600 ring-1 rim transition hover:fill-raised hover:text-ink-900"
         aria-label={unread ? t('notifications_n_unread', { n: unread }) : t('notifications')}
@@ -237,12 +255,12 @@ const MENU_ROW = 'flex w-full items-center gap-2.5 rounded-[var(--ui-radius-sm)]
 export function UserMenu() {
   const { user, standing, logout } = useApp()
   const navigate = useNavigate()
-  const { root, open, setOpen, close } = usePopover()
+  const { root, trigger, open, setOpen, close, onBlur } = usePopover()
   if (!user) return null
 
   return (
-    <div ref={root} className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="tool flex h-10 items-center gap-1.5 rounded-[var(--ui-radius-sm)] p-1 transition hover:fill sm:pr-2" aria-expanded={open} aria-haspopup="menu" aria-label={t('account_menu')}>
+    <div ref={root} onBlur={onBlur} className="relative">
+      <button ref={trigger} onClick={() => setOpen((o) => !o)} className="tool flex h-10 items-center gap-1.5 rounded-[var(--ui-radius-sm)] p-1 transition hover:fill sm:pr-2" aria-expanded={open} aria-haspopup="menu" aria-label={t('account_menu')}>
         <Avatar name={user.name} initials={user.avatar} size={32} />
         <ChevronDown size={14} className={`hidden text-ink-500 transition-transform sm:block ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
