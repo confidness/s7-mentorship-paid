@@ -5,13 +5,17 @@ the background, sits on top of them.
 
 | Axis | Values | Stored |
 | --- | --- | --- |
-| Theme (`data-theme` on `<html>`) | light, dark, or follow the system | per browser, `s7-theme` |
+| Theme (`data-theme` on `<html>`) | light or dark, whichever the device is set to | not stored; read from `prefers-color-scheme` |
 | Skin (`data-skin` on `<html>`) | what the interface is made of | per browser, `s7-skin` |
 | Background (`data-backdrop` on `<html>`) | auto, silk, sculpture, glass, or off | per browser, `s7-backdrop` |
 
-Light or dark, or follow the system — stored per browser and applied before first paint, so
-there is no flash. `index.html` reads both choices in a small inline script before the page
-renders; getting this wrong is not a flicker, it is the site showing the wrong palette.
+Light or dark is the device's setting, and only the device's. There is no switch in the
+interface: the operating system already has one, people change it there — at sunset, on a
+schedule, for their eyes — and a site that keeps its own copy ends up in daylight colours at
+midnight. `index.html` applies the theme and the stored skin in a small inline script before the
+page renders, so there is no flash, and `followSystemTheme` in `src/lib/theme.ts` keeps the theme
+in step if the device changes while the page is open. A choice an older build stored under
+`s7-theme` is ignored and cleared.
 
 A skin defines both themes, so someone who wants the editorial skin at night gets the editorial
 skin at night, not a different one. Every colour is a token in `src/index.css`. No component

@@ -6,7 +6,12 @@ import App from './App'
 import Crash from './components/Crash'
 import { AppProvider } from './lib/store'
 import { LocaleProvider } from './i18n'
+import { followSystemTheme } from './lib/theme'
 import './index.css'
+
+// Light or dark is the device's to decide, and it can change while the page is open — at
+// sunset, on a schedule. index.html set it before first paint; this keeps it in step after.
+followSystemTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

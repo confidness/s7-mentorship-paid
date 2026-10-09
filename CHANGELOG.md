@@ -68,6 +68,10 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Changed
 
+- Light and dark follow the device, always. The light / dark / system switch is gone from every
+  header; a choice it stored is ignored and cleared, and the theme changes live when the
+  operating system does. The switch also had a bug this removes: each copy of it held its own
+  choice, and one left on "system" could flip the theme back after another had picked one.
 - `html` carries the canvas colour and `body` is transparent, so the background layer behind
   the page shows through instead of being painted over.
 - The liquid metal is drawn only while brutal is left on Auto, and the atelier sign-in scene

@@ -171,7 +171,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   code: { en: 'Code', ru: 'Код', kk: 'Код' },
   code_editor: { en: 'Code editor', ru: 'Редактор кода', kk: 'Код редакторы' },
   code_quality: { en: 'Code quality', ru: 'Качество кода', kk: 'Код сапасы' },
-  colour_theme: { en: 'Colour theme', ru: 'Тема оформления', kk: 'Түс тақырыбы' },
   competition: { en: 'Competition', ru: 'Соревнование', kk: 'Жарыс' },
   competition_tasks: { en: 'Competition tasks', ru: 'Задания соревнования', kk: 'Жарыс тапсырмалары' },
   complete_a_lesson_or_a_challenge_and_the_first_e: {
@@ -209,7 +208,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   current_streak: { en: 'Current streak', ru: 'Текущая серия', kk: 'Ағымдағы серия' },
   current_track: { en: 'Current track', ru: 'Текущий трек', kk: 'Ағымдағы трек' },
   curriculum: { en: 'Curriculum', ru: 'Программа', kk: 'Бағдарлама' },
-  dark: { en: 'Dark', ru: 'Тёмная', kk: 'Қараңғы' },
   dashboard: { en: 'Dashboard', ru: 'Главная', kk: 'Басты бет' },
   data_erased: { en: 'Data erased', ru: 'Данные удалены', kk: 'Деректер өшірілді' },
   day_streak: { en: 'Day streak', ru: 'Серия дней', kk: 'Күндер сериясы' },
@@ -389,7 +387,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   level: { en: 'level', ru: 'уровень', kk: 'деңгей' },
   level_progress: { en: 'Level progress', ru: 'Прогресс уровня', kk: 'Деңгей прогресі' },
   level_xp: { en: 'Level XP', ru: 'XP уровня', kk: 'Деңгей XP' },
-  light: { en: 'Light', ru: 'Светлая', kk: 'Жарық' },
   like_this_project: { en: 'Like this project', ru: 'Поставить лайк', kk: 'Ұнату' },
   main: { en: 'Main', ru: 'Основное', kk: 'Негізгі' },
   manage: { en: 'Manage', ru: 'Управлять', kk: 'Басқару' },
@@ -525,9 +522,9 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   /* --- appearance ------------------------------------------------------------------- */
   appearance: { en: 'Appearance', ru: 'Оформление', kk: 'Безендіру' },
   appearance_note: {
-    en: 'Light and dark is one choice; what the interface is made of is another. A skin defines both, so picking one does not lock you out of the dark.',
-    ru: 'Светлая и тёмная — одно решение, из чего сделан интерфейс — другое. Тема задаёт обе, так что выбор не отбирает у тебя тёмный режим.',
-    kk: 'Ашық пен қараңғы — бір таңдау, интерфейс неден жасалғаны — екіншісі. Тақырып екеуін де анықтайды.',
+    en: 'Light or dark follows your device. What the interface is made of is your choice, and every skin has both, so none of them is out of reach at night.',
+    ru: 'Светлый или тёмный режим берётся из настроек устройства. Из чего сделан интерфейс — выбираешь ты, и у каждой темы есть оба режима, так что ночью доступна любая.',
+    kk: 'Ашық не қараңғы режим құрылғының баптауынан алынады. Интерфейс неден жасалғанын сен таңдайсың, әр тақырыпта екі режим де бар, сондықтан түнде кез келгені қолжетімді.',
   },
   skin_plain: { en: 'Plain', ru: 'Обычная', kk: 'Қарапайым' },
   skin_plain_note: {
@@ -968,7 +965,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     ru: 'Синтаксис, структура и почему компилятор указывает не на ту строку.',
     kk: 'Синтаксис, құрылым және компилятор неге басқа жолды көрсетеді.',
   },
-  system: { en: 'System', ru: 'Системная', kk: 'Жүйелік' },
   tap_a_student_for_the_full_profile: { en: 'Tap a student for the full profile', ru: 'Нажми на ученика, чтобы открыть профиль', kk: 'Толық профиль үшін оқушыны бас' },
   task: { en: 'Task', ru: 'Задание', kk: 'Тапсырма' },
   task_scored: { en: 'Task scored', ru: 'Задание оценено', kk: 'Тапсырма бағаланды' },
@@ -1019,7 +1015,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
     ru: 'Датчик смотрит вперёд и печатает расстояние в сантиметрах. Светодиод загорается, когда объект ближе 20 см…',
     kk: 'Сенсор алға қарайды және қашықтықты сантиметрмен басып шығарады. Нысан 20 см-ге жақындағанда жарықдиод жанады…',
   },
-  theme: { en: 'Theme', ru: 'Тема', kk: 'Тақырып' },
   theory: { en: 'Theory', ru: 'Теория', kk: 'Теория' },
   this_account_no_longer_exists: { en: 'This account no longer exists.', ru: 'Такого аккаунта больше нет.', kk: 'Бұл аккаунт енді жоқ.' },
   this_cannot_be_undone_and_it_affects_every_accou: {

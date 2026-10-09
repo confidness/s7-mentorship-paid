@@ -1,43 +1,49 @@
 /**
- * Theme: light, dark, or follow the system. The chosen mode is written to
+ * Theme: light or dark, and the device decides. The applied mode is written to
  * `<html data-theme>`, which every colour token in index.css keys off.
  *
- * index.html applies the stored choice before first paint, so there is no flash.
+ * There used to be a three-way switch in every header — light, dark, or follow the system — and
+ * a click on either of the first two was remembered for good, so a page could sit in daylight
+ * colours at midnight long after anyone remembered choosing them. The operating system already
+ * has this setting, and it is the one people change: at sunset, on a schedule, for their eyes.
+ * Following it, and only it, means the site agrees with every other window on the screen.
+ *
+ * index.html applies it before first paint, so there is no flash.
  */
 import { useEffect, useState } from 'react'
 
-export type ThemeChoice = 'light' | 'dark' | 'system'
-
-const KEY = 's7-theme'
+/** Where the old switch stored its choice. Read by nothing now, and cleared on load. */
+const LEGACY_KEY = 's7-theme'
 const media = () => window.matchMedia('(prefers-color-scheme: dark)')
 
-export const resolveTheme = (choice: ThemeChoice): 'light' | 'dark' => (choice === 'system' ? (media().matches ? 'dark' : 'light') : choice)
-
-export function readThemeChoice(): ThemeChoice {
-  try {
-    const saved = localStorage.getItem(KEY)
-    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved
-  } catch {
-    /* storage blocked — fall through to system */
+/**
+ * Keeps `<html data-theme>` on the device's setting, including when it changes while the page
+ * is open. Called once, from main.tsx, before anything renders; returns the cleanup.
+ *
+ * One listener for the whole app, not a hook per component: the old switch was mounted in
+ * several places, each holding its own copy of the choice, and a copy left on "system" would
+ * flip the theme back under a person who had just picked one in another.
+ */
+export function followSystemTheme(): () => void {
+  const mq = media()
+  const apply = () => {
+    document.documentElement.dataset.theme = mq.matches ? 'dark' : 'light'
   }
-  return 'system'
-}
-
-export function applyTheme(choice: ThemeChoice) {
-  document.documentElement.dataset.theme = resolveTheme(choice)
+  apply()
   try {
-    localStorage.setItem(KEY, choice)
+    localStorage.removeItem(LEGACY_KEY)
   } catch {
-    /* storage blocked — the theme still applies for this session */
+    /* storage blocked — there is nothing stored to clear either */
   }
+  mq.addEventListener('change', apply)
+  return () => mq.removeEventListener('change', apply)
 }
 
 /**
- * Reads the theme that is currently applied, without owning the choice.
+ * Reads the theme that is currently applied.
  *
- * `useTheme` writes `<html data-theme>` on mount, so anything that merely needs to *know* the
- * theme must not call it — two owners would fight over the attribute. This observes instead,
- * which also means it picks up a change made by the pre-paint script in index.html.
+ * `followSystemTheme` is the only writer of `<html data-theme>`; anything that needs to *know*
+ * the theme observes the attribute, which also picks up the pre-paint script in index.html.
  */
 export function useAppliedTheme(): 'light' | 'dark' {
   const read = () => (typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
@@ -73,22 +79,6 @@ export function usePrefersReducedMotion(): boolean {
   }, [])
 
   return reduced
-}
-
-/** Single source of truth for the toggle; also follows the OS while set to `system`. */
-export function useTheme() {
-  const [choice, setChoice] = useState<ThemeChoice>(readThemeChoice)
-
-  useEffect(() => {
-    applyTheme(choice)
-    if (choice !== 'system') return
-    const mq = media()
-    const onChange = () => applyTheme('system')
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [choice])
-
-  return { choice, resolved: resolveTheme(choice), setChoice }
 }
 
 /* ------------------------------------------------------------------ skins */

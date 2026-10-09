@@ -5,7 +5,6 @@ import { btn } from '../components/ui'
 import { AnimatedGroup, AnimatedItem } from '../components/motion'
 import { Mark } from '../components/Mark'
 import LocaleToggle from '../components/LocaleToggle'
-import ThemeToggle from '../components/ThemeToggle'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
 import { DEFAULT_PLATFORM_FEE_BPS } from '../lib/money'
 import { t, useLocale } from '../i18n'
@@ -211,7 +210,6 @@ export default function Landing() {
               </Link>
             </li>
           </ul>
-          <ThemeToggle compact />
         </div>
       </footer>
     </div>

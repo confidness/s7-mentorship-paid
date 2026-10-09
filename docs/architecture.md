@@ -24,7 +24,7 @@ src/
     outbox.ts       the queue of operations waiting to reach the server
     api.ts          the typed client for everything under api/
     supabase.ts     lazy client; the app degrades to fully local when unconfigured
-    theme.ts        light or dark, and the skin
+    theme.ts        light or dark from the device, and the skin
     store.tsx       React context: session, persistence, toasts. Thin — it calls logic.ts
   i18n/
     index.tsx       t(), LocaleProvider, locale-aware date and number formatting

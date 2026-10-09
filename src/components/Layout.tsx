@@ -8,7 +8,6 @@ import { useApp } from '../lib/store'
 import { notificationsFor, profileOf, resolveVars } from '../lib/selectors'
 import { levelFor } from '../lib/gamification'
 import { Avatar, Badge, ProgressBar, Skeleton } from './ui'
-import ThemeToggle from './ThemeToggle'
 import LocaleToggle from './LocaleToggle'
 import type { LucideIcon } from 'lucide-react'
 import { t, formatDate, useLocale } from '../i18n'
@@ -267,10 +266,6 @@ function UserMenu() {
                 <span className="text-sm font-medium text-ink-700">{t('language')}</span>
                 <LocaleToggle compact />
               </div>
-              <div className="flex items-center justify-between gap-2 px-3 py-2 sm:hidden">
-                <span className="text-sm font-medium text-ink-700">{t('theme')}</span>
-                <ThemeToggle compact />
-              </div>
               <button
                 className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50/80"
                 onClick={() => {
@@ -428,9 +423,6 @@ export default function Layout() {
             {user?.role === 'student' && <XpPill />}
             <span className="hidden md:inline-flex">
               <LocaleToggle compact />
-            </span>
-            <span className="hidden sm:inline-flex">
-              <ThemeToggle compact />
             </span>
             <NotificationBell />
             <UserMenu />

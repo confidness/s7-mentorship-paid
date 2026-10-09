@@ -4,7 +4,6 @@ import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
 import { Button, Field, inputClass } from '../components/ui'
 import { Logo } from '../components/Layout'
-import ThemeToggle from '../components/ThemeToggle'
 import LocaleToggle from '../components/LocaleToggle'
 import { t } from '../i18n'
 import { Mark } from '../components/Mark'
@@ -124,7 +123,6 @@ export default function Login({ register: startOnRegister }: { register?: boolea
       <section className="flex min-h-screen flex-col px-4 py-5 sm:px-8 sm:py-6">
         <div className="flex shrink-0 items-center justify-end gap-2">
           <LocaleToggle compact />
-          <ThemeToggle compact />
         </div>
 
         <div className="flex flex-1 items-center justify-center py-6">
