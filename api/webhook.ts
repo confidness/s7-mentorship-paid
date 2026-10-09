@@ -1,20 +1,22 @@
 /**
- * Stripe's webhook. The only thing in this codebase that grants an entitlement.
+ * Stripe's webhook. The only thing in this codebase that funds, cancels or refunds a contract.
  *
- * Everything else may read whether a student owns a lesson; nothing else may decide it.
- * That is why the RLS policies carry no insert rule for entitlements at all: this route
- * uses the service role, and a leaked anon key still cannot mint access to paid content.
+ * Everything else may read whether a contract is paid for; nothing else may decide it. And
+ * because the brand kit read rule keys on `funded`, this is also, at one remove, the only
+ * thing that can open a client's kit to a freelancer.
  *
  * Two details are load-bearing and easy to get wrong:
  *
- *  1. Signature verification runs against the RAW body. Parsing the JSON first — which most
- *     frameworks do by default — re-serializes it, the bytes no longer match what Stripe
- *     signed, and every event fails. Hence `req.text()` and never `req.json()`.
+ *  1. Signature verification runs against the RAW body. Parsing the JSON first re-serializes
+ *     it, the bytes no longer match what Stripe signed, and every event fails. Hence
+ *     `req.text()` and never `req.json()`.
  *
  *  2. Redelivery is normal. Stripe retries until it gets a 2xx, and the same event will
- *     arrive more than once. Every write here is idempotent, keyed on the session id, so
- *     the second delivery changes nothing rather than granting a duplicate entitlement or
- *     double-counting the day's revenue.
+ *     arrive more than once. Every write here is conditional on the status it expects, so the
+ *     second delivery matches no row and changes nothing.
+ *
+ * Connected-account updates do not come here. Accounts v2 announces them as thin events on
+ * their own destination, with their own secret — see api/connect/events.ts.
  */
 
 import type Stripe from 'stripe'
@@ -42,145 +44,96 @@ async function handler(req: Request): Promise<Response> {
     switch (event.type) {
       case 'checkout.session.completed':
       case 'checkout.session.async_payment_succeeded':
-        await grantFromSession(event.data.object)
+        await fund(event.data.object)
         break
 
       case 'checkout.session.async_payment_failed':
       case 'checkout.session.expired':
-        await markFailed(event.data.object)
+        await cancel(event.data.object)
         break
 
       case 'charge.refunded':
-        await markRefunded(event.data.object)
-        break
-
-      case 'account.updated':
-        await syncAccount(event.data.object)
+        await refund(event.data.object)
         break
 
       default:
-        // Unhandled types are acknowledged, not retried: returning an error would make
-        // Stripe redeliver an event we will never act on.
+        // Acknowledged, not retried: an error would make Stripe redeliver an event we will
+        // never act on.
         break
     }
     return json({ received: true })
   } catch (error) {
     // A 500 asks Stripe to try again, which is what we want for a transient database fault:
-    // the retry is safe precisely because these writes are idempotent.
+    // the retry is safe precisely because these writes are conditional.
     return fail(error)
   }
 }
 
-/**
- * Records payment and grants access.
- *
- * Only on a paid session. `checkout.session.completed` also fires for asynchronous methods
- * that have not settled yet, and granting on those would hand over content before the money
- * exists — the async_payment_succeeded event is what closes that case.
- */
-async function grantFromSession(session: Stripe.Checkout.Session) {
-  if (session.payment_status !== 'paid') return
+const contractOf = (session: Stripe.Checkout.Session) => session.metadata?.contractId ?? session.client_reference_id ?? null
 
-  const db = adminClient()
-  const lessonId = session.metadata?.lessonId
-  const studentId = session.metadata?.studentId
-  if (!lessonId || !studentId) {
-    console.error('checkout session without metadata:', session.id)
+/**
+ * The money arrived: the contract is funded, and the brand kit opens to the freelancer.
+ *
+ * Only when paid. `checkout.session.completed` also fires for a bank debit that has not
+ * settled, with payment_status `unpaid`; funding on that would start work on money that may
+ * never exist. `async_payment_succeeded` is the event that closes that case.
+ */
+async function fund(session: Stripe.Checkout.Session) {
+  if (session.payment_status === 'unpaid') return
+  const contractId = contractOf(session)
+  if (!contractId) {
+    console.error('checkout session without a contract:', session.id)
     return
   }
-
   const paymentIntent = typeof session.payment_intent === 'string' ? session.payment_intent : (session.payment_intent?.id ?? null)
 
-  // Keyed on the session id, which is unique in our schema. A redelivery updates the same
-  // row to the same values instead of inserting a second order.
-  const { data: order, error: orderError } = await db
-    .from('orders')
-    .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent: paymentIntent })
-    .eq('stripe_session_id', session.id)
-    .select('id, student_id, lesson_id')
+  const { data, error } = await adminClient()
+    .from('bazaar_contracts')
+    .update({ status: 'funded', funded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent, stripe_checkout_session_id: session.id })
+    .eq('id', contractId)
+    .eq('status', 'pending')
+    .select('id, total_amount_cents')
     .maybeSingle()
-  if (orderError) throw orderError
+  if (error) throw error
 
-  // The order row is normally written at checkout. If it is missing — a session created
-  // outside the usual path, or a lost write — the payment still happened, so reconstruct it
-  // rather than dropping a paid customer on the floor.
-  let orderId = order?.id ?? null
-  if (!orderId) {
-    const { data: rebuilt, error: rebuildError } = await db
-      .from('orders')
-      .insert({
-        stripe_session_id: session.id,
-        stripe_payment_intent: paymentIntent,
-        student_id: studentId,
-        lesson_id: lessonId,
-        amount_cents: session.amount_total ?? 0,
-        platform_fee_cents: Number(session.metadata?.platformFeeCents ?? 0),
-        currency: session.currency ?? 'usd',
-        status: 'paid',
-        paid_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single()
-    if (rebuildError) throw rebuildError
-    orderId = rebuilt.id
+  // No row is usually a redelivery of an event already applied. An amount that disagrees is
+  // never usual, and is worth a line in the logs before anybody's books are reconciled.
+  if (data && session.amount_total !== null && session.amount_total !== data.total_amount_cents) {
+    console.error('funded amount differs from contract:', contractId, session.amount_total, data.total_amount_cents)
   }
-
-  // The grant itself. onConflict makes the second delivery a no-op rather than an error.
-  const { error: grantError } = await db
-    .from('entitlements')
-    .upsert({ student_id: order?.student_id ?? studentId, lesson_id: order?.lesson_id ?? lessonId, order_id: orderId }, { onConflict: 'student_id,lesson_id', ignoreDuplicates: true })
-  if (grantError) throw grantError
 }
 
-async function markFailed(session: Stripe.Checkout.Session) {
-  const db = adminClient()
-  // Only a pending order moves to failed: an expired-session event arriving after a
-  // successful payment must not undo a sale.
-  const { error } = await db.from('orders').update({ status: 'failed' }).eq('stripe_session_id', session.id).eq('status', 'pending')
+/** Expired or failed before any money moved. A funded contract is never touched by this. */
+async function cancel(session: Stripe.Checkout.Session) {
+  const contractId = contractOf(session)
+  if (!contractId) return
+  const { error } = await adminClient().from('bazaar_contracts').update({ status: 'canceled' }).eq('id', contractId).eq('status', 'pending')
   if (error) throw error
 }
 
 /**
- * A refund marks the order and withdraws access.
+ * A full refund ends the contract, and with it the freelancer's access to the brand kit.
  *
- * Leaving the entitlement in place would mean paid content stays unlocked after the money
- * has gone back, which is the refund-abuse path.
+ * Partial refunds leave the contract as it is — a discount for a late delivery is not the end
+ * of the job. Note that with destination charges a refund comes out of Brandyzer's balance
+ * unless it is made with "reverse transfer", which pulls the freelancer's share back too;
+ * refunding from the Dashboard asks, and the answer is a business decision, not code.
  */
-async function markRefunded(charge: Stripe.Charge) {
-  const db = adminClient()
+async function refund(charge: Stripe.Charge) {
+  if (!charge.refunded) return
   const paymentIntent = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
   if (!paymentIntent) return
-
-  const { data: order, error } = await db
-    .from('orders')
+  const { error } = await adminClient()
+    .from('bazaar_contracts')
     .update({ status: 'refunded' })
-    .eq('stripe_payment_intent', paymentIntent)
-    .select('id, student_id, lesson_id')
-    .maybeSingle()
-  if (error) throw error
-  if (!order) return
-
-  const { error: revokeError } = await db.from('entitlements').delete().eq('student_id', order.student_id).eq('lesson_id', order.lesson_id)
-  if (revokeError) throw revokeError
-}
-
-/** Keeps the cached charges_enabled honest without waiting for the mentor to reload a page. */
-async function syncAccount(account: Stripe.Account) {
-  const db = adminClient()
-  const { error } = await db
-    .from('mentor_accounts')
-    .update({ charges_enabled: Boolean(account.charges_enabled), payouts_enabled: Boolean(account.payouts_enabled), updated_at: new Date().toISOString() })
-    .eq('stripe_account_id', account.id)
+    .eq('stripe_payment_intent_id', paymentIntent)
+    .in('status', ['funded', 'in_review', 'completed'])
   if (error) throw error
 }
 
 /**
- * Runs on the Node runtime, which the Stripe and Supabase SDKs need.
- *
- * The handler takes a Web `Request` and calls `req.text()`, so it receives the exact bytes
- * Stripe signed and never a re-serialised copy — which is the usual cause of "every webhook
- * fails in production". `constructEventAsync` is used rather than `constructEvent` because
- * verification goes through Web Crypto, which is async.
+ * Runs on the Node runtime, which the Stripe and Supabase SDKs need. `constructEventAsync`
+ * because verification goes through Web Crypto, which is async.
  */
 export const config = { runtime: 'nodejs' }
 

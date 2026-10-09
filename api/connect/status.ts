@@ -1,14 +1,15 @@
 /**
- * Refreshes what Stripe says about a mentor's connected account.
+ * Refreshes what Stripe says about a freelancer's connected account.
  *
- * charges_enabled is asked of Stripe rather than remembered, because it changes without
- * telling us: a document expires, a verification stalls, and an account that could take
- * money on Monday cannot on Tuesday. The cached copy in mentor_accounts exists so the
- * checkout path has something fast to read; this route is what keeps it honest.
+ * Whether transfers are active is asked of Stripe rather than remembered, because it changes
+ * without telling us: a document expires, a verification stalls, and an account that could
+ * be paid on Monday cannot on Tuesday. The cached copy on the profile exists so the directory
+ * can show who is taking work; this route, the thin-event receiver, and the hire route itself
+ * are what keep it honest.
  */
 
 import { adminClient, fail, json, requireMethod, requireUser } from '../_lib/server.js'
-import { stripe } from '../_lib/stripe.js'
+import { retrieveRecipient } from '../_lib/stripe.js'
 
 async function handler(req: Request): Promise<Response> {
   try {
@@ -16,25 +17,13 @@ async function handler(req: Request): Promise<Response> {
     const caller = await requireUser(req)
     const db = adminClient()
 
-    const { data: account } = await db.from('mentor_accounts').select('stripe_account_id').eq('user_id', caller.id).maybeSingle()
-    if (!account?.stripe_account_id) return json({ connected: false, chargesEnabled: false, payoutsEnabled: false })
+    const { data: profile } = await db.from('profiles').select('stripe_connect_id').eq('id', caller.id).single()
+    if (!profile?.stripe_connect_id) return json({ connected: false, transfersActive: false, status: 'unrequested', requirements: [] })
 
-    const live = await stripe().accounts.retrieve(account.stripe_account_id)
-    const chargesEnabled = Boolean(live.charges_enabled)
-    const payoutsEnabled = Boolean(live.payouts_enabled)
+    const state = await retrieveRecipient(profile.stripe_connect_id)
+    await db.from('profiles').update({ stripe_transfers_active: state.transfersActive }).eq('id', caller.id)
 
-    await db
-      .from('mentor_accounts')
-      .update({ charges_enabled: chargesEnabled, payouts_enabled: payoutsEnabled, updated_at: new Date().toISOString() })
-      .eq('user_id', caller.id)
-
-    return json({
-      connected: true,
-      chargesEnabled,
-      payoutsEnabled,
-      // What Stripe is still waiting for, so the mentor sees a reason rather than a red light.
-      requirements: live.requirements?.currently_due ?? [],
-    })
+    return json({ connected: true, ...state })
   } catch (error) {
     return fail(error)
   }

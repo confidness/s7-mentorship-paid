@@ -1,13 +1,13 @@
 {
-  "name": "s7-mentorship-paid",
+  "name": "brandyzer",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "check": "esbuild test/flow.test.ts test/mentor.test.ts test/monetization.test.ts test/progress.test.ts test/discovery.test.ts test/demand.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/flow.test.mjs && node node_modules/.cache/mentor.test.mjs && node node_modules/.cache/monetization.test.mjs && node node_modules/.cache/progress.test.mjs && node node_modules/.cache/discovery.test.mjs && node node_modules/.cache/demand.test.mjs && node scripts/check-api-imports.mjs"
+    "check": "esbuild test/money.test.ts test/bazaar.test.ts test/brand.test.ts test/studio.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/money.test.mjs && node node_modules/.cache/bazaar.test.mjs && node node_modules/.cache/brand.test.mjs && node node_modules/.cache/studio.test.mjs && node scripts/check-api-imports.mjs && node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.81",

@@ -1,323 +1,237 @@
-# S7 Mentorship
+# Brandyzer
 
-A marketplace for mentoring. A verified mentor writes a lesson, prices it, and reviews by hand
-what a student hands in. The platform runs identity, payment and access; it does not teach.
+Two products for small businesses, one account.
 
-That last part is deliberate and it is the main thing to understand about this repository. The
-codebase began as a robotics school with five courses and eighteen lessons written in code.
-A marketplace that arrives already teaching something has picked a side — every mentor after
-the first competes with the platform's own content, on the platform's own shelf — so the
-curriculum was retired. `src/lib/curriculum.ts` is still there, typed and empty: the helpers
-and the unlock order are the contract the rest of the app is written against, and reviving a
-built-in track is a data change rather than a code change.
+**Studio** turns a description of a business into a brand kit — a palette, two fonts, the
+rules of its voice and the style of its photos — and then writes captions and draws images in
+that brand, without the robot voice.
+
+**Bazaar** is where a business hires a freelancer. The client pays through Stripe, Brandyzer
+keeps 5%, and the client's brand kit opens to the freelancer for as long as the job is open,
+so the work starts from the brand instead of a guess.
+
+This codebase grew out of a mentorship marketplace and kept its spine: Supabase Auth and row
+level security, Vercel functions that re-identify every caller, integer money, Stripe Connect,
+the design system and its skins, and the hand-rolled checks. The mentorship domain is gone.
 
 ## First run
 
-There are no seeded accounts, no sample students and no example lessons. The first person to
-open it registers the first account.
+1. **Create a Supabase project** (Postgres 15 or newer — every new project is). Run
+   `supabase/migrations/0001_brandyzer.sql` in the SQL editor. It creates four tables, their
+   row level security and column grants, the signup trigger and the public `brand-assets`
+   bucket. It is safe to run again.
+2. **Set the environment** (below) in Vercel, or in `.env.local` for `vercel dev`.
+   `node scripts/check-env.mjs` says whether the Supabase keys are in the right slots
+   without printing them.
+3. **Stripe**: enable Connect, then add two destinations under Developers → Webhooks /
+   Event destinations (see *Payments*).
+4. Deploy, sign up, and open **Settings → Server features**: it reports which keys each
+   feature has, never their values.
 
-| Role | How you get it |
-| --- | --- |
-| Student | Register with name, email and password. Nothing is assigned until a mentor assigns it. |
-| Mentor | Register as a student, then apply at **Teach on S7**. A named reviewer checks your documents. |
+Nothing is seeded. The first person to sign up chooses whether they are a business, a
+freelancer, or both, and can change it in Settings at any time.
 
-### Why there is no mentor PIN
+## Environment
 
-There used to be one: an eight-digit code, checked server-side, that turned a registration into
-a mentor account. A shared secret answers the wrong question. It tells you someone knows a
-number that has been passed around a staff room for a year — not who they are, and not whether
-they should be handling children's work or taking their families' money. It also cannot be
-revoked for one person without changing it for everyone.
+The `VITE_` prefix is the line between public and secret: anything carrying it is compiled
+into the JavaScript every visitor downloads.
 
-What replaced it is an application: legal name, a description of what you have taught, and at
-least one document. A named admin approves or rejects it, and the decision records who made it
-and when.
+| Variable | Where | What |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | public | The browser's client. Row level security decides what it can reach. |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | server | The same project, for routes acting as the caller. |
+| `SUPABASE_SERVICE_ROLE_KEY` | server | Bypasses RLS. Writes contracts, Stripe ids and Storage files. Treat it like a root password. |
+| `GEMINI_API_KEY` | server | Brand kits and copy. Free tier at aistudio.google.com. |
+| `GEMINI_MODEL` | server, optional | Pins one model. Empty means the built-in list, newest first. |
+| `POLLINATIONS_API_KEY` | server, optional | `sk_…` from enter.pollinations.ai. First choice for images. |
+| `HF_TOKEN` | server, optional | Hugging Face token; FLUX.1-schnell on the serverless router. Second choice. |
+| `POLLINATIONS_MODEL`, `POLLINATIONS_LEGACY=off` | server, optional | Override the Pollinations model; turn off the anonymous fallback. |
+| `STRIPE_SECRET_KEY` | server | Prefer a restricted key (`rk_…`) with Checkout Sessions, Customers, Accounts v2 and Account Links. |
+| `STRIPE_WEBHOOK_SECRET` | server | Signing secret of the snapshot webhook at `/api/webhook`. |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | server | Signing secret of the Accounts v2 event destination at `/api/connect/events`. |
+| `PUBLIC_SITE_URL` | server | Where Stripe sends people back to. |
 
-| Stage | What it means |
-| --- | --- |
-| `none` | never applied — the authoring tools are not shown |
-| `pending` | waiting for a reviewer; still a student in every respect |
-| `approved` | may write and publish lessons |
-| `rejected` | told why, and may apply again with it corrected |
+## Studio
 
-Approval alone does not allow **selling**. A paid lesson also needs a connected Stripe account
-with charges enabled, checked at publish time and again at purchase time — see *Money*.
+### Brand kits
 
-Identity documents live in a private Supabase Storage bucket. They are never public, never
-listed, and are shown to a reviewer only through signed links that expire in five minutes.
+`POST /api/studio/brand-kit` asks Gemini for a kit against a `responseSchema`, then runs the
+reply through `normalizeBrandKit` in `src/lib/brand.ts` before anything is saved. The model's
+output is untrusted input: a colour that is not a hex code is dropped, a font name that could
+break a stylesheet or a Google Fonts URL falls back to a safe default, and the house list of
+banned words is always merged in. The kit is saved *as the caller*, through RLS — no service
+role is needed to write your own row.
 
-## Money
+Kits are locked in: generated once, then read. A new direction is a new kit beside the old
+one, so the brand a freelancer was handed last week is still the brand they have. The logo is
+the exception, because the first drawing often is not the one.
 
-Mentors price their own lessons and keep most of each sale.
+### Copy, without the slop
 
-| Piece | Where it lives |
-| --- | --- |
-| Price | `custom_lessons.price_cents`, integer minor units — never a float |
-| Purchase | Stripe Checkout, created by `api/checkout.ts` |
-| The platform's cut | `PLATFORM_FEE_BPS` basis points, default 2000 = 20% |
-| Payout | Stripe Connect Express; Stripe handles KYC and bank details |
-| Access | a row in `entitlements`, written **only** by the Stripe webhook |
+`POST /api/studio/copy` sends the spec's directive word for word —
 
-Two properties are worth stating plainly, because they are what make this real rather than
-decorative:
+> You are the Brandyzer Copy Engine. Strip robotic transitions, corporate buzzwords
+> ('delve', 'tapestry', 'synergy'), and excessive emojis. Output conversational, grounded,
+> small-business marketing text.
 
-**The price is never taken from the request.** `api/checkout.ts` reads it from the database.
-A client that could name its own amount would buy a forty-dollar lesson for one cent.
+— followed by the kit's own tone, example lines and banned words. That is the polite half.
+The other half is `slopCheck`, which reads every variant back against the same list plus the
+tells no list catches (more than two emoji, rows of exclamation marks, em dashes). Flagged
+copy earns exactly one rewrite with the offending words named; anything still flagged is
+returned marked, never silently hidden. Copy can be written in English, Russian or Kazakh.
 
-**The paywall is the server, not the UI.** `api/lesson-content.ts` refuses to send tasks or a
-material URL without an entitlement row, and strips the quiz answer key from every student
-copy. Editing `localStorage`, or calling the endpoint directly with a valid session, yields the
-same 402. The lock icon in the interface is a courtesy; deleting it from the DOM reveals
-nothing. `test/monetization.test.ts` asserts exactly this.
+### Models
 
-Webhook deliveries are idempotent, keyed on the Checkout Session id — Stripe retries on
-purpose, and a redelivery must not grant a second entitlement or count the revenue twice.
-A full refund withdraws the entitlement again.
+Gemini 1.5 Flash, which this was first specified against, has been retired, and 2.5 Flash is
+closed to new projects. `api/_lib/gemini.ts` tries a list of current Flash models in order,
+stepping to the next on a 404, a per-model free-tier 429 or an overload, and stopping at once
+on a bad key. The key travels in a header, never the URL.
 
-A free lesson is open to anyone who can see it. That sounds obvious and was not: the row level
-security policy required an entitlement to submit, entitlements exist only for something
-somebody paid for, and so a lesson priced at zero could never be handed in at all.
+### Images
 
-## The loop
+Pollinations moved to `gen.pollinations.ai` and now wants a secret key, so the browser can no
+longer be handed a Pollinations URL to load. The server fetches the image, checks it really is
+one (a 200 carrying an HTML page is skipped), and stores it in the `brand-assets` bucket under
+`<user id>/<uuid>`. The bucket is public but not listable.
 
-1. A mentor publishes a lesson: their own material as a PDF or Word file, plus up to ten tasks.
-2. A student opens it from **Mentor assignments**, paying first if it is priced.
-3. Multiple-choice questions mark themselves. Anything written by hand goes to the mentor.
-4. The mentor reads it, scores the rubric and writes feedback.
-5. **Approve** pays the XP and notifies the student. **Request changes** sends it back, and
-   resubmitting does not re-pay what was already earned.
+Every photo prompt has the kit's `image_style` directives and palette folded in by
+`buildImagePrompt` — the owner types "sourdough on the counter", the model is told the rest.
+A kit with no style gets the spec's default: natural lighting, 35mm film grain, photorealistic
+product style. Logos are asked for without lettering, because image models still cannot spell.
 
-A lesson from a built-in track, if anyone adds one back, runs through four sections — theory,
-code, task, challenge. There used to be two more, components and wiring, which assumed the
-subject was electronics.
+## Bazaar
 
-## Languages
+### Hiring and the 5%
 
-Kazakh, Russian and English, switchable from the header at any moment — nothing reloads and
-nothing is lost. 962 interface strings, each written three times.
+`POST /api/bazaar/hire` reads the price from the database — the body names a service, never
+an amount — asks Stripe, right then, whether the freelancer can receive transfers, writes a
+`pending` contract, and opens a Stripe Checkout Session whose PaymentIntent is a destination
+charge:
 
-Dates and numbers follow the interface language rather than the operating system. Chrome
-resolves `kk-KZ` but ships no Kazakh month or weekday names, so those are assembled in
-`i18n/index.tsx` instead of being handed to `Intl`.
+```ts
+payment_intent_data: {
+  application_fee_amount: split.feeCents, // platformFee(total, 500) — Math.round(total * 0.05), in integers
+  transfer_data: { destination: freelancer.stripe_connect_id },
+}
+```
 
-Text the app generates and stores — notifications, XP history, a new student's goal — is kept
-as a dictionary key plus the ids it refers to, never as a finished sentence. A notification
-written in Kazakh therefore reads in Russian the moment the language changes, instead of being
-frozen in whatever language was active when it was written.
+This is the PaymentIntent the spec describes, created through Checkout so Stripe's hosted
+page handles cards, wallets, 3-D Secure and receipts. `test/money.test.ts` checks that the
+integer fee equals `Math.round(total * 0.05)` for every amount it tries.
 
-## Mentor-authored lessons
+**Two consequences of destination charges worth deciding about before launch:**
 
-A PDF or Word file of material, and up to ten questions of three kinds — multiple choice,
-write code, or a written answer. The mentor sets how many and what each is worth.
+- **The freelancer is paid when the payment clears, not when the work is accepted.**
+  `funded → in_review → completed` is the working agreement between two people, not escrow.
+  Holding money until acceptance means switching to separate charges and transfers, with the
+  transfer made on `accept`.
+- **Brandyzer pays Stripe's processing fee.** At 5% the platform's cut is below Stripe's
+  fee on any job under roughly $14 (US card pricing). Services have a $5 floor as a sanity
+  check, not as pricing advice.
 
-Multiple-choice questions mark themselves, so a lesson made only of them settles the moment it
-is handed in and pays out on the spot. Anything written by hand cannot be marked by a machine,
-so it goes to the mentor and travels the same review loop projects do.
+### Contracts
 
-## Groups
+| Status | Means | Moved by |
+| --- | --- | --- |
+| `pending` | checkout started, nothing paid | hire route |
+| `funded` | Stripe confirmed the money | webhook (or the client asking for changes) |
+| `in_review` | the freelancer delivered | freelancer |
+| `completed` | the client accepted | client |
+| `canceled` | checkout expired or the payment failed | webhook |
+| `refunded` | a full refund | webhook |
 
-A mentor's timetable: a named class with a room, a slot and a roster drawn from the registered
-students. A student sits in one group at a time, so adding them to a second removes them from
-the first. Deleting a group never removes its students.
+Browsers have no write right on contracts at all. Payment states are the webhook's alone;
+people move contracts through `PATCH /api/bazaar/contracts`, which asks `decideTransition` and
+updates only if the status is still the one it decided against.
 
-## Competitions
+### Sharing the brand kit
 
-Nothing is seeded. A mentor announces an event from inside the app — name, place, start and end
-time, and a running order of slots. Announcing notifies every student once; editing afterwards
-does not nag them again.
+The spec's "active contract" is `funded` or `in_review`: paid for and not yet finished. A
+freelancer can read the client's kit — and write copy and draw images in it — exactly then,
+enforced by the `brand_kits_shared` policy. Not while the hire is merely pending, and not
+after completion or a refund.
 
-Teams are created by the mentor and filled from the registered students, one team per student
-per event. Points are only ever earned: a team claims a task, submits it, and the mentor scores
-it. Un-scoring or deleting a scored task hands the points back, so nothing on the leaderboard
-was typed in by hand.
+A composite foreign key, `(brand_kit_id, client_id) → brand_kits (id, user_id)`, means a
+contract can only ever share a kit that belongs to its client. Without it, a client and a
+freelancer working together could name somebody else's kit id and the read rule would hand it
+over.
 
-## The AI mentor
+## Payments setup
 
-`askMentor(question, context)` in `src/lib/ai.ts` is the only thing the UI knows about, and it
-has two brains behind it.
+- **Connected accounts** are Accounts v2 recipients with the Express dashboard: Brandyzer is
+  merchant of record, collects fees and carries negative balances, and asks for exactly one
+  capability, `stripe_balance.stripe_transfers`. Whether a freelancer can be paid is read from
+  that capability's status, not from the v1 `charges_enabled` field.
+- **Snapshot webhook** → `https://<site>/api/webhook`, subscribed to
+  `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+  `checkout.session.async_payment_failed`, `checkout.session.expired` and `charge.refunded`.
+- **Accounts v2 event destination** (thin events) → `https://<site>/api/connect/events`,
+  subscribed to `v2.core.account[configuration.recipient].capability_status_updated`,
+  `v2.core.account[configuration.recipient].updated` and `v2.core.account[requirements].updated`.
+  It keeps the directory's "taking payments" badge current; the hire route checks Stripe live
+  either way.
+- Refunds come out of Brandyzer's balance unless made with *reverse transfer*, which also pulls
+  back the freelancer's share. The Dashboard asks; the answer is a business decision.
 
-When a key is configured, `api/mentor.ts` answers — a serverless function calling OpenRouter or
-Anthropic. **The key lives only in the server's environment.** There is deliberately no `VITE_`
-prefix: anything carrying one is inlined into the client bundle and readable in devtools.
+## Where this differs from the spec
 
-Without a key — or on a rate limit, a timeout, an outage, or a reply that will not parse — the
-built-in knowledge base answers instead, with the same shape and the same teaching rule. Each
-reply says which brain produced it.
-
-Fifteen topics in three languages, and they are about learning rather than about any subject:
-being stuck, a blank start, a review comment that did not land, work sent back, asking a
-question that gets answered, a missed deadline, a broken streak, what belongs in a submission,
-what a mentor is actually grading, using help honestly, choosing a mentor, access after paying,
-and how to teach here.
-
-The teaching rule is stated in the system prompt as a rule rather than a preference: hint,
-explain, ask back, and refuse to hand over the finished work. Asked to do the assignment, it
-says no and offers to take the problem apart instead — there are only three ways to be stuck,
-and naming which one is usually most of the answer.
-
-OpenRouter is asked for prose; Anthropic is asked for JSON. A small free model handed a strict
-JSON contract explains JSON instead of following it, which is how a working key produced an
-answer nobody saw. What comes back is cleaned rather than trusted: leaked instructions, schema
-fragments and "Sure! Here is" openers are dropped.
-
-## Design
-
-Brutalist, on a liquid-metal field.
-
-The background is `LiquidMetal` from Paper Design's own shader package, so the parameters come
-straight from `shaders.paper.design` and no WebGL is written here. It freezes under
-`prefers-reduced-motion` and when the tab is hidden — the reduced-motion rule in the stylesheet
-reaches CSS animation and nothing driven from JavaScript, which is a gap worth knowing about.
-
-The palette is read off that field rather than invented: the near-black at the centre of a
-metaball, the cool slate of its shadow side, the white of the tint, and the molten red running
-into signal yellow that the chromatic aberration throws along every edge. There is no green in
-that image and none in the app.
-
-Nothing pretends to be glass. No blur, no specular rim, no soft shadow. Depth is a hard offset,
-corners are square, and colour is rationed: yellow for the one thing that matters on a screen,
-red for what is destructive, and nothing else. Buttons are filled blocks that move into their
-own shadow when pressed.
-
-Light, dark, or follow the system — stored per browser and applied before first paint, so there
-is no flash. Every colour is a token in `src/index.css`.
-
-Motion is five primitives copied in from Motion Primitives, not a dependency on all thirty:
-one entrance per screen on navigation, a stagger where a list is genuinely ordered, a
-directional crossfade between a lesson's sections, and a counting XP total. No card fades up on
-any grid. `LazyMotion` with only the DOM features, mounted `strict`, keeps the cost down and
-makes a stray `motion.div` throw rather than quietly pull the whole library back in.
-
-Student routes audit clean at WCAG AA in both themes, measured over about 1500 text nodes.
+| Spec | Here | Why |
+| --- | --- | --- |
+| `price_usd`, `total_amount`, … | `price_usd_cents`, `total_amount_cents`, … | Integer cents, unit in the name. A float does not hold 0.1 exactly. |
+| `status` with four values | plus `canceled` and `refunded` | An expired checkout and a refund have to end the contract, or a refunded freelancer keeps the kit. |
+| `stripe.paymentIntents.create` | Checkout Session with `payment_intent_data` | Same destination-charge PaymentIntent and fee; Stripe's hosted page instead of a card form to build and keep compliant. |
+| Gemini 1.5 Flash | current Flash models, tried in order | 1.5 is retired. |
+| Pollinations URL in the browser | fetched and stored by the server | Pollinations now needs a secret key. The original anonymous URL is the last fallback. |
+| — | `stripe_transfers_active` on profiles | The directory needs to show who can be hired; the Stripe ids themselves are not readable from a browser. |
+| — | `business_json`, `delivery_note`, `delivery_url`, `brief` | Copy needs to know what the business sells; review needs something to review. |
 
 ## Architecture
 
 ```
 src/
   lib/
-    types.ts        every entity: User, Course, Module, Lesson, Project, Feedback,
-                    Achievement, XPTransaction, Group, Team, Competition, Notification,
-                    CustomLesson, CustomTask, LessonSubmission
-    curriculum.ts   empty and typed — see the note at the top of this file
-    seed.ts         what a fresh install ships with: achievements, and nothing else
-    logic.ts        ALL business rules as pure functions (state) => state
-    selectors.ts    derived reads: progress, unlock chain, review queue, leaderboard
-    gamification.ts levels, XP rules, achievement predicates
-    codecheck.ts    static checker behind Lesson.checks
-    ai.ts           the knowledge base and the one function the UI calls
-    money.ts        integer minor units, the platform fee, locale-aware formatting
-    api.ts          the typed client for everything under api/
-    supabase.ts     lazy client; the app degrades to fully local when unconfigured
-    store.tsx       React context: session, persistence, toasts. Thin — it calls logic.ts
-  i18n/
-    index.tsx       t(), LocaleProvider, locale-aware date and number formatting
-    ui.ts           962 interface strings, each { en, ru, kk }
-    content.ts      merges a translation pack over the English canonical
-    ai.ru.ts        the knowledge base in Russian; ai.kk.ts is its Kazakh twin
-  components/       design system (ui.tsx), layout chrome, motion primitives, the shader
-  pages/            student/*, mentor/* and admin/* screens, one file per screen
-api/                Vercel functions: checkout, webhook, lesson content, mentor, Connect
-supabase/           the schema, its row level security policies and storage buckets
-test/               three files, run by `npm run check` with esbuild and bare node
+    brand.ts      what a kit is: types, normalising, slopCheck, buildImagePrompt
+    bazaar.ts     the 5% split, decideHire, decideTransition — the rules, as pure functions
+    money.ts      integer minor units and platformFee
+    api.ts        every read and call the interface makes
+    store.tsx     the session and the toasts, nothing else
+  pages/          studio/, bazaar/, contracts/, sell/, Settings, Login
+  components/     design system (ui.tsx), kit previews, chrome, skins and the 3D scene
+api/
+  _lib/           server.ts (callers and clients), stripe.ts, gemini.ts, images.ts, studio.ts
+  studio/         brand-kit, copy, image
+  bazaar/         hire, contracts
+  connect/        onboard, status, events
+  webhook.ts, health.ts
+supabase/migrations/0001_brandyzer.sql
+test/             money, bazaar, brand, studio
 ```
 
-**Business logic never lives in a component.** Every state change goes through a pure function
-in `logic.ts`, which is why the tests drive the whole progress chain with no React in sight.
+Ten serverless functions, inside a Vercel Hobby project's limit of twelve. The Studio routes
+are given 60 seconds in `vercel.json`; image generation can take thirty.
 
-### Data layer
-
-Split along the line of what somebody gains by forging it.
-
-**Local**, in one object persisted to `localStorage`: progress, XP, streaks, projects. Nobody
-profits from faking their own streak.
-
-**Server**, in Postgres with row level security: identity, mentor approval, lesson prices,
-orders and entitlements. These decide who may teach and who may open paid content, and a value
-the browser can edit is not a decision — it is a suggestion. `api/_lib/server.ts` holds two
-Supabase clients and the difference between them is the security model: `userClient` acts as
-the caller with RLS applied, `adminClient` bypasses RLS and is reserved for the Stripe webhook
-and admin review.
-
-Progress is moving. `supabase/migrations/0002_progress.sql` adds three tables and the client
-is wired to them: a mutation is diffed into operations, queued, and flushed to
-`api/progress.ts`, which upserts and expresses no rules of its own. Run 0002 and it is on;
-without it the app keeps working exactly as before, because an unconfigured backend is the
-same code path as being offline.
-
-Operations rather than a snapshot, because a snapshot lets a stale tab overwrite a fresh one.
-Every one is a grow-only insert or a monotonic write, so replaying a queue is free and two
-devices converge whichever order they merge in — `test/progress.test.ts` asserts both, with
-no database. The streak is the single exception, being the only field that goes down, so an
-older operation is ignored rather than allowed to walk it back.
-
-Still local, and next: projects and notifications. Until projects move, a mentor can only see
-what was submitted in the browser they are reviewing in.
-
-## Deploying to Vercel
-
-1. Push the repository to GitHub.
-2. Import it in Vercel. The framework preset is **Vite**; `vercel.json` already routes every
-   path back to `index.html` so deep links work.
-3. Add the environment variables (Production and Preview). The `VITE_` prefix is the line
-   between public and secret: anything carrying it is inlined into the browser bundle, so a
-   key that must stay secret must never have one.
-
-   Public, and prefixed on purpose:
-   - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` — safe in the browser; row level
-     security is what decides what they can reach.
-   - `VITE_STRIPE_PUBLISHABLE_KEY`.
-
-   Secret, and never prefixed:
-   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — the service role
-     bypasses row level security entirely. It is what lets the webhook write an entitlement
-     no user may write. Treat it like a root password.
-   - `STRIPE_SECRET_KEY` — creates Checkout Sessions and Connect accounts.
-   - `STRIPE_WEBHOOK_SECRET` — without it the webhook cannot tell a real payment notice from
-     an anonymous POST, so it refuses everything.
-   - `PLATFORM_FEE_BPS` — optional; the platform's cut in basis points, default `2000` (20%).
-   - `PUBLIC_SITE_URL` — where Stripe returns people after checkout and onboarding.
-   - `OPENROUTER_API_KEY` — the key for the AI mentor. OpenRouter carries free models, so this
-     works on an account with no balance; get one at openrouter.ai/keys.
-   - `OPENROUTER_MODEL` — optional, and usually left empty. Blank means several free models are
-     tried in order and the first that answers is used, which survives a free id going paid
-     without notice. Setting it pins one model, tried alone and never substituted.
-   - `ANTHROPIC_API_KEY` — an alternative to the above, used when no OpenRouter key is set.
-   - `ANTHROPIC_WORKSPACE_ID` — only if that key was created at the organisation level rather
-     than inside a workspace. Anthropic refuses such a key with a 400 until a workspace is
-     named; **Send a test question** in Settings says so in as many words when it happens.
-4. Create the database. Run `supabase/migrations/0001_monetization.sql` against the project —
-   it creates eight tables, the row level security policies and two private Storage buckets.
-   Grant yourself review rights with
-   `update profiles set is_admin = true where id = '<your-user-id>';`, which is deliberately a
-   database operation: nothing the client can post sets that flag.
-5. Point a Stripe webhook at `https://<your-deployment>/api/webhook`, subscribed to
-   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-   `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded` and
-   `account.updated`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
-   Locally: `stripe listen --forward-to localhost:3000/api/webhook`.
-6. Enable Stripe Connect (Express) so mentors can be paid.
-7. Deploy. Build command `npm run build`, output `dist`.
-8. Sign in as a mentor and open **Settings → Server features**. It reports, for each endpoint,
-   whether it is deployed and whether its key is set — without ever revealing the value, and
-   **Send a test question** spends one real request to tell a good key from a rejected one.
+The interface is English for now. The Kazakh and Russian machinery is all still in
+`src/i18n` — adding a language is writing its strings and listing it in `LOCALES`.
 
 ## Checks
 
 ```
-npm run check     three files, esbuild-bundled and run with bare node
+npm run check     four test files, every api/ function loaded the way Vercel loads it,
+                  and every interface string present in the dictionary
 npx tsc --noEmit  types
 npm run build     production bundle
 ```
 
-`test/flow.test.ts` drives register → submit → review → approve → XP → unlock against a course
-fixture it builds itself, because a check that depends on product content breaks every time the
-content changes. `test/mentor.test.ts` runs the real AI handler against a stubbed provider and
-asserts what leaves and what comes back, without needing a key. `test/monetization.test.ts`
-covers the fee arithmetic and the paywall's own decision function.
+`test/studio.test.ts` runs the real copy and brand-kit routes against stubbed Gemini and
+Supabase endpoints and asserts what leaves: the schema, the directive, the kit's banned words,
+the key in a header and never the URL, one rewrite for slop, a model fallthrough on 404 but
+not on a bad key, and a model-written kit repaired and saved under the caller's verified id.
 
-## Stack
+## Not done yet
 
-React 18, TypeScript, Vite, Tailwind CSS v4, React Router, Motion, lucide-react,
-`@paper-design/shaders-react`. No state library, no chart library, no syntax-highlighting
-library — the charts are hand-drawn SVG and the editor is a textarea with a highlighted
-overlay. 294 kB gzipped, most of it the Supabase client.
+- The 3D scene's centrepiece is still the old S-curve mark.
+- No per-user rate limit on the Studio routes. Signed-in only, but a determined account can
+  spend the free-tier quota.
+- No dispute handling (`charge.dispute.created`), no Express dashboard login link for
+  freelancers, no notifications when a contract moves.
+- Generated images are not kept in a gallery; each lives in Storage and in the page that made it.

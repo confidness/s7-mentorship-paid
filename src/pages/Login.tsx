@@ -2,25 +2,26 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
+import type { Role } from '../lib/bazaar'
 import { Button, Field, inputClass } from '../components/ui'
 import { Logo } from '../components/Layout'
 import ThemeToggle from '../components/ThemeToggle'
-import LocaleToggle from '../components/LocaleToggle'
 import { t } from '../i18n'
 import { Mark } from '../components/Mark'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
 import AtelierSceneGate from '../components/AtelierSceneGate'
+import { RolePicker } from './Settings'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
-  const { login, register, state } = useApp()
+  const { login, register } = useApp()
   const toast = useToast()
   const navigate = useNavigate()
 
-  const firstRun = state.users.length === 0
-  const [mode, setMode] = useState<'login' | 'register'>(startOnRegister || firstRun ? 'register' : 'login')
+  const [mode, setMode] = useState<'login' | 'register'>(startOnRegister ? 'register' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [role, setRole] = useState<Role>('client')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
 
@@ -28,185 +29,122 @@ export default function Login({ register: startOnRegister }: { register?: boolea
     e.preventDefault()
     const next: Record<string, string> = {}
     if (!/^\S+@\S+\.\S+$/.test(email)) next.email = t('enter_a_valid_email_address')
-    if (password.length < 6) next.password = t('use_at_least_6_characters')
-    if (mode === 'register') {
-      if (name.trim().length < 2) next.name = t('tell_us_your_name')
-    }
+    if (password.length < 8) next.password = t('use_at_least_8_characters')
+    if (mode === 'register' && name.trim().length < 2) next.name = t('tell_us_your_name')
     setErrors(next)
     if (Object.keys(next).length) return
 
     setBusy(true)
-
-    // Everyone registers as a student. Teaching is applied for afterwards and reviewed by a
-    // person — see /mentor/apply. There is no longer a shared secret that turns the role on.
-    const result = await (mode === 'login' ? login(email, password) : register({ name, email, password, role: 'student' }))
+    const result = await (mode === 'login' ? login(email, password) : register({ name, email, password, role }))
     setBusy(false)
 
-    if (!result.ok || !result.user) {
+    if (!result.ok) {
       setErrors({ form: result.error ?? t('something_went_wrong_try_again') })
       return
     }
-
-    const user = result.user
-    toast({
-      title: t(mode === 'login' ? 'welcome_back_name' : 'account_created_name', { name: user.name.split(' ')[0] }),
-      body: user.role === 'mentor' ? t('your_mentor_workspace_is_ready') : t('nothing_waiting_for_you_yet'),
-      tone: 'success',
-    })
-    navigate(user.role === 'mentor' ? '/m' : '/', { replace: true })
+    toast({ title: mode === 'login' ? t('welcome_back') : t('account_created'), tone: 'success' })
+    navigate(mode === 'register' && role === 'freelancer' ? '/sell' : '/', { replace: true })
   }
-
-  /**
-   * Counted, not claimed — and on an empty platform there is nothing to count.
-   *
-   * These used to read 5 courses, 18 lessons, 10 achievements, which was true while the
-   * product shipped a curriculum. It no longer does, and "0 courses, 0 lessons" is a worse
-   * first impression than saying plainly how the thing works, so below a real roster the
-   * numbers give way to three sentences.
-   */
-  const mentors = state.users.filter((u) => u.role === 'mentor').length
-  const published = state.customLessons.filter((l) => l.published).length
-  const facts = published > 0 ? [
-    { value: mentors, label: t('mentors') },
-    { value: published, label: t('lessons') },
-    { value: state.users.filter((u) => u.role === 'student').length, label: t('students') },
-  ] : []
 
   return (
     <div className="relative min-h-screen lg:grid lg:grid-cols-[1fr_minmax(26rem,32rem)]">
-      {/* The one screen with a headline and almost no body text, so the metal runs uncovered. */}
       <LiquidMetalBackground depth="hero" />
-      {/* story side — one claim, three numbers, nothing else */}
       <section className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
-        {/* atelier-only: floats behind the copy, not in front of it */}
         <AtelierSceneGate />
         <Logo />
-        <h1 className="mt-14 flex min-h-[19rem] max-w-xl flex-col justify-start text-[46px] leading-[1.05] font-bold tracking-[-0.035em] text-ink-900 xl:text-[58px]">{t('one_platform_from_first_led')}<span className="bg-gradient-to-r from-brand-500 to-accent-500 bg-clip-text text-transparent">{t('to_national_final')}</span>
+        <h1 className="mt-14 max-w-xl text-[46px] leading-[1.05] font-bold tracking-[-0.035em] text-ink-900 xl:text-[58px]">
+          {t('hero_line_one')} <span className="bg-gradient-to-r from-brand-500 to-accent-500 bg-clip-text text-transparent">{t('hero_line_two')}</span>
         </h1>
-        <p className="mt-6 max-w-md text-[17px] leading-relaxed text-ink-600">
-          {t('lessons_projects_mentor_review_and_progress_in_o')}
-        </p>
-
-        {facts.length === 0 && (
-          <ul className="mt-12 max-w-md space-y-2.5 text-sm text-ink-600">
-            <li className="flex gap-3">
-              <span className="font-bold text-ink-900 tabular-nums">01</span>
-              {t('how_it_works_apply')}
+        <p className="mt-6 max-w-md text-[17px] leading-relaxed text-ink-600">{t('hero_body')}</p>
+        <ul className="mt-12 max-w-md space-y-2.5 text-sm text-ink-600">
+          {['how_it_works_kit', 'how_it_works_create', 'how_it_works_hire'].map((key, i) => (
+            <li key={key} className="flex gap-3">
+              <span className="font-bold text-ink-900 tabular-nums">0{i + 1}</span>
+              {t(key)}
             </li>
-            <li className="flex gap-3">
-              <span className="font-bold text-ink-900 tabular-nums">02</span>
-              {t('how_it_works_publish')}
-            </li>
-            <li className="flex gap-3">
-              <span className="font-bold text-ink-900 tabular-nums">03</span>
-              {t('how_it_works_review')}
-            </li>
-          </ul>
-        )}
-
-        <dl className="mt-12 flex gap-10">
-          {facts.map((fact) => (
-            <div key={fact.label}>
-              <dt className="sr-only">{fact.label}</dt>
-              <dd>
-                <span className="block text-[32px] leading-none font-bold tracking-[-0.03em] text-ink-900 tabular-nums">{fact.value}</span>
-                <span className="mt-1.5 block text-sm text-ink-500">{fact.label}</span>
-              </dd>
-            </div>
           ))}
-        </dl>
+        </ul>
       </section>
 
-      {/* form side */}
       <section className="flex min-h-screen flex-col px-4 py-5 sm:px-8 sm:py-6">
         <div className="flex shrink-0 items-center justify-end gap-2">
-          <LocaleToggle compact />
           <ThemeToggle compact />
         </div>
 
         <div className="flex flex-1 items-center justify-center py-6">
-        <div className="card specular relative w-full max-w-md p-6 sm:p-8">
-          <div className="relative mb-7 lg:hidden">
-            <span className="inline-flex items-center gap-2.5">
-              <Mark size={40} className="rounded-full" />
-              <span className="text-lg font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
-            </span>
-          </div>
+          <div className="card specular relative w-full max-w-md p-6 sm:p-8">
+            <div className="relative mb-7 lg:hidden">
+              <span className="inline-flex items-center gap-2.5">
+                <Mark size={40} className="rounded-full" />
+                <span className="text-lg font-bold tracking-[-0.02em] text-ink-900">{t('brand')}</span>
+              </span>
+            </div>
 
-          <h2 className="relative text-[26px] font-bold tracking-[-0.03em] text-ink-900">
-            {mode === 'login' ? t('sign_in') : firstRun ? t('create_the_first_account') : t('create_your_account')}
-          </h2>
-          <p className="relative mt-1.5 text-sm text-ink-500">
-            {mode === 'login'
-              ? t('use_the_email_and_password_you_registered_with')
-              : firstRun
-                ? t('nobody_has_signed_up_yet_whoever_registers_first')
-                : t('students_start_with_what_their_mentor_sets')}
-          </p>
+            <h2 className="relative text-[26px] font-bold tracking-[-0.03em] text-ink-900">{mode === 'login' ? t('sign_in') : t('create_your_account')}</h2>
+            <p className="relative mt-1.5 text-sm text-ink-500">{mode === 'login' ? t('use_the_email_and_password_you_registered_with') : t('register_subtitle')}</p>
 
-          <div className="chrome relative mt-6 mb-6 inline-flex w-full p-1" role="tablist">
-            {(['login', 'register'] as const).map((m) => (
-              <button
-                key={m}
-                role="tab"
-                aria-selected={mode === m}
-                onClick={() => {
-                  setMode(m)
-                  setErrors({})
-                }}
-                className={`relative flex-1 px-4 py-2 text-sm font-semibold transition ${
-                  mode === m ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12)]' : 'text-ink-600'
-                }`}
-              >
-                {m === 'login' ? t('sign_in') : t('register')}
-              </button>
-            ))}
-          </div>
+            <div className="chrome relative mt-6 mb-6 inline-flex w-full p-1" role="tablist">
+              {(['login', 'register'] as const).map((m) => (
+                <button
+                  key={m}
+                  role="tab"
+                  aria-selected={mode === m}
+                  onClick={() => {
+                    setMode(m)
+                    setErrors({})
+                  }}
+                  className={`relative flex-1 px-4 py-2 text-sm font-semibold transition ${mode === m ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12)]' : 'text-ink-600'}`}
+                >
+                  {m === 'login' ? t('sign_in') : t('register')}
+                </button>
+              ))}
+            </div>
 
-          <form onSubmit={onSubmit} noValidate className="relative space-y-4">
-            {mode === 'register' && (
-              <Field label={t('full_name')} required error={errors.name}>
-                <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('alikhan_sultanov')} autoComplete="name" />
+            <form onSubmit={onSubmit} noValidate className="relative space-y-4">
+              {mode === 'register' && (
+                <Field label={t('your_name')} required error={errors.name}>
+                  <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+                </Field>
+              )}
+
+              <Field label={t('email')} required error={errors.email}>
+                <input className={inputClass} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourshop.com" autoComplete="email" />
               </Field>
-            )}
 
-            <Field label={t('email')} required error={errors.email}>
-              <input className={inputClass} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('you_school_kz')} autoComplete="email" />
-            </Field>
+              <Field label={t('password')} required error={errors.password} hint={mode === 'register' ? t('at_least_8_characters') : undefined}>
+                <input
+                  className={inputClass}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                />
+              </Field>
 
-            <Field label={t('password')} required error={errors.password} hint={mode === 'register' ? t('at_least_6_characters') : undefined}>
-              <input
-                className={inputClass}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              />
-            </Field>
+              {mode === 'register' && (
+                <fieldset>
+                  <legend className="mb-2 text-sm font-semibold text-ink-800">{t('what_brings_you_here')}</legend>
+                  <RolePicker value={role} onChange={setRole} compact />
+                </fieldset>
+              )}
 
-            {mode === 'register' && (
-              <p className="border border-brand-300/50 bg-brand-100/40 px-3.5 py-3 text-sm leading-relaxed text-ink-700">
-                {t('everyone_starts_as_a_student_teaching_is_applied_for')}
-              </p>
-            )}
+              {errors.form && (
+                <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+                  {errors.form}
+                </p>
+              )}
 
-            {errors.form && (
-              <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
-                {errors.form}
-              </p>
-            )}
+              <Button type="submit" size="lg" loading={busy} iconRight={ArrowRight} className="w-full">
+                {mode === 'login' ? t('sign_in') : t('create_account')}
+              </Button>
+            </form>
 
-            <Button type="submit" size="lg" loading={busy} iconRight={ArrowRight} className="w-full">
-              {mode === 'login' ? t('sign_in') : t('create_account')}
-            </Button>
-          </form>
-
-          <p className="relative mt-6 flex items-center justify-center gap-1.5 text-xs text-ink-500">
-            <ShieldCheck size={13} aria-hidden="true" />
-            {t('your_account_and_progress_stay_in_this_browser')}
-          </p>
-        </div>
+            <p className="relative mt-6 flex items-center justify-center gap-1.5 text-xs text-ink-500">
+              <ShieldCheck size={13} aria-hidden="true" />
+              {t('payments_are_handled_by_stripe')}
+            </p>
+          </div>
         </div>
       </section>
     </div>

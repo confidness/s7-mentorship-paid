@@ -1,13 +1,19 @@
 /**
- * Typed wrappers over the server routes.
+ * Everything the interface asks the backend, in one file.
  *
- * Every call carries the caller's access token, and every one of them is re-authorised on
- * the server. Nothing here is a permission check — this file only asks questions and
- * relays answers. If a function in here appears to decide something, the decision is
- * really the server's and this is the cached copy.
+ * Two kinds of call, and the split follows the security model. Reads, and the writes a
+ * person may make to their own rows, go straight to Postgres through the Supabase client —
+ * row level security and column grants are the boundary, so a route in between would add a
+ * round trip and nothing else. Anything that spends a key or moves money goes through a
+ * route under api/, which re-identifies the caller and decides for itself.
+ *
+ * Nothing here is a permission check. If a function in here appears to decide something,
+ * the decision is really the server's and this is the cached copy.
  */
 
-import type { CustomLesson, CustomTask, LessonStats, Notification } from './types'
+import { normalizeKitRow, type BrandKitRow, type CopyFormat, type ImagePurpose, type ImageShape } from './brand'
+import type { ContractAction, Role, Split } from './bazaar'
+import type { ContractRow, Me, ServiceRow } from './types'
 import { accessToken, backendConfigured, supabase } from './supabase'
 
 export class ApiError extends Error {
@@ -32,13 +38,9 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const text = await res.text()
 
   /**
-   * A reply that is not JSON is not a reply from this API.
-   *
-   * `JSON.parse` on an HTML error page throws a SyntaxError from inside the data layer,
-   * which surfaces as "Unexpected token '<'" somewhere in the interface — a message that
-   * describes the parser rather than the problem. The common causes are a platform error
-   * page, a proxy, and the one that bit here: a static preview server, where `/api/*` is
-   * simply not running and every route 404s with two words of plain text.
+   * A reply that is not JSON is not a reply from this API — a platform error page, a proxy,
+   * or a static preview where /api/* is simply not running. Saying so beats letting
+   * JSON.parse surface "Unexpected token '<'" somewhere in the interface.
    */
   let body: Record<string, unknown> = {}
   if (text) {
@@ -48,261 +50,167 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
       throw new ApiError(res.status === 200 ? 502 : res.status, 'api_unavailable', text.slice(0, 200))
     }
   }
-
-  // 404 on our own path means the function is not deployed, not that a record is missing —
-  // routes here answer 404 with a JSON body and a code of their own.
   if (res.status === 404 && !body.error) throw new ApiError(404, 'api_unavailable', res.statusText)
-
   if (!res.ok) throw new ApiError(res.status, String(body.error ?? 'error'), String(body.message ?? body.error ?? res.statusText))
   return body as T
 }
 
-/* ---------------------------------------------------------------- mentors */
-
-export interface StandingResponse {
-  role: 'student' | 'mentor'
-  isAdmin: boolean
-  chargesEnabled: boolean
-  payoutsEnabled: boolean
+/** A PostgREST failure, as the same error type the routes throw. */
+function check<T>(result: { data: T | null; error: { message: string; code?: string } | null }): T {
+  if (result.error) throw new ApiError(result.error.code === '42501' ? 403 : 500, result.error.code ?? 'db_error', result.error.message)
+  return result.data as T
 }
 
-/**
- * What this account may do, read straight from Postgres.
- *
- * This was a serverless function that did exactly these two selects as the caller. Both
- * tables are readable by their owner under RLS — `profiles_read` and `accounts_read_own` —
- * so the function was a round trip that added nothing but a dependency on being deployed.
- *
- * Removing it buys two things. Standing now works wherever the app runs, including a static
- * preview with no functions at all, which is where the teaching switch was failing. And it
- * frees one of the twelve serverless functions a Vercel Hobby project is allowed, which the
- * demand board needed.
- */
-export async function getMentorStanding(): Promise<StandingResponse> {
-  if (!backendConfigured) throw new ApiError(501, 'not_configured', 'The server is not configured.')
-
-  const { data: auth } = await supabase().auth.getUser()
-  if (!auth.user) throw new ApiError(401, 'unauthenticated', 'Sign in to continue.')
-
-  const [{ data: profile }, { data: account }] = await Promise.all([
-    supabase().from('profiles').select('role, is_admin').eq('id', auth.user.id).maybeSingle(),
-    supabase().from('mentor_accounts').select('charges_enabled, payouts_enabled').eq('user_id', auth.user.id).maybeSingle(),
-  ])
-
-  return {
-    role: profile?.role === 'mentor' ? 'mentor' : 'student',
-    isAdmin: Boolean(profile?.is_admin),
-    chargesEnabled: Boolean(account?.charges_enabled),
-    payoutsEnabled: Boolean(account?.payouts_enabled),
-  }
-}
-
-/**
- * Start teaching, or stop.
- *
- * Written straight to `profiles` rather than through a route, because there is nothing for a
- * route to add: policy `profiles_update_self` from 0006 already permits exactly this change
- * and still refuses `is_admin`, so the boundary is the database either way. Going direct
- * also means the switch works without the serverless functions running — which is the
- * difference between the preview build being a demo and being a dead button.
- */
-export async function setTeaching(teaching: boolean): Promise<'student' | 'mentor'> {
-  if (!backendConfigured) throw new ApiError(501, 'not_configured', 'The server is not configured.')
-  const role = teaching ? 'mentor' : 'student'
-
+async function myId(): Promise<string> {
   const { data } = await supabase().auth.getUser()
   if (!data.user) throw new ApiError(401, 'unauthenticated', 'Sign in to continue.')
-
-  const { error } = await supabase().from('profiles').update({ role }).eq('id', data.user.id)
-  // A policy refusal arrives as 42501. It means migration 0006 has not been applied — the
-  // old policy pinned `role` to its current value — and that is worth saying out loud
-  // rather than reporting as a generic failure.
-  if (error) throw new ApiError(error.code === '42501' ? 403 : 500, error.code === '42501' ? 'role_change_refused' : 'write_failed', error.message)
-  return role
+  return data.user.id
 }
+
+/* ---------------------------------------------------------------- profile */
+
+/** Named columns, never `*`: the Stripe ids are not granted to a browser and `*` would fail. */
+const PROFILE_COLUMNS = 'id, name, avatar, bio, role, stripe_transfers_active, created_at'
+
+export async function getMe(): Promise<Me | null> {
+  const { data } = await supabase().auth.getUser()
+  if (!data.user) return null
+  const row = check(await supabase().from('profiles').select(PROFILE_COLUMNS).eq('id', data.user.id).maybeSingle())
+  if (!row) return null
+  return { ...(row as Omit<Me, 'email'>), email: data.user.email ?? '' }
+}
+
+export async function updateMe(patch: { name?: string; bio?: string | null; role?: Role }) {
+  const id = await myId()
+  check(await supabase().from('profiles').update(patch).eq('id', id).select('id').single())
+}
+
+/* ---------------------------------------------------------------- studio */
+
+const KIT_COLUMNS = 'id, user_id, brand_name, vibe_summary, business_json, palette_json, typography_json, voice_rules_json, logo_url, created_at, updated_at'
+
+/** The caller's own kits. Kits shared through a contract are reached from that contract. */
+export async function listKits(): Promise<BrandKitRow[]> {
+  const id = await myId()
+  const rows = check(await supabase().from('brand_kits').select(KIT_COLUMNS).eq('user_id', id).order('created_at', { ascending: false })) as BrandKitRow[]
+  return rows.map(normalizeKitRow)
+}
+
+/** Any kit the caller may read — their own, or one shared with them on an active contract. */
+export async function getKit(kitId: string): Promise<BrandKitRow | null> {
+  const row = check(await supabase().from('brand_kits').select(KIT_COLUMNS).eq('id', kitId).maybeSingle()) as BrandKitRow | null
+  return row && normalizeKitRow(row)
+}
+
+export async function deleteKit(kitId: string) {
+  check(await supabase().from('brand_kits').delete().eq('id', kitId))
+}
+
+export interface KitRequest {
+  brandName?: string
+  offering: string
+  audience?: string
+  location?: string
+  vibeWords?: string[]
+}
+
+export const createKit = (input: KitRequest) =>
+  call<{ kit: BrandKitRow; logoConcept: string; model: string }>('/api/studio/brand-kit', { method: 'POST', body: JSON.stringify(input) }).then((r) => ({ ...r, kit: normalizeKitRow(r.kit) }))
+
+export interface CopyVariant {
+  text: string
+  angle: string
+  /** From slopCheck on the server: `banned:delve`, `emoji:4`… Empty when clean. */
+  issues: string[]
+}
+
+export const writeCopy = (input: { brandKitId: string; format: CopyFormat; brief: string; language: 'en' | 'ru' | 'kk' }) =>
+  call<{ variants: CopyVariant[]; model: string }>('/api/studio/copy', { method: 'POST', body: JSON.stringify(input) })
+
+export const drawImage = (input: { brandKitId: string; purpose: ImagePurpose; subject?: string; shape?: ImageShape }) =>
+  call<{ url: string; prompt: string; provider: string }>('/api/studio/image', { method: 'POST', body: JSON.stringify(input) })
+
+/* ---------------------------------------------------------------- bazaar */
+
+const SERVICE_COLUMNS = 'id, freelancer_id, title, description, price_usd_cents, delivery_days, portfolio_urls, active, created_at, updated_at'
+const SERVICE_WITH_FREELANCER = `${SERVICE_COLUMNS}, freelancer:profiles!freelancer_id(id, name, avatar, stripe_transfers_active)`
+
+export async function listServices(): Promise<ServiceRow[]> {
+  return check(await supabase().from('bazaar_services').select(SERVICE_WITH_FREELANCER).eq('active', true).order('created_at', { ascending: false }).limit(200)) as unknown as ServiceRow[]
+}
+
+export async function getService(serviceId: string): Promise<ServiceRow | null> {
+  return check(await supabase().from('bazaar_services').select(SERVICE_WITH_FREELANCER).eq('id', serviceId).maybeSingle()) as unknown as ServiceRow | null
+}
+
+export async function myServices(): Promise<ServiceRow[]> {
+  const id = await myId()
+  return check(await supabase().from('bazaar_services').select(SERVICE_COLUMNS).eq('freelancer_id', id).order('created_at', { ascending: false })) as ServiceRow[]
+}
+
+export interface ServiceDraft {
+  title: string
+  description: string
+  price_usd_cents: number
+  delivery_days: number
+  portfolio_urls: string[]
+  active: boolean
+}
+
+/** Written directly: the policy and the column grants are the whole of what may be written. */
+export async function saveService(draft: ServiceDraft, serviceId?: string): Promise<string> {
+  if (serviceId) {
+    check(await supabase().from('bazaar_services').update(draft).eq('id', serviceId).select('id').single())
+    return serviceId
+  }
+  const freelancer_id = await myId()
+  const row = check(await supabase().from('bazaar_services').insert({ ...draft, freelancer_id }).select('id').single()) as { id: string }
+  return row.id
+}
+
+/** Refused by the database once anybody has hired it — pause it instead. */
+export async function deleteService(serviceId: string) {
+  check(await supabase().from('bazaar_services').delete().eq('id', serviceId))
+}
+
+export const hire = (input: { serviceId: string; brandKitId?: string | null; brief?: string }) =>
+  call<{ url: string; contractId: string; split: Split }>('/api/bazaar/hire', { method: 'POST', body: JSON.stringify(input) })
+
+const CONTRACT_COLUMNS =
+  'id, client_id, freelancer_id, service_id, brand_kit_id, service_title, delivery_days, brief, currency, total_amount_cents, platform_fee_cents, freelancer_payout_cents, status, delivery_note, delivery_url, created_at, funded_at, delivered_at, completed_at'
+const CONTRACT_WITH_PEOPLE = `${CONTRACT_COLUMNS}, client:profiles!client_id(id, name, avatar), freelancer:profiles!freelancer_id(id, name, avatar)`
+
+/** Both sides at once: row level security returns exactly the contracts this person is party to. */
+export async function listContracts(): Promise<ContractRow[]> {
+  return check(await supabase().from('bazaar_contracts').select(CONTRACT_WITH_PEOPLE).order('created_at', { ascending: false }).limit(200)) as unknown as ContractRow[]
+}
+
+export async function getContract(contractId: string): Promise<ContractRow | null> {
+  return check(await supabase().from('bazaar_contracts').select(CONTRACT_WITH_PEOPLE).eq('id', contractId).maybeSingle()) as unknown as ContractRow | null
+}
+
+export const actOnContract = (id: string, action: ContractAction, extra: { note?: string; url?: string } = {}) =>
+  call<{ ok: true; status: string }>('/api/bazaar/contracts', { method: 'PATCH', body: JSON.stringify({ id, action, ...extra }) })
 
 /* ---------------------------------------------------------------- payouts */
 
+export interface PayoutStatus {
+  connected: boolean
+  transfersActive: boolean
+  status: string
+  requirements: string[]
+}
+
 export const startOnboarding = () => call<{ url: string }>('/api/connect/onboard', { method: 'POST' })
+export const payoutStatus = () => call<PayoutStatus>('/api/connect/status')
 
-export const payoutStatus = () =>
-  call<{ connected: boolean; chargesEnabled: boolean; payoutsEnabled: boolean; requirements?: string[] }>('/api/connect/status')
+/* ---------------------------------------------------------------- health */
 
-/* ---------------------------------------------------------------- lessons */
-
-export interface LessonTeaser {
-  id: string
-  title: string
-  summary: string
-  priceCents: number
-  currency: string
-  published: boolean
-  materialName: string | null
-  authorId?: string
-  authorName?: string
-  owned?: boolean
-  stats?: LessonStats
-  createdAt: string
-  updatedAt: string
+export interface Health {
+  ok: boolean
+  text: { configured: boolean; models: string[] }
+  images: { providers: string[] }
+  payments: { configured: boolean; checkout: boolean; webhook: boolean; connectEvents: boolean }
 }
 
-export const listCatalogue = () => call<{ lessons: LessonTeaser[]; entitlements: string[] }>('/api/lessons')
-export const listMyLessons = () => call<{ lessons: LessonTeaser[] }>('/api/lessons?mine=1')
-
-export interface LessonDraft {
-  id?: string
-  title: string
-  summary: string
-  priceCents: number
-  currency: string
-  materialPath?: string | null
-  materialName?: string | null
-  materialMime?: string | null
-  materialSize?: number | null
-  tasks: CustomTask[]
-}
-
-export const saveLesson = (draft: LessonDraft) => call<{ ok: true; id: string }>('/api/lessons', { method: 'POST', body: JSON.stringify(draft) })
-
-export const publishLesson = (id: string, published: boolean) =>
-  call<{ ok: true; published: boolean }>('/api/lessons', { method: 'PATCH', body: JSON.stringify({ id, published }) })
-
-export const deleteLesson = (id: string) => call<{ ok: true; withdrawn?: boolean; deleted?: boolean }>(`/api/lessons?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
-
-/* ------------------------------------------------------------- purchasing */
-
-/**
- * The lesson's real contents.
- *
- * A 402 is not an error to swallow — it is the paywall answering, and the caller should
- * show the buy page. Anything else is a genuine failure.
- */
-export interface LessonContent {
-  entitled: boolean
-  lesson: Pick<CustomLesson, 'id' | 'title' | 'summary'> & { priceCents: number; currency: string; authorId?: string }
-  tasks: CustomTask[]
-  material: { name: string; mime: string; size: number; url: string } | null
-}
-
-export async function getLessonContent(lessonId: string): Promise<LessonContent | { paywalled: true; lesson: LessonContent['lesson'] }> {
-  try {
-    return await call<LessonContent>(`/api/lesson-content?lessonId=${encodeURIComponent(lessonId)}`)
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 402) {
-      const res = await fetch(`/api/lesson-content?lessonId=${encodeURIComponent(lessonId)}`, {
-        headers: { authorization: `Bearer ${(await accessToken()) ?? ''}` },
-      })
-      const body = (await res.json()) as { lesson: LessonContent['lesson'] }
-      return { paywalled: true, lesson: body.lesson }
-    }
-    throw error
-  }
-}
-
-/** Returns the Stripe Checkout URL to send the buyer to. The purchase completes over there. */
-export const startCheckout = (lessonId: string) => call<{ url: string; sessionId: string }>('/api/checkout', { method: 'POST', body: JSON.stringify({ lessonId }) })
-
-/* -------------------------------------------------------------- progress */
-
-export interface ProgressSnapshot {
-  profile: { xp: number; streak: number; lastActiveDate: string; currentCourseId: string; enrolledCourseIds: string[]; goal: string } | null
-  lessons: { lessonId: string; courseId: string; checkPassedAt: string | null; completedAt: string | null; challengeCompletedAt: string | null }[]
-  xp: { id: string; amount: number; reason: string; vars?: Record<string, string | number>; kind: string; refId?: string; createdAt: string }[]
-}
-
-export const getProgress = () => call<ProgressSnapshot>('/api/progress')
-
-export const pushProgress = (ops: unknown[]) => call<{ ok: true; applied: number }>('/api/progress', { method: 'POST', body: JSON.stringify({ ops }) })
-
-/* -------------------------------------------------------------- projects */
-
-export interface RemoteProject {
-  id: string
-  authorId: string
-  title: string
-  description: string
-  code: string
-  notes: string
-  courseId: string
-  lessonId: string
-  attachments: { id: string; kind: 'image' | 'video'; name: string; url: string; size?: number }[]
-  tags: string[]
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'needs_changes'
-  createdAt: string
-  submittedAt?: string
-  reviewedAt?: string
-  reviewerId?: string
-  likes: number
-  views: number
-  feedback: { id: string; projectId: string; mentorId: string; decision: 'approved' | 'needs_changes' | 'comment'; message: string; rubric?: { completeness: number; clarity: number; craft: number }; createdAt: string }[]
-}
-
-export const listProjects = () => call<{ projects: RemoteProject[] }>('/api/projects')
-
-export interface ProjectSave {
-  id?: string
-  title: string
-  description?: string
-  code?: string
-  notes?: string
-  courseId?: string
-  lessonId?: string
-  attachments?: unknown[]
-  tags?: string[]
-  status?: 'draft' | 'submitted'
-}
-
-export const saveProject = (draft: ProjectSave) => call<{ ok: true; id: string }>('/api/projects', { method: 'POST', body: JSON.stringify(draft) })
-
-/** Claiming is what stops two mentors writing the same review; the second gets a 409. */
-export const claimProject = (id: string) => call<{ ok: true; id: string }>('/api/projects', { method: 'PATCH', body: JSON.stringify({ id, action: 'claim' }) })
-
-export const decideProject = (id: string, decision: 'approved' | 'needs_changes', message: string, rubric?: { completeness: number; clarity: number; craft: number }) =>
-  call<{ ok: true; id: string }>('/api/projects', { method: 'PATCH', body: JSON.stringify({ id, action: 'decide', decision, message, rubric }) })
-
-/* --------------------------------------------------------- notifications */
-
-/**
- * Only the ones that crossed from another account.
- *
- * A notification about your own action was written by the reducer that performed it, in this
- * browser, and is already in local state. What the server holds is the rest: the review
- * decision, the answer to a mentor application — the things somebody else did to you, which
- * no reducer of yours ever ran to hear about.
- */
-export const listNotifications = () => call<{ notifications: Notification[] }>('/api/notifications')
-
-/** No ids means the whole inbox, which is what opening the panel means. */
-export const markNotificationsRead = (ids?: string[]) =>
-  call<{ ok: true }>('/api/notifications', { method: 'PATCH', body: JSON.stringify({ ids: ids ?? [] }) })
-
-/* ------------------------------------------------------------- demand board */
-
-export interface CourseRequest {
-  id: string
-  authorId: string
-  title: string
-  body: string
-  budgetCents: number
-  currency: string
-  deadline?: string
-  status: 'open' | 'fulfilled' | 'withdrawn'
-  votes: number
-  createdAt: string
-  answers: { lessonId: string; mentorId: string }[]
-}
-
-export const listRequests = () => call<{ requests: CourseRequest[]; voted: string[] }>('/api/requests')
-
-export const askForCourse = (input: { title: string; body?: string; budgetCents?: number; currency?: string; deadline?: string | null }) =>
-  call<{ ok: true; id: string }>('/api/requests', { method: 'POST', body: JSON.stringify(input) })
-
-/** Voting twice is not an error — the primary key settles it and the server says ok. */
-export const voteForRequest = (id: string, wanted: boolean) =>
-  call<{ ok: true }>('/api/requests', { method: 'PATCH', body: JSON.stringify({ id, action: wanted ? 'vote' : 'unvote' }) })
-
-export const withdrawRequest = (id: string) => call<{ ok: true }>('/api/requests', { method: 'PATCH', body: JSON.stringify({ id, action: 'withdraw' }) })
-
-/** Answering announces to everyone who voted — once per request, ever. See api/requests.ts. */
-export const answerRequest = (id: string, lessonId: string) =>
-  call<{ ok: true; announced: number }>('/api/requests', { method: 'PATCH', body: JSON.stringify({ id, action: 'fulfil', lessonId }) })
+export const getHealth = () => call<Health>('/api/health')

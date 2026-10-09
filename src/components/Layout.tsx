@@ -3,20 +3,19 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { MoreHorizontal, X } from 'lucide-react'
 import { useApp } from '../lib/store'
 import ThemeToggle from './ThemeToggle'
-import LocaleToggle from './LocaleToggle'
 import { t } from '../i18n'
 import { Mark } from './Mark'
 import LiquidMetalBackground from './LiquidMetalBackground'
 import { PageTransition } from './motion'
 import { SectionTabs, tabsForPath } from './sections'
 import { isNavActive, navFor, type NavItem } from './nav'
-import { LevelCard, NavRail, NotificationBell, UserMenu, XpChip, useEscape } from './menubar'
+import { NavRail, UserMenu, useEscape } from './menubar'
 
 /** The mark on its disc. Under the orbit skin a slow ring of light turns behind it. */
 function BrandMark({ size = 38 }: { size?: number }) {
   return (
     <span className="brand-mark relative grid shrink-0 place-items-center rounded-full">
-      <Mark size={size} className="relative rounded-full shadow-[0_8px_18px_-8px_rgb(21_96_236/0.7)]" />
+      <Mark size={size} className="relative rounded-full shadow-[0_8px_18px_-8px_rgb(228_87_46/0.7)]" />
     </span>
   )
 }
@@ -27,8 +26,8 @@ export function Logo({ compact }: { compact?: boolean }) {
       <BrandMark size={40} />
       {!compact && (
         <span className="leading-tight">
-          <span className="block text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
-          <span className="block text-xs text-ink-500">{t('learning_platform')}</span>
+          <span className="block text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('brand')}</span>
+          <span className="block text-xs text-ink-500">{t('brand_tagline')}</span>
         </span>
       )}
     </span>
@@ -47,29 +46,27 @@ function useScrolled(threshold = 8) {
 }
 
 /**
- * The phone's menu: a dock at the thumb, four sections and "more".
- *
- * The marker is one element translated by whole slots, so it glides between them the same way
- * the desktop rail does. A section that is not in the dock — the account — lights "more",
- * because that is where it is reached from.
+ * The phone's menu: a dock at the thumb, four sections and "more". A section that is not in
+ * the dock lights "more", because that is where it is reached from.
  */
 function MobileDock({ items, onMore }: { items: NavItem[]; onMore: () => void }) {
   const { pathname } = useLocation()
   const dock = items.filter((n) => n.primary).slice(0, 4)
   const at = dock.findIndex((item) => isNavActive(item, pathname))
   const elsewhere = at < 0 && items.some((item) => isNavActive(item, pathname))
-  const slot = at >= 0 ? at : elsewhere ? 4 : -1
+  const slots = dock.length + 1
+  const slot = at >= 0 ? at : elsewhere ? dock.length : -1
 
   return (
     <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 lg:hidden" aria-label={t('primary')}>
       <div className="dock relative mx-auto max-w-md">
         <div aria-hidden="true" className="menubar-slab chrome absolute inset-0" />
-        <div className="relative grid grid-cols-5 p-1.5">
+        <div className="relative grid p-1.5" style={{ gridTemplateColumns: `repeat(${slots}, minmax(0, 1fr))` }}>
           {slot >= 0 && (
             <span
               aria-hidden="true"
               className="nav-pill slide pointer-events-none absolute top-1.5 bottom-1.5 left-1.5"
-              style={{ width: 'calc((100% - 0.75rem) / 5)', transform: `translateX(${slot * 100}%)` }}
+              style={{ width: `calc((100% - 0.75rem) / ${slots})`, transform: `translateX(${slot * 100}%)` }}
             />
           )}
           {dock.map((item, i) => {
@@ -86,8 +83,8 @@ function MobileDock({ items, onMore }: { items: NavItem[]; onMore: () => void })
               </Link>
             )
           })}
-          <button onClick={onMore} className={`relative z-10 flex min-w-0 flex-col items-center gap-1 px-0.5 py-2 text-[11px] font-semibold ${slot === 4 ? 'text-ink-900' : 'text-ink-500'}`} aria-haspopup="dialog">
-            <MoreHorizontal size={19} className={slot === 4 ? 'text-brand-500' : ''} aria-hidden="true" />
+          <button onClick={onMore} className={`relative z-10 flex min-w-0 flex-col items-center gap-1 px-0.5 py-2 text-[11px] font-semibold ${slot === dock.length ? 'text-ink-900' : 'text-ink-500'}`} aria-haspopup="dialog">
+            <MoreHorizontal size={19} className={slot === dock.length ? 'text-brand-500' : ''} aria-hidden="true" />
             <span className="max-w-full truncate">{t('more')}</span>
           </button>
         </div>
@@ -131,12 +128,7 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
           })}
         </nav>
 
-        <div className="mt-4 empty:hidden">
-          <LevelCard />
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t edge pt-4">
-          <LocaleToggle compact />
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t edge pt-4">
           <ThemeToggle compact />
         </div>
       </div>
@@ -151,8 +143,7 @@ export default function Layout() {
   const closeSheet = useCallback(() => setSheet(false), [])
   const scrolled = useScrolled()
   const sectionTabs = tabsForPath(location.pathname)
-  const nav = navFor(location.pathname)
-  const home = user?.role === 'mentor' ? '/m' : '/'
+  const nav = navFor(user?.role)
   useEscape(sheet, closeSheet)
 
   useEffect(() => {
@@ -171,15 +162,13 @@ export default function Layout() {
             otherwise become the containing block of the popovers and clip their blur. */}
         <div className="menubar relative mx-auto max-w-7xl" data-scrolled={scrolled || undefined}>
           <div aria-hidden="true" className="menubar-slab chrome absolute inset-0" />
-          {/* Two equal flexible sides keep the rail centred; the right side never shrinks
-              below its own width, so a long label pushes the rail over rather than under it. */}
           <div className="relative flex h-16 items-center gap-2 px-2 sm:px-3">
             <div className="flex min-w-0 flex-1 basis-0">
-              <Link to={home} aria-label={t('s7_brand')} className="flex min-w-0 items-center gap-2.5 rounded-[var(--ui-radius-sm)] pr-2">
+              <Link to="/" aria-label={t('brand')} className="flex min-w-0 items-center gap-2.5 rounded-[var(--ui-radius-sm)] pr-2">
                 <BrandMark />
                 <span className="min-w-0 leading-tight lg:hidden xl:block">
-                  <span className="block truncate text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('s7_brand')}</span>
-                  <span className="block truncate text-[11px] text-ink-500">{user?.role === 'mentor' ? t('mentor_workspace') : t('student_workspace')}</span>
+                  <span className="block truncate text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('brand')}</span>
+                  <span className="block truncate text-[11px] text-ink-500">{user ? t(`role_${user.role}`) : t('brand_tagline')}</span>
                 </span>
               </Link>
             </div>
@@ -187,11 +176,9 @@ export default function Layout() {
             <NavRail items={nav} />
 
             <div className="flex min-w-max flex-1 basis-0 items-center justify-end gap-1.5">
-              {user?.role === 'student' && <XpChip />}
               <span className="hidden xl:inline-flex">
                 <ThemeToggle compact />
               </span>
-              <NotificationBell />
               <UserMenu />
             </div>
           </div>
@@ -199,9 +186,6 @@ export default function Layout() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 pt-7 pb-36 sm:px-6 lg:pb-16">
-        {/* The section strip sits outside the transition on purpose: it belongs to the
-            section rather than to the page, so it should stay put while the page under it
-            changes. Animating it would make moving between two tabs look like leaving. */}
         {sectionTabs && <SectionTabs tabs={sectionTabs} />}
         <PageTransition routeKey={location.pathname}>
           <Outlet />

@@ -73,10 +73,10 @@ export default function OrbitSceneGate() {
   if (skin !== 'orbit' || !hasWebGL()) return null
 
   const mode = pathname === '/login' || pathname === '/register' ? 'hero' : 'app'
-  // A page outside the five sections — one course, one lesson — takes the vantage of the
-  // section it is reached from.
+  // Every page sits in a section — the kit pages under Studio, a service under the Bazaar —
+  // so the camera only falls back to the first station for a page that is in none.
   const found = sectionIndex(pathname)
-  const station = found >= 0 ? found : pathname.startsWith('/learn/') ? 1 : 0
+  const station = found >= 0 ? found : 0
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

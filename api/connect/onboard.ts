@@ -1,16 +1,17 @@
 /**
- * Stripe Connect onboarding for a mentor who wants to be paid.
+ * Stripe Connect onboarding for a freelancer who wants to be paid.
  *
- * Express accounts, so Stripe collects the tax and identity details and carries the KYC
- * obligation. We never see a bank number; we hold an account id and whether Stripe is
- * willing to accept charges for it.
+ * An Accounts v2 recipient with the Express dashboard, so Stripe collects the identity, tax
+ * and bank details and carries the KYC obligation. We never see a bank number; we hold an
+ * account id and whether Stripe will transfer money to it.
  *
- * POST returns a link to send the mentor to. Links are single-use and expire in minutes,
- * so this is called again each time rather than stored.
+ * POST returns a link to send the freelancer to. Account links are single-use and expire in
+ * minutes, so this is called again each time rather than stored.
  */
 
+import { sells } from '../../src/lib/bazaar.js'
 import { HttpError, adminClient, fail, json, requireMethod, requireUser } from '../_lib/server.js'
-import { siteOrigin, stripe } from '../_lib/stripe.js'
+import { createRecipientAccount, siteOrigin, stripe } from '../_lib/stripe.js'
 
 async function handler(req: Request): Promise<Response> {
   try {
@@ -18,42 +19,37 @@ async function handler(req: Request): Promise<Response> {
     const caller = await requireUser(req)
     const db = adminClient()
 
-    /**
-     * No approval check. There is nothing left to approve.
-     *
-     * This required an approved `mentor_applications` row, which made sense while a reviewer
-     * decided who could teach. Migration 0006 removed the application desk and nothing
-     * writes such a row any more, so the check could never pass: no application, no Connect
-     * account, `charges_enabled` never true, and `requireSellingMentor` therefore refused
-     * every paid publish. The gate outlived the thing it was gating and quietly closed the
-     * whole marketplace.
-     *
-     * Identity is still checked, just not by us: an Express account cannot take money until
-     * Stripe has completed its own KYC on the person behind it.
-     */
-    const { data: existing } = await db.from('mentor_accounts').select('stripe_account_id').eq('user_id', caller.id).maybeSingle()
+    const { data: profile } = await db.from('profiles').select('name, role, stripe_connect_id').eq('id', caller.id).single()
+    // A client has nothing to be paid for. Switching role is one click in settings, and
+    // asking for it first keeps the directory and the payout accounts telling one story.
+    if (!sells(profile?.role)) throw new HttpError(403, 'not_a_freelancer', 'Switch your account to freelancer in Settings first.')
 
-    let accountId = existing?.stripe_account_id
+    let accountId: string | null = profile?.stripe_connect_id ?? null
     if (!accountId) {
-      const account = await stripe().accounts.create({
-        type: 'express',
-        email: caller.email,
-        capabilities: { transfers: { requested: true } },
-        business_profile: { product_description: 'Mentorship and lessons on S7 Mentorship' },
-        metadata: { userId: caller.id },
-      })
-      accountId = account.id
-      const { error } = await db.from('mentor_accounts').insert({ user_id: caller.id, stripe_account_id: accountId })
-      if (error) throw new HttpError(500, 'write_failed', error.message)
+      const account = await createRecipientAccount({ email: caller.email, name: profile?.name ?? 'Freelancer', userId: caller.id })
+      // Written only if still empty: two tabs onboarding at once must not leave the profile
+      // pointing at the account that loses. The loser is re-read rather than trusted.
+      const { data: claimed } = await db.from('profiles').update({ stripe_connect_id: account.id }).eq('id', caller.id).is('stripe_connect_id', null).select('stripe_connect_id').maybeSingle()
+      if (claimed) accountId = account.id
+      else {
+        const { data: again } = await db.from('profiles').select('stripe_connect_id').eq('id', caller.id).single()
+        accountId = again?.stripe_connect_id ?? null
+      }
+      if (!accountId) throw new HttpError(500, 'write_failed', 'Could not record the payout account.')
     }
 
     const origin = siteOrigin(req)
-    const link = await stripe().accountLinks.create({
+    const link = await stripe().v2.core.accountLinks.create({
       account: accountId,
-      type: 'account_onboarding',
-      // Stripe sends people back here when a link has gone stale; the page asks for a fresh one.
-      refresh_url: `${origin}/m/payouts?refresh=1`,
-      return_url: `${origin}/m/payouts?done=1`,
+      use_case: {
+        type: 'account_onboarding',
+        account_onboarding: {
+          configurations: ['recipient'],
+          // Stripe sends people back here when a link has gone stale; the page asks for a fresh one.
+          refresh_url: `${origin}/sell/payouts?refresh=1`,
+          return_url: `${origin}/sell/payouts?done=1`,
+        },
+      },
     })
 
     return json({ url: link.url })

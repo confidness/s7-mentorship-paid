@@ -99,7 +99,7 @@ if (env.VITE_SUPABASE_ANON_KEY && env.SUPABASE_ANON_KEY && env.VITE_SUPABASE_ANO
   problems.push('VITE_SUPABASE_ANON_KEY and SUPABASE_ANON_KEY hold different keys. They should be the same one — copy whichever you prefer into both.')
 }
 
-const optional = ['OPENROUTER_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'VITE_STRIPE_PUBLISHABLE_KEY']
+const optional = ['GEMINI_API_KEY', 'POLLINATIONS_API_KEY', 'HF_TOKEN', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_CONNECT_WEBHOOK_SECRET', 'PUBLIC_SITE_URL']
 const missing = optional.filter((k) => !env[k])
 
 console.log()

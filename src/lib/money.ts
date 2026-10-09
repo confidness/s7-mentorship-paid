@@ -10,8 +10,14 @@
  * not import anything browser- or node-specific.
  */
 
-/** Basis points: 10000 bps = 100%. 2000 bps = 20%. */
-export const DEFAULT_PLATFORM_FEE_BPS = 2000
+/**
+ * Basis points: 10000 bps = 100%. 500 bps = 5%, Brandyzer's cut of a Bazaar hire.
+ *
+ * A constant rather than an environment variable. The interface tells a client what the
+ * freelancer receives before they pay, and a fee that could differ between the page and the
+ * server is a number the platform would be quoting without knowing it.
+ */
+export const PLATFORM_FEE_BPS = 500
 
 /** Zero-decimal currencies have no minor unit — ¥500 is 500, not 50000. */
 const ZERO_DECIMAL = new Set(['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'])
@@ -22,33 +28,25 @@ export const isZeroDecimal = (currency: string) => ZERO_DECIMAL.has(currency.toL
  * The platform's cut of a sale, rounded half-up to a whole minor unit.
  *
  * Rounding has to land somewhere, and it must be deterministic: this number is sent to
- * Stripe as application_fee_amount and also written to our own orders row, and the two
+ * Stripe as application_fee_amount and also written to the contract row, and the two
  * disagreeing would make the books wrong. Computed once, here, and reused.
+ *
+ * For a whole number of cents this equals `Math.round(amount * 0.05)` exactly — the test
+ * checks it across a range — without ever passing through a float.
  */
-export function platformFee(amountCents: number, bps: number = DEFAULT_PLATFORM_FEE_BPS): number {
+export function platformFee(amountCents: number, bps: number = PLATFORM_FEE_BPS): number {
   if (!Number.isInteger(amountCents) || amountCents < 0) throw new Error(`amount must be a non-negative integer of minor units, got ${amountCents}`)
   if (!Number.isInteger(bps) || bps < 0 || bps > 10000) throw new Error(`fee must be 0..10000 bps, got ${bps}`)
   // Integer arithmetic start to finish; the +5000 is the half-up rounding term.
   const fee = Math.floor((amountCents * bps + 5000) / 10000)
-  // A fee above the amount would make the mentor owe money on a sale.
+  // A fee above the amount would make the freelancer owe money on a sale.
   return Math.min(fee, amountCents)
 }
 
-/** What the mentor receives. */
-export const mentorShare = (amountCents: number, bps?: number) => amountCents - platformFee(amountCents, bps)
+/** What the freelancer receives. */
+export const payoutShare = (amountCents: number, bps?: number) => amountCents - platformFee(amountCents, bps)
 
-/** Reads PLATFORM_FEE_BPS from the environment, falling back to the default. */
-export function feeBpsFromEnv(raw: string | undefined): number {
-  if (!raw) return DEFAULT_PLATFORM_FEE_BPS
-  const n = Number(raw)
-  if (!Number.isInteger(n) || n < 0 || n > 10000) return DEFAULT_PLATFORM_FEE_BPS
-  return n
-}
-
-/**
- * Formats minor units for display. Locale-aware, because the app ships Kazakh, Russian
- * and English and a price is one of the few numbers a student reads before paying.
- */
+/** Formats minor units for display, in the interface language rather than the OS's. */
 export function formatMoney(amountCents: number, currency: string, locale = 'en'): string {
   const zero = isZeroDecimal(currency)
   const value = zero ? amountCents : amountCents / 100
@@ -65,7 +63,7 @@ export function formatMoney(amountCents: number, currency: string, locale = 'en'
   }
 }
 
-/** Parses what a mentor typed ("12.50") into minor units. Returns null if it is not a price. */
+/** Parses what a freelancer typed ("12.50") into minor units. Returns null if it is not a price. */
 export function parsePrice(input: string, currency: string): number | null {
   const cleaned = input.trim().replace(/\s/g, '').replace(',', '.')
   if (!/^\d*\.?\d*$/.test(cleaned) || cleaned === '' || cleaned === '.') return null

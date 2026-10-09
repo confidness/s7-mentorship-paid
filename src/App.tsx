@@ -2,66 +2,72 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Layout from './components/Layout'
 import OrbitSceneGate from './components/OrbitSceneGate'
+import { Spinner } from './components/ui'
 import { useApp } from './lib/store'
+import { backendConfigured } from './lib/supabase'
 
 import Login from './pages/Login'
-import Assigned, { AssignedLesson } from './pages/student/Assigned'
-import MentorLessons, { LessonSubmissions } from './pages/mentor/MentorLessons'
-import LessonBuilder from './pages/mentor/LessonBuilder'
-import EventBuilder from './pages/mentor/EventBuilder'
 import NotFound from './pages/NotFound'
+import Settings from './pages/Settings'
+import StudioHome from './pages/studio/Home'
+import NewKit from './pages/studio/NewKit'
+import KitPage from './pages/studio/Kit'
+import Directory from './pages/bazaar/Directory'
+import ServicePage from './pages/bazaar/Service'
+import ContractList from './pages/contracts/List'
+import ContractDetail from './pages/contracts/Detail'
+import MyServices from './pages/sell/Services'
+import ServiceEditor from './pages/sell/ServiceEditor'
+import Payouts from './pages/sell/Payouts'
 
-import Dashboard from './pages/student/Dashboard'
-import Courses from './pages/student/Courses'
-import CourseDetail from './pages/student/CourseDetail'
-import LessonPage from './pages/student/Lesson'
-import MyLearning from './pages/student/MyLearning'
-import Projects from './pages/student/Projects'
-import Requests from './pages/student/Requests'
-import ProjectDetail from './pages/student/ProjectDetail'
-import Achievements from './pages/student/Achievements'
-import Gallery from './pages/student/Gallery'
-import Competition from './pages/student/Competition'
-import AIMentor from './pages/student/AIMentor'
-import Profile from './pages/student/Profile'
-import StudentSettings from './pages/student/Settings'
-
-import MentorDashboard from './pages/mentor/Dashboard'
-import MentorStudents from './pages/mentor/Students'
-import MentorGroups from './pages/mentor/Groups'
-import MentorReviews from './pages/mentor/Reviews'
-import ReviewDetail from './pages/mentor/ReviewDetail'
-import MentorProjects from './pages/mentor/Projects'
-import MentorAnalytics from './pages/mentor/Analytics'
-import { MentorCourses, MentorCompetition, MentorSettings } from './pages/mentor/Misc'
-import Payouts from './pages/mentor/Payouts'
-
-/**
- * Signed in, and for `/m` also teaching.
- *
- * The learner side is open to everybody. It used to bounce a mentor back to `/m`, which made
- * sense when teaching was a status granted after review — now that anyone can switch it on,
- * a mentor is simply somebody who also publishes, and locking them out of the catalogue
- * would mean they could not take a course on the platform they teach on.
- */
-function Protected({ mentor, children }: { mentor?: boolean; children: ReactNode }) {
+function Protected({ children }: { children: ReactNode }) {
   const { user } = useApp()
   const location = useLocation()
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
-  if (mentor && user.role !== 'mentor') return <Navigate to="/" replace />
   return <>{children}</>
 }
 
+/**
+ * Shown instead of the app when the browser bundle has no Supabase project.
+ *
+ * Brandyzer has no local mode: every kit, service and contract is a row other people read.
+ * Deliberately not translated, for the same reason as the crash screen — it is about the
+ * deployment, and the person reading it is whoever is setting it up.
+ */
+function NotConfigured() {
+  return (
+    <div className="grid min-h-screen place-items-center p-6">
+      <div className="card w-full max-w-lg space-y-3 p-6">
+        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink-900">Brandyzer needs a Supabase project</h1>
+        <p className="text-sm leading-relaxed text-ink-600">
+          Set <code className="font-mono">VITE_SUPABASE_URL</code> and <code className="font-mono">VITE_SUPABASE_ANON_KEY</code>, run{' '}
+          <code className="font-mono">supabase/migrations/0001_brandyzer.sql</code> against the project, and rebuild. The README lists the server keys.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
-  const { user } = useApp()
+  const { ready, user } = useApp()
+  if (!backendConfigured) return <NotConfigured />
+  // Until the stored session is checked, nobody is signed in or out — showing the sign-in
+  // page for half a second to somebody who is signed in reads as being logged out.
+  if (!ready) {
+    return (
+      <div className="grid min-h-screen place-items-center text-ink-500">
+        <Spinner />
+      </div>
+    )
+  }
 
   return (
     <>
       {/* Behind every route, and outside them, so the world survives navigation. */}
       <OrbitSceneGate />
       <Routes>
-        <Route path="/login" element={user ? <Navigate to={user.role === 'mentor' ? '/m' : '/'} replace /> : <Login />} />
-        <Route path="/register" element={user ? <Navigate to={user.role === 'mentor' ? '/m' : '/'} replace /> : <Login register />} />
+        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/" replace /> : <Login register />} />
 
         <Route
           element={
@@ -70,58 +76,22 @@ export default function App() {
             </Protected>
           }
         >
-          {/* The catalogue is the front door: what there is to learn here, before anything
-              about one account's progress. `/courses` still resolves to the same page so old
-              links keep working. */}
-          <Route path="/" element={<Courses />} />
-          <Route path="/courses" element={<Navigate to="/" replace />} />
-          {/* The demand board sits beside the catalogue: what there is to learn, and what
-              there is not yet. Both sides of the marketplace read the same page. */}
-          <Route path="/requests" element={<Requests />} />
-          <Route path="/courses/:courseId" element={<CourseDetail />} />
-          <Route path="/learn/:courseId/:lessonId" element={<LessonPage />} />
-          {/* Progress used to be the home page. It is the first tab of Learning now. */}
-          <Route path="/learning" element={<Dashboard />} />
-          <Route path="/learning/courses" element={<MyLearning />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:projectId" element={<ProjectDetail />} />
-          <Route path="/achievements" element={<Achievements />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/competition" element={<Competition />} />
-          <Route path="/ai" element={<AIMentor />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/assigned" element={<Assigned />} />
-          <Route path="/assigned/:lessonId" element={<AssignedLesson />} />
-          <Route path="/settings" element={<StudentSettings />} />
-        </Route>
+          <Route path="/" element={<StudioHome />} />
+          <Route path="/studio/new" element={<NewKit />} />
+          <Route path="/studio/:kitId" element={<KitPage />} />
 
-        <Route
-          path="/m"
-          element={
-            <Protected mentor>
-              <Layout />
-            </Protected>
-          }
-        >
-          <Route index element={<MentorDashboard />} />
-          <Route path="groups" element={<MentorGroups />} />
-          <Route path="students" element={<MentorStudents />} />
-          <Route path="students/:studentId" element={<MentorStudents />} />
-          <Route path="reviews" element={<MentorReviews />} />
-          <Route path="reviews/:projectId" element={<ReviewDetail />} />
-          <Route path="projects" element={<MentorProjects />} />
-          <Route path="courses" element={<MentorCourses />} />
-          <Route path="competition" element={<MentorCompetition />} />
-          <Route path="competition/new" element={<EventBuilder />} />
-          <Route path="competition/:competitionId/edit" element={<EventBuilder />} />
-          <Route path="analytics" element={<MentorAnalytics />} />
-          <Route path="requests" element={<Requests />} />
-          <Route path="lessons" element={<MentorLessons />} />
-          <Route path="lessons/new" element={<LessonBuilder />} />
-          <Route path="lessons/:lessonId" element={<LessonSubmissions />} />
-          <Route path="lessons/:lessonId/edit" element={<LessonBuilder />} />
-          <Route path="settings" element={<MentorSettings />} />
-          <Route path="payouts" element={<Payouts />} />
+          <Route path="/bazaar" element={<Directory />} />
+          <Route path="/bazaar/:serviceId" element={<ServicePage />} />
+
+          <Route path="/contracts" element={<ContractList />} />
+          <Route path="/contracts/:contractId" element={<ContractDetail />} />
+
+          <Route path="/sell" element={<MyServices />} />
+          <Route path="/sell/new" element={<ServiceEditor />} />
+          <Route path="/sell/:serviceId/edit" element={<ServiceEditor />} />
+          <Route path="/sell/payouts" element={<Payouts />} />
+
+          <Route path="/settings" element={<Settings />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

@@ -1,8 +1,9 @@
 import { LOCALES, useLocale, t } from '../i18n'
 
-/** Three languages, three letters each — the switch never needs a dropdown. */
+/** Three letters per language — the switch never needs a dropdown. With one language, no switch. */
 export default function LocaleToggle({ compact }: { compact?: boolean }) {
   const { locale, setLocale } = useLocale()
+  if (LOCALES.length < 2) return null
 
   return (
     <div className="chrome inline-flex p-0.5" role="radiogroup" aria-label={t('language')}>

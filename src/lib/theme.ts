@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 
 export type ThemeChoice = 'light' | 'dark' | 'system'
 
-const KEY = 's7-theme'
+const KEY = 'brandyzer-theme'
 const media = () => window.matchMedia('(prefers-color-scheme: dark)')
 
 export const resolveTheme = (choice: ThemeChoice): 'light' | 'dark' => (choice === 'system' ? (media().matches ? 'dark' : 'light') : choice)
@@ -122,7 +122,7 @@ export const INDUSTRY_SKINS: SkinChoice[] = ['marketplace', 'academy', 'streak',
 
 export const SKINS: SkinChoice[] = [...HOUSE_SKINS, ...INDUSTRY_SKINS]
 
-const SKIN_KEY = 's7-skin'
+const SKIN_KEY = 'brandyzer-skin'
 
 export function readSkin(): SkinChoice {
   try {

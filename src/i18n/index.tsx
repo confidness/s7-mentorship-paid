@@ -3,25 +3,32 @@ import { UI } from './ui'
 
 export type Locale = 'kk' | 'ru' | 'en'
 
-export const LOCALES: { value: Locale; label: string; short: string }[] = [
-  { value: 'kk', label: 'Қазақша', short: 'ҚАЗ' },
-  { value: 'ru', label: 'Русский', short: 'РУС' },
-  { value: 'en', label: 'English', short: 'ENG' },
-]
+/**
+ * Only the languages the dictionary is complete in.
+ *
+ * Brandyzer's interface is written in English so far. The machinery for Kazakh and Russian
+ * is all still here — `t()`, the Kazakh date names, the switch in the menu — and turning one
+ * back on is a matter of writing its strings in ui.ts and adding it to this list. Offering a
+ * language before then would show a Russian date beside an English sentence, which reads as
+ * broken rather than as partly translated. The Studio still *writes copy* in all three.
+ */
+export const LOCALES: { value: Locale; label: string; short: string }[] = [{ value: 'en', label: 'English', short: 'ENG' }]
 
-const KEY = 's7-locale'
-const TAGS: Record<Locale, string> = { kk: 'kk-KZ', ru: 'ru-RU', en: 'en-GB' }
+const KEY = 'brandyzer-locale'
+const TAGS: Record<Locale, string> = { kk: 'kk-KZ', ru: 'ru-RU', en: 'en-US' }
+
+const available = (value: string | null | undefined): value is Locale => LOCALES.some((l) => l.value === value)
 
 export function detectLocale(): Locale {
   try {
     const saved = localStorage.getItem(KEY)
-    if (saved === 'kk' || saved === 'ru' || saved === 'en') return saved
+    if (available(saved)) return saved
   } catch {
     /* storage blocked — fall through to the browser language */
   }
-  const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : 'ru'
-  if (nav.startsWith('kk')) return 'kk'
-  if (nav.startsWith('ru') || nav.startsWith('uk') || nav.startsWith('be')) return 'ru'
+  const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : 'en'
+  if (nav.startsWith('kk') && available('kk')) return 'kk'
+  if ((nav.startsWith('ru') || nav.startsWith('uk') || nav.startsWith('be')) && available('ru')) return 'ru'
   return 'en'
 }
 
@@ -30,14 +37,17 @@ export function detectLocale(): Locale {
  * plain functions, class-free helpers, deeply nested components — without threading a hook
  * through every file. The provider owns the state and re-renders the tree when it changes.
  */
-let current: Locale = 'ru'
+let current: Locale = 'en'
 
 export const getLocale = () => current
 export const localeTag = () => TAGS[current]
 
-/** Translate. Unknown keys fall back to English, then to the key itself so gaps are visible. */
+/**
+ * Translate. Unknown keys fall back to English, then to the key itself so gaps are visible —
+ * and `scripts/check-i18n.mjs` fails the build on any literal key the dictionary lacks.
+ */
 export function t(key: string, vars?: Record<string, string | number>): string {
-  const entry = UI[key]
+  const entry = Object.prototype.hasOwnProperty.call(UI, key) ? UI[key] : undefined
   let text = entry ? (entry[current] ?? entry.en) : key
   if (vars) for (const [name, value] of Object.entries(vars)) text = text.replaceAll(`{${name}}`, String(value))
   return text
@@ -77,7 +87,7 @@ interface Ctx {
   setLocale: (locale: Locale) => void
 }
 
-const LocaleCtx = createContext<Ctx>({ locale: 'ru', setLocale: () => {} })
+const LocaleCtx = createContext<Ctx>({ locale: 'en', setLocale: () => {} })
 
 export const useLocale = () => useContext(LocaleCtx)
 
