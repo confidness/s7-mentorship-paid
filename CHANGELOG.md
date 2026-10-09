@@ -94,6 +94,10 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Fixed
 
+- A new lesson could not be published. The builder saved it, then published it by the id the
+  page had made up rather than the one the server minted, and the server answered "No such
+  lesson." Each retry saved another identical draft. Publishing now uses the saved id, and a
+  refused publish leaves the builder on the saved lesson so a retry updates it.
 - Accounts created before the migrations ran had a login but no profile, because the trigger
   that makes one only sees sign-ups after it exists. Sign-in worked, so it went unnoticed, while
   every write tied to the profile — progress, projects, hand-ins, notifications, the AI allowance —

@@ -145,7 +145,12 @@ interface Ctx {
    * publishing a priced lesson needs an approved application and a payout account, and the
    * caller has to be able to show that refusal instead of a success toast.
    */
-  saveCustomLesson: (lesson: CustomLesson) => Promise<void>
+  /**
+   * Saves a lesson and resolves to the id it has now. A new lesson arrives with an id this browser
+   * made up; the server mints the real one, and anything done to the lesson next — publishing it —
+   * has to use that.
+   */
+  saveCustomLesson: (lesson: CustomLesson) => Promise<string>
   deleteCustomLesson: (lessonId: string) => Promise<void>
   setLessonPublished: (lessonId: string, published: boolean) => Promise<void>
   /**
@@ -774,7 +779,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Server first, then state. The other order would leave the interface claiming a lesson
       // was published after the server refused, which is the failure a mentor would act on.
       saveCustomLesson: async (lesson) => {
-        if (!backendConfigured) return void setState((s) => logic.saveCustomLesson(s, lesson))
+        if (!backendConfigured) {
+          setState((s) => logic.saveCustomLesson(s, lesson))
+          return lesson.id
+        }
         const { id } = await api.saveLesson({
           // A local id is not a uuid, so an unsaved lesson asks the server to mint one.
           id: lesson.id.startsWith('cl-') ? undefined : lesson.id,
@@ -789,6 +797,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           tasks: lesson.tasks,
         })
         setState((s) => logic.saveCustomLesson(s, { ...lesson, id }))
+        return id
       },
       deleteCustomLesson: async (lessonId) => {
         if (backendConfigured) await api.deleteLesson(lessonId)

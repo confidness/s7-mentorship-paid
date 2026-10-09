@@ -145,14 +145,22 @@ export default function LessonBuilder() {
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
+    let savedId: string | undefined
     try {
       setSaving(true)
-      await saveCustomLesson(lesson)
-      if (publish) await setLessonPublished(lesson.id, true)
+      savedId = await saveCustomLesson(lesson)
+      // Published by the id the save came back with. A new lesson's id was made up on this page
+      // and the server minted another; publishing by the made-up one asked for a lesson that did
+      // not exist, so every new lesson failed to publish with "No such lesson."
+      if (publish) await setLessonPublished(savedId, true)
     } catch (error) {
       // A refusal here is usually the server saying this mentor may not sell yet, and it is
       // the one thing they need to read. Navigating away with a success toast hid it.
       toast({ title: t('could_not_save_the_lesson'), body: error instanceof Error ? error.message : '', tone: 'error' })
+      // Saved but not published: carry on from the saved lesson, so pressing the button again
+      // updates it instead of saving another copy of it. Before this, each retry left one more
+      // identical draft behind.
+      if (savedId && !existing) navigate(`/m/lessons/${savedId}/edit`, { replace: true })
       return
     } finally {
       setSaving(false)
