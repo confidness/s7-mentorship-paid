@@ -46,7 +46,8 @@ is for a deployment that takes real accounts and real payments.
      than inside a workspace. Anthropic refuses such a key with a 400 until a workspace is
      named; **Send a test question** in Settings says so in as many words when it happens.
 4. Create the database. Apply every file in `supabase/migrations/` against the project, in
-   numeric order, starting at `0001_monetization.sql`. The later files change the policies the
+   numeric order, starting at `0001_monetization.sql` — most simply as one script:
+   `npm run db:bundle > all-migrations.sql`, pasted into Supabase → SQL Editor and run. The later files change the policies the
    earlier ones created, so a deployment built from `0001` alone is not the one the code is
    written against. See the [migrations runbook](runbooks/supabase-migrations.md) for how, and
    for what each file does.
@@ -110,6 +111,26 @@ value, and it shouts first if the service-role key is anywhere the browser would
 Both settings of Supabase's email confirmation work. With it off, registering signs the person
 in. With it on, registering succeeds, the person is told to confirm their email and then sign
 in, and the interface does not pretend they are signed in before they are.
+
+With it on, two settings decide whether the email works at all. Supabase → Authentication → URL
+Configuration:
+
+- **Site URL**: the production address, e.g. `https://s7-mentorship-paid.vercel.app`. A new
+  project sets it to `http://localhost:3000`, and any link Supabase cannot otherwise place goes
+  there — to a page that does not exist.
+- **Redirect URLs**: add `https://<your-domain>/**` (and a preview pattern such as
+  `https://*-<your-team>.vercel.app/**` if you test on previews). Sign-up asks for the link to
+  return to `/login` on the site it was made on; Supabase only honours that if the address is
+  listed here, and otherwise falls back to the Site URL.
+
+Supabase's built-in mail sender is for testing: it sends a handful of emails an hour and they
+often land in spam. For real users, set your own SMTP under Authentication → Emails, or turn
+confirmation off.
+
+When sign-in fails the page says why: an unconfirmed email (with a button that sends the link
+again), a wrong email or password, too many attempts, or a server it cannot reach. A sign-up for
+an email that already has an account says so and moves to the sign-in tab, instead of asking for
+a confirmation Supabase never sends.
 
 ## Which functions run where
 

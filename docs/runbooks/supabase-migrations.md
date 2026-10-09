@@ -20,9 +20,22 @@ two branches both add `0013`, whichever merges second renumbers.
 
 ## Applying
 
-Paste each file into the Supabase SQL editor and run it, in order. Or run it with `psql`
-against the project's database connection string. Both do the same thing; the repository has no
-Supabase CLI configuration.
+All at once, which is the way to do it:
+
+```
+npm run db:bundle > all-migrations.sql
+```
+
+Paste `all-migrations.sql` into Supabase → SQL Editor and press Run. It is every file in numeric
+order inside one transaction, so a failure part-way changes nothing, and it ends with a query
+whose rows should all read `true`. It is safe on a database that already has some or all of
+them. The bundle has been run twice over against Postgres 16 with stand-ins for Supabase's
+`auth` and `storage` schemas: every check true both times, a sign-up creating its profile, and
+the AI allowance refusing the call past its limit.
+
+Or one at a time: paste each file into the SQL editor and run it, in order, or run it with
+`psql` against the project's connection string. The repository has no Supabase CLI
+configuration.
 
 The files are written to be run again. They use `create table if not exists`, and they drop a
 policy before creating it, because `create policy` has no `if not exists` and a file that

@@ -11,6 +11,7 @@ import type { Competition, CompetitionTask, CustomLesson, Group, TaskAnswer, Tea
 import { profileOf, resolveVars } from './selectors'
 import type { Standing } from './types'
 import { backendConfigured, supabase } from './supabase'
+import { SIGN_IN_MESSAGE, signInProblem, signUpExisting } from './authErrors'
 import * as api from './api'
 import type { LessonSubmission } from './types'
 import { mergeSubmissions, type ReviewDecision } from './submissions'
@@ -102,8 +103,12 @@ interface Ctx {
   state: AppState
   user: User | null
   profile: ReturnType<typeof profileOf>
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; user?: User }>
-  register: (input: { name: string; email: string; password: string; role: User['role'] }) => Promise<{ ok: boolean; error?: string; user?: User }>
+  /** `unconfirmed`: the account exists but its email has not been confirmed — offer to resend. */
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; user?: User; unconfirmed?: boolean }>
+  /** `exists`: that email already has an account — send the person to sign in instead. */
+  register: (input: { name: string; email: string; password: string; role: User['role'] }) => Promise<{ ok: boolean; error?: string; user?: User; exists?: boolean }>
+  /** Sends the confirmation email again, back to this site. */
+  resendConfirmation: (email: string) => Promise<{ ok: boolean; error?: string }>
   logout: () => void
   /** What the server says this person may do. Re-read after sign-in and after a purchase. */
   standing: Standing
@@ -602,7 +607,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         const { data, error } = await supabase().auth.signInWithPassword({ email: address, password })
-        if (error || !data.user) return { ok: false, error: translate('incorrect_password_try_again') }
+        if (error || !data.user) {
+          // Said as what it is — see authErrors.ts. An unconfirmed email is the usual one, and
+          // calling it a wrong password is how a working account came to look forgotten.
+          const problem = signInProblem(error)
+          return { ok: false, error: translate(SIGN_IN_MESSAGE[problem], { email: address }), unconfirmed: problem === 'unconfirmed' }
+        }
 
         /**
          * The role comes from the profiles row, not from user_metadata.
@@ -654,9 +664,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase().auth.signUp({
           email: input.email.trim().toLowerCase(),
           password: input.password,
-          options: { data: { name: input.name.trim(), role: 'student' } },
+          // The confirmation link returns here, to the site the person signed up on. Without it
+          // Supabase uses the project's Site URL, which a new project sets to localhost:3000 —
+          // the link opens nothing, the account stays unconfirmed, and sign-in refuses it.
+          options: { data: { name: input.name.trim(), role: 'student' }, emailRedirectTo: `${window.location.origin}/login` },
         })
-        if (error || !data.user) return { ok: false, error: error?.message ?? translate('something_went_wrong_try_again') }
+        if (signUpExisting(error, data.user?.identities)) return { ok: false, error: translate('account_exists_sign_in'), exists: true }
+        if (error || !data.user) {
+          const problem = signInProblem(error)
+          return { ok: false, error: problem === 'unknown' ? (error?.message ?? translate('something_went_wrong_try_again')) : translate(SIGN_IN_MESSAGE[problem], { email: input.email.trim() }) }
+        }
 
         // Supabase only issues a session at signup when email confirmation is turned off. With it
         // on, signUp succeeds and returns a user with no token. Carrying on here would mark the
@@ -664,8 +681,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // site rather than as an unread email.
         if (!data.session) return { ok: false, error: translate('confirm_email_then_sign_in') }
 
-        // Everyone starts as a student regardless of what was asked for; teaching is applied
-        // for and reviewed. The role in input is not honoured here on purpose.
+        // Everyone starts as a student regardless of what was asked for; teaching is switched
+        // on afterwards in Settings. The role in input is not honoured here on purpose.
         const result = logic.registerUser(state, { ...input, role: 'student' })
         if (!result.user) return { ok: false, error: result.error && translate(result.error) }
         const authId = data.user.id
@@ -673,6 +690,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const adopted = logic.adoptAccountId(result.state, result.user.id, authId)
         setState({ ...adopted, users: adopted.users.map((u) => (u.id === authId ? mirrored : u)), sessionUserId: authId })
         return { ok: true, user: mirrored }
+      },
+
+      async resendConfirmation(email) {
+        if (!backendConfigured) return { ok: false }
+        const { error } = await supabase().auth.resend({
+          type: 'signup',
+          email: email.trim().toLowerCase(),
+          options: { emailRedirectTo: `${window.location.origin}/login` },
+        })
+        if (error) return { ok: false, error: translate(SIGN_IN_MESSAGE[signInProblem(error)], { email }) }
+        return { ok: true }
       },
 
       logout: () => {

@@ -923,6 +923,39 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   sign_in: { en: 'Sign in', ru: 'Войти', kk: 'Кіру' },
   sign_out: { en: 'Sign out', ru: 'Выйти', kk: 'Шығу' },
+  /* --- sign-in failures, said as what they are ------------------------------------------ */
+  wrong_email_or_password: { en: 'Wrong email or password.', ru: 'Неверная почта или пароль.', kk: 'Пошта немесе құпия сөз қате.' },
+  confirm_your_email_first: {
+    en: 'Confirm your email first: open the link we sent to {email}.',
+    ru: 'Сначала подтверди почту: открой ссылку из письма на {email}.',
+    kk: 'Алдымен поштаңды раста: {email} адресіне жіберілген сілтемені аш.',
+  },
+  resend_confirmation_email: { en: 'Send the link again', ru: 'Отправить ссылку ещё раз', kk: 'Сілтемені қайта жіберу' },
+  confirmation_email_sent: {
+    en: 'Sent. Check your inbox, and the spam folder.',
+    ru: 'Отправлено. Проверь входящие и папку «Спам».',
+    kk: 'Жіберілді. Кіріс жәшігін және «Спам» қалтасын тексер.',
+  },
+  could_not_reach_the_server: {
+    en: 'Could not reach the server. Check your connection and try again.',
+    ru: 'Не удалось связаться с сервером. Проверь подключение и попробуй ещё раз.',
+    kk: 'Серверге қосылу мүмкін болмады. Байланысты тексеріп, қайта көр.',
+  },
+  too_many_attempts_wait: {
+    en: 'Too many attempts. Wait a minute and try again.',
+    ru: 'Слишком много попыток. Подожди минуту и попробуй снова.',
+    kk: 'Әрекет тым көп. Бір минут күтіп, қайта көр.',
+  },
+  account_exists_sign_in: {
+    en: 'An account with this email already exists. Sign in instead.',
+    ru: 'Аккаунт с этой почтой уже есть. Войди в него.',
+    kk: 'Бұл поштамен аккаунт бар. Соған кір.',
+  },
+  your_account_is_saved_on_the_server: {
+    en: 'Your account is saved on the server, so it works on any device.',
+    ru: 'Аккаунт хранится на сервере, поэтому работает на любом устройстве.',
+    kk: 'Аккаунт серверде сақталады, сондықтан кез келген құрылғыда жұмыс істейді.',
+  },
   confirm_email_then_sign_in: { en: 'Account created. Confirm the link in your email, then sign in.', ru: 'Аккаунт создан. Подтверди ссылку в письме и войди.', kk: 'Аккаунт құрылды. Поштадағы сілтемені растап, кір.' },
   something_went_wrong_try_again: { en: 'Something went wrong. Try again.', ru: 'Что-то пошло не так. Попробуй ещё раз.', kk: 'Бірдеңе дұрыс болмады. Қайта көр.' },
   sort_projects: { en: 'Sort projects', ru: 'Сортировка проектов', kk: 'Жобаларды сұрыптау' },

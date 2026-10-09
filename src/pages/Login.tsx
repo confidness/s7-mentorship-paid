@@ -6,22 +6,42 @@ import { Button, Field, inputClass } from '../components/ui'
 import { Logo } from '../components/Layout'
 import LocaleToggle from '../components/LocaleToggle'
 import { t } from '../i18n'
+import { backendConfigured } from '../lib/supabase'
 import { Mark } from '../components/Mark'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
 import AtelierSceneGate from '../components/AtelierSceneGate'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
-  const { login, register, state } = useApp()
+  const { login, register, resendConfirmation, state } = useApp()
   const toast = useToast()
   const navigate = useNavigate()
 
-  const firstRun = state.users.length === 0
+  /**
+   * Nobody has signed up — but only a browser-only build can know that.
+   *
+   * With a server, accounts live in Supabase, and this browser's copy is empty on any new device,
+   * in a private window, or after its data was cleared. Counting it here greeted a returning
+   * person with "Create the first account — nobody has signed up yet" and the register tab, which
+   * reads exactly like the site having forgotten them.
+   */
+  const firstRun = !backendConfigured && state.users.length === 0
   const [mode, setMode] = useState<'login' | 'register'>(startOnRegister || firstRun ? 'register' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
+  // Set when sign-in failed on an unconfirmed email: the one failure a button can fix.
+  const [unconfirmed, setUnconfirmed] = useState(false)
+  const [resent, setResent] = useState<'idle' | 'sending' | 'sent'>('idle')
+
+  async function resend() {
+    setResent('sending')
+    const result = await resendConfirmation(email)
+    if (result.ok) return setResent('sent')
+    setResent('idle')
+    setErrors({ form: result.error ?? t('something_went_wrong_try_again') })
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -36,13 +56,17 @@ export default function Login({ register: startOnRegister }: { register?: boolea
 
     setBusy(true)
 
-    // Everyone registers as a student. Teaching is applied for afterwards and reviewed by a
-    // person — see /mentor/apply. There is no longer a shared secret that turns the role on.
+    // Everyone registers as a student; teaching is switched on afterwards in Settings.
+    setUnconfirmed(false)
+    setResent('idle')
     const result = await (mode === 'login' ? login(email, password) : register({ name, email, password, role: 'student' }))
     setBusy(false)
 
     if (!result.ok || !result.user) {
       setErrors({ form: result.error ?? t('something_went_wrong_try_again') })
+      if ('unconfirmed' in result && result.unconfirmed) setUnconfirmed(true)
+      // Already registered: the account is there, so the useful next step is the other tab.
+      if ('exists' in result && result.exists) setMode('login')
       return
     }
 
@@ -194,9 +218,14 @@ export default function Login({ register: startOnRegister }: { register?: boolea
             )}
 
             {errors.form && (
-              <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
-                {errors.form}
-              </p>
+              <div role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
+                <p>{errors.form}</p>
+                {unconfirmed && (
+                  <button type="button" onClick={resend} disabled={resent !== 'idle'} className="mt-2 font-semibold underline underline-offset-2 disabled:no-underline disabled:opacity-80">
+                    {resent === 'sent' ? t('confirmation_email_sent') : t('resend_confirmation_email')}
+                  </button>
+                )}
+              </div>
             )}
 
             <Button type="submit" size="lg" loading={busy} iconRight={ArrowRight} className="w-full">
@@ -206,7 +235,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
 
           <p className="relative mt-6 flex items-center justify-center gap-1.5 text-xs text-ink-500">
             <ShieldCheck size={13} aria-hidden="true" />
-            {t('your_account_and_progress_stay_in_this_browser')}
+            {t(backendConfigured ? 'your_account_is_saved_on_the_server' : 'your_account_and_progress_stay_in_this_browser')}
           </p>
         </div>
         </div>

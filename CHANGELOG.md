@@ -12,6 +12,8 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Added
 
+- `npm run db:bundle`: every migration as one script for the Supabase SQL Editor, in a single
+  transaction, ending with a query that checks each piece landed.
 - A background behind every page, in three looks written for WebGL2 by hand: silk (the
   default), a floating sculpture, and liquid glass, each one shader painted in the skin's own
   colours. Auto picks one per skin — atelier gets the sculpture, streak the glass, editorial,
@@ -91,6 +93,17 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Fixed
 
+- With a server configured, a new browser, a private window or cleared site data opened the
+  sign-in page on "Create the first account — nobody has signed up yet", because it counted the
+  accounts saved in that browser rather than on the server. A returning person read it as the
+  site having forgotten them. That greeting is now for browser-only builds, and with a server
+  the page opens on Sign in and says the account is saved on the server.
+- Every sign-in failure read "Incorrect password". It now says what happened: an unconfirmed
+  email (with a button to send the link again), a wrong email or password, too many attempts, or
+  no answer from the server. Signing up with an email that already has an account says so,
+  instead of promising a confirmation email Supabase never sends.
+- Confirmation links return to the site the person signed up on, not to the Supabase project's
+  Site URL, which a new project sets to localhost.
 - A tab opened before a deploy crashed the first time it opened a screen it had not loaded yet
   ("Failed to fetch dynamically imported module"): the file it asked for had been replaced. The
   app now reloads itself once to fetch the new version, and if that does not help, the crash
