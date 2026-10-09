@@ -6,6 +6,7 @@ import { AnimatedGroup, AnimatedItem } from '../components/motion'
 import { Mark } from '../components/Mark'
 import LocaleToggle from '../components/LocaleToggle'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
+import { OrbitStage } from '../components/OrbitSceneGate'
 import { DEFAULT_PLATFORM_FEE_BPS } from '../lib/money'
 import { t, useLocale } from '../i18n'
 
@@ -124,6 +125,8 @@ export default function Landing() {
               </Link>
             </div>
           </div>
+          {/* Under the orbit skin, upright, the 3D mark stands here rather than behind the words. */}
+          <OrbitStage />
         </section>
 
         <Section id="landing-how" title={t('landing_how_title')} lede={t('landing_how_lede')}>

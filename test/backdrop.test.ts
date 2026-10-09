@@ -11,6 +11,7 @@
 
 import { contrast, ladderStart, ladderStep, LADDER_WARMUP, LADDER_WINDOW, luminance, mixCalm, mixPalette, normaliseCalm, paletteFrom, parseColor, type Ladder, type RGB } from '../src/components/backdrop/core.ts'
 import { AUTO, BACKDROP_CHOICES, drawsHere, isBackdropChoice, resolveBackdrop } from '../src/components/backdrop/looks.ts'
+import { sectionIndex, vantage } from '../src/components/nav.ts'
 
 declare const process: { exitCode?: number }
 
@@ -179,6 +180,31 @@ check('nor is the orbit world: it comes with its skin', !isBackdropChoice('orbit
 check('nor is garbage', !isBackdropChoice('sparkles') && !isBackdropChoice(null) && !isBackdropChoice(undefined))
 check('every listed choice is one', BACKDROP_CHOICES.every(isBackdropChoice))
 eq('Auto is the first choice, and the default', BACKDROP_CHOICES[0], 'auto')
+
+/* ------------------------------------------------------------------ the orbit camera */
+
+console.log('where the orbit camera stands')
+
+{
+  eq('sign-in is the hero vantage', vantage('/login').mode, 'hero')
+  eq('so is registration', vantage('/register').mode, 'hero')
+  eq('the front door has a vantage of its own', vantage('/welcome').mode, 'front')
+  eq('the catalogue is the first station', vantage('/').station, 0)
+  eq('inside the app the camera is at a station', vantage('/').mode, 'app')
+  eq('Learning is the second', vantage('/learning').station, 1)
+  eq('a page a section covers takes its station: the badges are Learning', vantage('/achievements').station, 1)
+  eq('and the gallery is Work', vantage('/gallery').station, 2)
+  eq('settings are the account', vantage('/settings').station, 4)
+  eq('one lesson is reached from Learning', vantage('/learn/c1/l1').station, 1)
+  eq('one course is reached from the catalogue', vantage('/courses/c1').station, 0)
+  eq('a path that only starts like a lesson is not one', vantage('/learnings').station, 0)
+  eq('a missing address is in no section', sectionIndex('/no/such/page'), -1)
+  eq('and the camera still has somewhere to go', vantage('/no/such/page').station, 0)
+  eq('a mentor page takes its own section', vantage('/m/reviews').station, 2)
+  eq('an unknown mentor page goes to the overview', vantage('/m/nonsense').station, 0)
+  const paths = ['/', '/welcome', '/login', '/learning', '/projects', '/ai', '/profile', '/m', '/m/students/x', '/x', '']
+  check('every vantage is one of the five stations', paths.every((p) => Number.isInteger(vantage(p).station) && vantage(p).station >= 0 && vantage(p).station < 5))
+}
 
 /* ------------------------------------------------------------------ calm zone */
 

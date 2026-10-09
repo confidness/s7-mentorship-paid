@@ -1,4 +1,5 @@
 import { BookOpen, ClipboardCheck, Compass, FilePlus2, FolderKanban, GraduationCap, LayoutDashboard, Settings, User as UserIcon, Users, type LucideIcon } from 'lucide-react'
+import type { SceneMode } from './OrbitScene'
 
 /**
  * The five sections, shared by the menu bar and the 3D scene.
@@ -63,3 +64,20 @@ export function isNavActive(item: NavItem, pathname: string) {
 
 /** Which of the five sections this page belongs to, or -1 for a page that sits in none. */
 export const sectionIndex = (pathname: string) => navFor(pathname).findIndex((item) => isNavActive(item, pathname))
+
+/**
+ * Where the orbit world's camera stands for a page.
+ *
+ * Sign-in and registration are `hero`: a headline and a form, with the mark beside the form.
+ * The public front door is `front`: the mark beside a headline that runs most of the way
+ * across, with more text below it. Every page inside the app takes its section's station. A
+ * page outside the five — one course, one lesson, a missing address — takes the station of the
+ * section it is reached from, and the catalogue's when there is none, so the camera always
+ * has somewhere to go.
+ */
+export function vantage(pathname: string): { mode: SceneMode; station: number } {
+  if (pathname === '/login' || pathname === '/register') return { mode: 'hero', station: 0 }
+  if (pathname === '/welcome') return { mode: 'front', station: 0 }
+  const found = sectionIndex(pathname)
+  return { mode: 'app', station: found >= 0 ? found : under(pathname, '/learn') ? 1 : 0 }
+}

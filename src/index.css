@@ -2055,6 +2055,18 @@
     border-radius: 999px;
   }
 
+  /* The front door's stage for the world's mark: upright screens only, where the camera puts
+     the mark below the buttons. Rendered only while the world is drawn (OrbitStage). */
+  .orbit-stage {
+    display: none;
+  }
+  @media (orientation: portrait) {
+    .orbit-stage {
+      display: block;
+      height: clamp(14rem, 40svh, 24rem);
+    }
+  }
+
   /* A slow ring of light behind the mark. */
   [data-skin='orbit'] .brand-mark::before {
     content: '';

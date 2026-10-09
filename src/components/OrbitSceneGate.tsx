@@ -2,8 +2,8 @@ import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from '
 import { useLocation } from 'react-router-dom'
 import { useAppliedTheme, usePrefersReducedMotion } from '../lib/theme'
 import { useAppliedBackdrop } from '../lib/backdrop'
-import { sectionIndex } from './nav'
-import type { OrbitSceneProps } from './OrbitScene'
+import { vantage } from './nav'
+import type { OrbitSceneProps, SceneMode, StageBox } from './OrbitScene'
 
 /**
  * The light half of the orbit scene: decides whether it runs, and with what.
@@ -85,13 +85,55 @@ function useAfterFirstPaint() {
 }
 
 /**
+ * Where the page has left room for the mark, if it has: `OrbitStage`'s box, in page pixels.
+ *
+ * Read on navigation, on resize and when the fonts arrive — words set in a fallback face end
+ * somewhere else — and never per frame. The scene does the rest, from the scroll position.
+ */
+function useStage(active: boolean, pathname: string): StageBox | null {
+  const [stage, setStage] = useState<StageBox | null>(null)
+
+  useEffect(() => {
+    if (!active) return
+    let frame = 0
+    let live = true
+    const measure = () => {
+      frame = 0
+      const rect = document.querySelector('[data-orbit-stage]')?.getBoundingClientRect()
+      const next = rect && rect.height > 0 ? { top: Math.round(rect.top + window.scrollY), height: Math.round(rect.height) } : null
+      setStage((was) => (was?.top === next?.top && was?.height === next?.height ? was : next))
+    }
+    const schedule = () => {
+      if (live && !frame) frame = requestAnimationFrame(measure)
+    }
+    const observer = new ResizeObserver(schedule)
+    observer.observe(document.body)
+    window.addEventListener('resize', schedule)
+    void document.fonts?.ready.then(schedule)
+    schedule()
+    return () => {
+      live = false
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      window.removeEventListener('resize', schedule)
+    }
+  }, [active, pathname])
+
+  return active ? stage : null
+}
+
+/**
  * How much canvas colour sits over the scene.
  *
- * None on sign-in, which carries a headline and a form and nothing else. Inside the app the
- * page headings sit straight on the scene with no glass under them, and this is what keeps
- * their contrast measured rather than lucky.
+ * None on sign-in, which carries a headline and a form and nothing else. Inside the app — and
+ * on the front door, whose section headings and ledes sit straight on the scene below the
+ * hero — this is what keeps their contrast measured rather than lucky.
  */
-const VEIL = { hero: { light: 0, dark: 0 }, app: { light: 0.36, dark: 0.26 } } as const
+const VEIL: Record<SceneMode, { light: number; dark: number }> = {
+  hero: { light: 0, dark: 0 },
+  front: { light: 0.3, dark: 0.2 },
+  app: { light: 0.36, dark: 0.26 },
+}
 
 export default function OrbitSceneGate() {
   const look = useAppliedBackdrop()
@@ -99,6 +141,8 @@ export default function OrbitSceneGate() {
   const reduced = usePrefersReducedMotion()
   const { pathname } = useLocation()
   const painted = useAfterFirstPaint()
+  const { mode, station } = vantage(pathname)
+  const stage = useStage(look === 'orbit' && mode === 'front', pathname)
   const [hidden, setHidden] = useState(false)
   // Phones and small machines get fewer particles and a cheaper sky. Read once: this is a
   // property of the device, not of the moment.
@@ -113,13 +157,22 @@ export default function OrbitSceneGate() {
 
   if (look !== 'orbit' || !painted || !hasWebGL()) return null
 
-  const mode = pathname === '/login' || pathname === '/register' ? 'hero' : 'app'
-  // A page outside the five sections — one course, one lesson — takes the vantage of the
-  // section it is reached from.
-  const found = sectionIndex(pathname)
-  const station = found >= 0 ? found : pathname.startsWith('/learn/') ? 1 : 0
+  return <Layer theme={theme} mode={mode} station={station} still={reduced || hidden} lowPower={lowPower} reduced={reduced} stage={stage} />
+}
 
-  return <Layer theme={theme} mode={mode} station={station} still={reduced || hidden} lowPower={lowPower} reduced={reduced} />
+/**
+ * Room for the world's mark on a page that would otherwise put words over it.
+ *
+ * On a portrait screen the front door's text runs the full width, so the camera stands the mark
+ * below the buttons; this is the empty space it stands in, measured by `useStage` and aimed at
+ * by the scene. It is there only while the world is actually drawn — under a background chosen
+ * in settings, or without WebGL, it would be a hole in the page — and only in portrait, which
+ * is when the camera takes that pose (index.css).
+ */
+export function OrbitStage() {
+  const look = useAppliedBackdrop()
+  if (look !== 'orbit' || !hasWebGL()) return null
+  return <div aria-hidden="true" data-orbit-stage className="orbit-stage" />
 }
 
 /**

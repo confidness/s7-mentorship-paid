@@ -24,7 +24,8 @@ import { galaxy, glowTexture, motes, SCurve, stars, type Cloud, type Palette } f
  * a bloom pass — this sits behind every page, under frosted glass, and has to stay cheap.
  */
 
-export type SceneMode = 'hero' | 'app'
+/** Sign-in, the public front door, or a page inside the app. */
+export type SceneMode = 'hero' | 'front' | 'app'
 
 export interface OrbitSceneProps {
   theme: 'light' | 'dark'
@@ -36,6 +37,14 @@ export interface OrbitSceneProps {
   lowPower: boolean
   /** Called once the first frame is on screen, so the gate can fade the world in rather than pop it. */
   onReady?: () => void
+  /** Where a page has left room for the mark, in page pixels; the front door's, when upright. */
+  stage?: StageBox | null
+}
+
+/** A band of the page, measured from the top of the document, that the mark should stand in. */
+export interface StageBox {
+  top: number
+  height: number
 }
 
 /** Brand blue #1560ec at the centre of both, with violet and cyan either side of it. */
@@ -82,6 +91,19 @@ interface Pose {
 /** Sign-in: the mark sits right of centre, beside the form rather than behind the headline. */
 const HERO: Pose = { pos: [-1.9, 0.5, 9.2], look: [-1.9, 0.1, 0] }
 const HERO_NARROW: Pose = { pos: [0, 0.4, 10], look: [0, 0.2, 0] }
+
+/**
+ * The front door, wide: the mark stands to the right of the headline, which runs a little over
+ * half way across. Upright, the words take the whole width and no fixed pose clears them — the
+ * hero is a line taller in Kazakh, and a small phone ends it lower down — so there the camera is
+ * aimed at the stage the page leaves under its buttons (`OrbitStage`), measured. Without one it
+ * falls back to the sign-in framing.
+ */
+const FRONT: Pose = { pos: [-4.3, -0.4, 13], look: [-4.3, -0.75, 0] }
+
+/** The mark's size in world units, glow left out: two arcs of radius 1 drawn as a 0.2 tube. */
+const MARK_W = 4.6
+const MARK_H = 2.4
 
 /** One vantage per section, in menu order. */
 const STATIONS: Pose[] = [
@@ -281,13 +303,14 @@ function Orbits({ palette, shared, blending, glow }: { palette: Palette; shared:
 
 /* ------------------------------------------------------------------ direction */
 
-function Director({ mode, station, still, shared, emblem }: { mode: SceneMode; station: number; still: boolean; shared: Shared; emblem: MutableRefObject<THREE.Group | null> }) {
+function Director({ mode, station, still, stage, shared, emblem }: { mode: SceneMode; station: number; still: boolean; stage: StageBox | null; shared: Shared; emblem: MutableRefObject<THREE.Group | null> }) {
   const invalidate = useThree((s) => s.invalidate)
   const gl = useThree((s) => s.gl)
   const input = useRef({ x: 0, y: 0, sx: 0, sy: 0, scroll: 0 })
   const look = useRef(new THREE.Vector3(0, 0.6, 0))
   const goalPos = useMemo(() => new THREE.Vector3(), [])
   const goalLook = useMemo(() => new THREE.Vector3(), [])
+  const aim = useMemo(() => new THREE.Vector3(), [])
 
   useEffect(() => {
     // Window listeners, not canvas events: the canvas is behind the page and takes no input.
@@ -309,7 +332,7 @@ function Director({ mode, station, still, shared, emblem }: { mode: SceneMode; s
   }, [invalidate])
 
   // A still scene renders on demand, so a change of section has to ask for its frame.
-  useEffect(() => void invalidate(), [mode, station, still, invalidate])
+  useEffect(() => void invalidate(), [mode, station, still, stage, invalidate])
 
   useFrame(({ camera, size }, delta) => {
     const dt = Math.min(delta, 1 / 20)
@@ -320,27 +343,52 @@ function Director({ mode, station, still, shared, emblem }: { mode: SceneMode; s
     shared.uPixelRatio.value = gl.getPixelRatio()
 
     const narrow = size.width < size.height
-    const pose = mode === 'hero' ? (narrow ? HERO_NARROW : HERO) : (STATIONS[station] ?? STATIONS[0])
-    goalLook.fromArray(pose.look)
-    goalPos.fromArray(pose.pos)
-    // A phone held upright sees a narrow slice; step back so the orbits still fit.
-    if (narrow) goalPos.sub(goalLook).multiplyScalar(1.5).add(goalLook)
+    const staged = mode === 'front' && narrow && stage ? stage : null
+    // How far a pixel of the page reaches at the mark's distance, filled in when staged.
+    let tilt = 0
 
-    inp.sx += ((still ? 0 : inp.x) - inp.sx) * ease(3)
-    inp.sy += ((still ? 0 : inp.y) - inp.sy) * ease(3)
-    goalPos.x += inp.sx * 0.7
-    goalPos.y += inp.sy * 0.45
+    inp.sx += ((still || staged ? 0 : inp.x) - inp.sx) * ease(3)
+    inp.sy += ((still || staged ? 0 : inp.y) - inp.sy) * ease(3)
 
-    // Scrolling a long page tilts the view down towards the floor.
-    const s = Math.min(inp.scroll / 1400, 1)
-    goalPos.y -= s * 1.4
-    goalLook.y -= s * 2
+    if (staged) {
+      // Back off until the mark fits the stage's height and most of the screen's width, then
+      // rise or drop, looking level, until the centre of the S is the centre of the stage as
+      // the page first opens.
+      const half = Math.tan(THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov / 2))
+      const fitHeight = (MARK_H * size.height) / (0.6 * staged.height * 2 * half)
+      const fitWidth = (MARK_W * size.height) / (0.82 * size.width * 2 * half)
+      const distance = Math.max(fitHeight, fitWidth, 8)
+      const centre = 1 - (2 * (staged.top + staged.height / 2)) / size.height
+      const y = -centre * distance * half
+      goalPos.set(0, y, distance)
+      goalLook.set(0, y, 0)
+      tilt = (2 * distance * half) / size.height
+    } else {
+      // Upright with no stage measured, the front door takes the sign-in framing.
+      const pose = mode === 'app' ? (STATIONS[station] ?? STATIONS[0]) : narrow ? HERO_NARROW : mode === 'front' ? FRONT : HERO
+      goalLook.fromArray(pose.look)
+      goalPos.fromArray(pose.pos)
+      // A phone held upright sees a narrow slice; step back so the orbits still fit.
+      if (narrow) goalPos.sub(goalLook).multiplyScalar(1.5).add(goalLook)
+
+      goalPos.x += inp.sx * 0.7
+      goalPos.y += inp.sy * 0.45
+
+      // Scrolling a long page tilts the view down towards the floor.
+      const s = Math.min(inp.scroll / 1400, 1)
+      goalPos.y -= s * 1.4
+      goalLook.y -= s * 2
+    }
 
     camera.position.lerp(goalPos, ease(1.7))
     look.current.lerp(goalLook, ease(1.7))
-    camera.lookAt(look.current)
+    aim.copy(look.current)
+    // Staged, the view tilts down with the scroll pixel for pixel, unlerped, so the mark moves
+    // with its stage like part of the page; past the stage's foot it stops, the mark gone above.
+    if (staged) aim.y -= Math.min(inp.scroll, staged.top + staged.height) * tilt
+    camera.lookAt(aim)
 
-    shared.uIntensity.value += ((mode === 'hero' ? 1 : 0.6) - shared.uIntensity.value) * ease(1.2)
+    shared.uIntensity.value += ((mode === 'app' ? 0.6 : 1) - shared.uIntensity.value) * ease(1.2)
 
     const g = emblem.current
     if (g) {
@@ -372,7 +420,7 @@ function FirstFrame({ onReady }: { onReady?: () => void }) {
 
 /* ------------------------------------------------------------------ assembly */
 
-function World({ theme, mode, station, still, lowPower, onReady }: OrbitSceneProps) {
+function World({ theme, mode, station, still, lowPower, onReady, stage = null }: OrbitSceneProps) {
   const palette = theme === 'dark' ? DARK : LIGHT
   const blending = palette.dark ? THREE.AdditiveBlending : THREE.NormalBlending
   // Time and intensity outlive a change of theme, so toggling it does not restart the world.
@@ -389,7 +437,7 @@ function World({ theme, mode, station, still, lowPower, onReady }: OrbitScenePro
 
   return (
     <>
-      <Director mode={mode} station={station} still={still} shared={shared} emblem={emblem} />
+      <Director mode={mode} station={station} still={still} stage={stage} shared={shared} emblem={emblem} />
       <FirstFrame onReady={onReady} />
       {/* Keyed by theme: blending modes and colours are baked into the materials. */}
       <group key={theme}>
