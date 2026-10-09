@@ -34,6 +34,8 @@ export interface OrbitSceneProps {
   /** A composed still frame: reduced motion, or a tab nobody is looking at. */
   still: boolean
   lowPower: boolean
+  /** Called once the first frame is on screen, so the gate can fade the world in rather than pop it. */
+  onReady?: () => void
 }
 
 /** Brand blue #1560ec at the centre of both, with violet and cyan either side of it. */
@@ -353,9 +355,24 @@ function Director({ mode, station, still, shared, emblem }: { mode: SceneMode; s
   return null
 }
 
+/**
+ * Says when the first frame has been drawn: useFrame runs just before a render, so the frame
+ * after that one is the first with the world on screen. Until then the gate keeps the canvas
+ * transparent, because an opaque canvas that has not drawn yet is a black rectangle.
+ */
+function FirstFrame({ onReady }: { onReady?: () => void }) {
+  const done = useRef(false)
+  useFrame(() => {
+    if (done.current || !onReady) return
+    done.current = true
+    requestAnimationFrame(() => onReady())
+  })
+  return null
+}
+
 /* ------------------------------------------------------------------ assembly */
 
-function World({ theme, mode, station, still, lowPower }: OrbitSceneProps) {
+function World({ theme, mode, station, still, lowPower, onReady }: OrbitSceneProps) {
   const palette = theme === 'dark' ? DARK : LIGHT
   const blending = palette.dark ? THREE.AdditiveBlending : THREE.NormalBlending
   // Time and intensity outlive a change of theme, so toggling it does not restart the world.
@@ -373,6 +390,7 @@ function World({ theme, mode, station, still, lowPower }: OrbitSceneProps) {
   return (
     <>
       <Director mode={mode} station={station} still={still} shared={shared} emblem={emblem} />
+      <FirstFrame onReady={onReady} />
       {/* Keyed by theme: blending modes and colours are baked into the materials. */}
       <group key={theme}>
         <Backdrop palette={palette} shared={shared} lowPower={lowPower} />
