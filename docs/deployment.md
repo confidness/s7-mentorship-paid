@@ -46,8 +46,8 @@ is for a deployment that takes real accounts and real payments.
      than inside a workspace. Anthropic refuses such a key with a 400 until a workspace is
      named; **Send a test question** in Settings says so in as many words when it happens.
 4. Create the database. Apply every file in `supabase/migrations/` against the project, in
-   numeric order, starting at `0001_monetization.sql` — most simply as one script:
-   `npm run db:bundle > all-migrations.sql`, pasted into Supabase → SQL Editor and run. The later files change the policies the
+   numeric order, starting at `0001_monetization.sql` — most simply as one script: copy all of
+   `supabase/all-migrations.sql` into Supabase → SQL Editor and run it. The later files change the policies the
    earlier ones created, so a deployment built from `0001` alone is not the one the code is
    written against. See the [migrations runbook](runbooks/supabase-migrations.md) for how, and
    for what each file does.
