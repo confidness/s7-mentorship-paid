@@ -24,7 +24,7 @@ import { useAppliedBackdrop } from '../lib/backdrop'
  * is a laptop fan and a battery complaint.
  *
  * And it loads only when it is shown. This file is the gate; the shader package is imported by
- * `LiquidMetalField` alone, fetched the first time the brutal skin is on. Nine skins out of ten
+ * `LiquidMetalField` alone, fetched the first time the brutal skin is on. Ten skins out of eleven
  * never draw the field, and imported here they would all have downloaded it anyway — the same
  * reasoning, and the same split, as `AtelierSceneGate`.
  */

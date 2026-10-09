@@ -99,8 +99,8 @@ export default function Settings() {
       <Card className="p-5 sm:p-6">
         <SectionHeading title={t('appearance')} subtitle={t('appearance_note')} icon={Palette} />
         <SkinPicker />
-        {/* Light and dark stays where it has always been, in the header — this card is the
-            other axis. Putting both here would suggest they are one list of ten. */}
+        {/* Light and dark is the device's setting and has no control anywhere — this card is
+            the other axis, what the interface is made of and what it is drawn on. */}
         <div className="mt-6">
           <BackdropPicker />
         </div>

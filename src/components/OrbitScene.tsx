@@ -10,7 +10,8 @@ import { galaxy, glowTexture, motes, SCurve, stars, type Cloud, type Palette } f
  * The world the `orbit` skin is set in — the heavy half of the pair.
  *
  * `OrbitSceneGate.tsx` is the light half and the only thing that should import this file:
- * `three` and the renderer are several hundred kilobytes, and nine other skins never need them.
+ * `three` and the renderer are several hundred kilobytes, and the skins without a scene never
+ * need them.
  *
  * What is in it, back to front: a nebula sky, a field of distant stars, a turning spiral
  * galaxy, a circuit-board floor that pulses outwards from the centre, and in the middle the S7

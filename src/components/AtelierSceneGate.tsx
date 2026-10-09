@@ -6,7 +6,7 @@ import { useAppliedBackdrop } from '../lib/backdrop'
  * Loads the Three.js scene only for the one skin that uses it.
  *
  * `three` and `@react-three/fiber` are genuinely heavy next to everything else this
- * interface ships — the other nine skins have no reason to ever fetch that code. The gate
+ * interface ships — a skin without a scene has no reason to ever fetch that code. The gate
  * that decides "is this atelier, on a screen wide enough to show it" has to live in a module
  * that does not itself import `three`, or the decision arrives after the bytes already did.
  * `AtelierScene.tsx` carries the import; this file deliberately does not, and everything

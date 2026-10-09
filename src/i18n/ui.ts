@@ -165,9 +165,7 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   city: { en: 'City', ru: 'Город', kk: 'Қала' },
   clear: { en: 'CLEAR', ru: 'СВОБОДНО', kk: 'БОС' },
   close_dialog: { en: 'Close dialog', ru: 'Закрыть окно', kk: 'Терезені жабу' },
-  close_menu: { en: 'Close menu', ru: 'Закрыть меню', kk: 'Мәзірді жабу' },
   close_navigation: { en: 'Close navigation', ru: 'Закрыть навигацию', kk: 'Навигацияны жабу' },
-  close_notifications: { en: 'Close notifications', ru: 'Закрыть уведомления', kk: 'Хабарламаларды жабу' },
   code: { en: 'Code', ru: 'Код', kk: 'Код' },
   code_editor: { en: 'Code editor', ru: 'Редактор кода', kk: 'Код редакторы' },
   code_quality: { en: 'Code quality', ru: 'Качество кода', kk: 'Код сапасы' },
@@ -571,9 +569,9 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   skin_marketplace: { en: 'Marketplace', ru: 'Маркетплейс', kk: 'Маркетплейс' },
   skin_marketplace_note: {
-    en: 'Purple on near-black, four-pixel corners, one-pixel grey rules, almost no shadow. The densest of the ten: a catalogue you scan.',
-    ru: 'Фиолетовый на почти чёрном, углы в четыре пикселя, серые линейки в один, тени почти нет. Самая плотная из десяти: каталог, который просматривают.',
-    kk: 'Қараға жақын фонда күлгін, төрт пиксель бұрыштар, бір пиксель сұр сызықтар, көлеңке жоқтың қасы. Ондықтың ең тығызы.',
+    en: 'Purple on near-black, four-pixel corners, one-pixel grey rules, almost no shadow. The densest of them all: a catalogue you scan.',
+    ru: 'Фиолетовый на почти чёрном, углы в четыре пикселя, серые линейки в один, тени почти нет. Самая плотная из всех: каталог, который просматривают.',
+    kk: 'Қараға жақын фонда күлгін, төрт пиксель бұрыштар, бір пиксель сұр сызықтар, көлеңке жоқтың қасы. Барлығының ең тығызы.',
   },
   skin_academy: { en: 'Academy', ru: 'Академия', kk: 'Академия' },
   skin_academy_note: {
@@ -595,9 +593,9 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   skin_poster: { en: 'Poster', ru: 'Плакат', kk: 'Плакат' },
   skin_poster_note: {
-    en: 'Acid green and deep blue straight onto black and white, no shadow between them. The loudest of the ten.',
-    ru: 'Кислотный зелёный и густой синий прямо по чёрному и белому, без теней между ними. Самая громкая из десяти.',
-    kk: 'Қышқыл жасыл мен қою көк тікелей ақ пен қараның үстінде, аралықта көлеңке жоқ. Ондықтың ең қаттысы.',
+    en: 'Acid green and deep blue straight onto black and white, no shadow between them. The loudest of them all.',
+    ru: 'Кислотный зелёный и густой синий прямо по чёрному и белому, без теней между ними. Самая громкая из всех.',
+    kk: 'Қышқыл жасыл мен қою көк тікелей ақ пен қараның үстінде, аралықта көлеңке жоқ. Барлығының ең қаттысы.',
   },
   background: { en: 'Background', ru: 'Фон', kk: 'Фон' },
   background_note: {
@@ -823,7 +821,6 @@ export const UI: Record<string, { en: string; ru: string; kk: string }> = {
   },
   open_ai_mentor: { en: 'Open AI Mentor', ru: 'Открыть AI-наставника', kk: 'AI тәлімгерді ашу' },
   open_current_lesson: { en: 'Open current lesson', ru: 'Открыть текущий урок', kk: 'Ағымдағы сабақты ашу' },
-  open_navigation: { en: 'Open navigation', ru: 'Открыть навигацию', kk: 'Навигацияны ашу' },
   open_project: { en: 'Open project', ru: 'Открыть проект', kk: 'Жобаны ашу' },
   open_the_report_below_to_see_what_is_missing: { en: 'Open the report below to see what is missing.', ru: 'Смотри отчёт ниже — там видно, чего не хватает.', kk: 'Төмендегі есепті қара — нені жетіспейтіні сонда.' },
   open_your_current_lesson_finish_the_task_and_sub: {

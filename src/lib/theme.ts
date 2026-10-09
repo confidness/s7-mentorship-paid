@@ -105,7 +105,7 @@ export const DEFAULT_SKIN: SkinChoice = 'orbit'
  * work, brutalism, terminal UI.
  * The second five were read off the platforms this product competes with, whose visual
  * languages are each a bet about what sells a course. Keeping the groups apart in the picker
- * is the difference between a choice and a list of ten.
+ * is the difference between a choice and a list of eleven.
  */
 export const HOUSE_SKINS: SkinChoice[] = ['orbit', 'plain', 'editorial', 'atelier', 'brutal', 'terminal']
 export const INDUSTRY_SKINS: SkinChoice[] = ['marketplace', 'academy', 'streak', 'cinema', 'poster']

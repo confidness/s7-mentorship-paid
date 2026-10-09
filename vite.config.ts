@@ -10,9 +10,10 @@ import vercel from './vercel.json'
  * the Supabase client again; split out, those files keep their hash until the dependency
  * itself is upgraded. Only libraries the first screen needs anyway belong here. three.js and
  * the react-three packages are left out on purpose: named here they would become a chunk the
- * entry imports, and the atelier scene — lazy so that nine skins never fetch it — would be
- * downloaded by everyone. `scheduler` goes with react-dom because react-dom imports it; left
- * behind in the entry it would make the two files import each other.
+ * entry imports, and the 3D scenes would be downloaded before the first paint. Left to Rollup
+ * they share one lazy chunk, which the orbit world fetches after the first paint and a skin
+ * without a scene never fetches at all. `scheduler` goes with react-dom because react-dom
+ * imports it; left behind in the entry it would make the two files import each other.
  */
 const VENDOR: [RegExp, string][] = [
   [/\/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom|@remix-run\/[^/]+)\//, 'react'],
