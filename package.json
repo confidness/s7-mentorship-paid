@@ -21,7 +21,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
-    "stripe": "^22.6.2",
+    "stripe": "^23.0.0",
     "three": "^0.169.0"
   },
   "devDependencies": {
