@@ -7,11 +7,16 @@ import Crash from './components/Crash'
 import { AppProvider } from './lib/store'
 import { LocaleProvider } from './i18n'
 import { followSystemTheme } from './lib/theme'
+import { reloadOnStaleBuild } from './lib/staleBuild'
 import './index.css'
 
 // Light or dark is the device's to decide, and it can change while the page is open — at
 // sunset, on a schedule. index.html set it before first paint; this keeps it in step after.
 followSystemTheme()
+
+// A tab opened before a deploy asks for screens by their old file names and gets nothing back;
+// the new index.html is the only cure, so the app fetches it once instead of showing a crash.
+reloadOnStaleBuild()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

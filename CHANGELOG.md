@@ -91,6 +91,12 @@ the day it happened, so that it reads as milestones; they are not releases anyon
 
 ### Fixed
 
+- A tab opened before a deploy crashed the first time it opened a screen it had not loaded yet
+  ("Failed to fetch dynamically imported module"): the file it asked for had been replaced. The
+  app now reloads itself once to fetch the new version, and if that does not help, the crash
+  screen says the site was updated instead of showing a module URL. Missing files under
+  `/assets` now get a 404 rather than `index.html` served under a year-long cache header.
+- The crash screen was white text on a white card in the dark theme.
 - The lesson page ran a hook after an early return, so React would throw if a lesson locked or
   unlocked while it was open.
 - The AI mentor's built-in answers, the sign-in page and the welcome notification still told
