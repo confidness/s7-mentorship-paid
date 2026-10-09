@@ -22,6 +22,13 @@ is for a deployment that takes real accounts and real payments.
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — the service role
      bypasses row level security entirely. It is what lets the webhook write an entitlement
      no user may write. Treat it like a root password.
+   - If the project has Vercel's Supabase integration, it already holds the service key as
+     `SUPABASE_SECRET_KEY`, and the functions use it when `SUPABASE_SERVICE_ROLE_KEY` is empty —
+     so the master key never has to be copied by hand. The integration sets it for Production
+     only; a Preview deployment still needs `SUPABASE_SERVICE_ROLE_KEY` for the routes that use it.
+     Every `VITE_` variable must hold a value: an empty one is the same as none, and the site
+     then runs in browser-only mode, where an account lives in one browser and nowhere else.
+     `GET /api/health` answering `"db":"unconfigured"` is how that looks from outside.
    - `STRIPE_SECRET_KEY` — creates Checkout Sessions and Connect accounts.
    - `STRIPE_WEBHOOK_SECRET` — without it the webhook cannot tell a real payment notice from
      an anonymous POST, so it refuses everything.

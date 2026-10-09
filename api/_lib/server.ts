@@ -59,8 +59,22 @@ export function userClient(token: string): SupabaseClient {
   })
 }
 
+/**
+ * The key that bypasses row level security, under either of the names it arrives by.
+ *
+ * `SUPABASE_SERVICE_ROLE_KEY` is the one this project documents and sets by hand. Vercel's
+ * Supabase integration writes the same authority as `SUPABASE_SECRET_KEY` — Supabase's newer
+ * `sb_secret_…` key — and keeps it in step when it is rotated, so a deployment that has the
+ * integration needs no master key pasted anywhere. The hand-set one wins when both are present.
+ */
+export function serviceKey(): string {
+  const key = env('SUPABASE_SERVICE_ROLE_KEY') || env('SUPABASE_SECRET_KEY')
+  if (!key) throw new HttpError(500, 'not_configured', 'SUPABASE_SERVICE_ROLE_KEY is not set')
+  return key
+}
+
 export function adminClient(): SupabaseClient {
-  return createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'), {
+  return createClient(requireEnv('SUPABASE_URL'), serviceKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 }
