@@ -23,6 +23,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
   const [name, setName] = useState('')
   const [role, setRole] = useState<Role>('client')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function onSubmit(e: FormEvent) {
@@ -32,12 +33,17 @@ export default function Login({ register: startOnRegister }: { register?: boolea
     if (password.length < 8) next.password = t('use_at_least_8_characters')
     if (mode === 'register' && name.trim().length < 2) next.name = t('tell_us_your_name')
     setErrors(next)
+    setNotice('')
     if (Object.keys(next).length) return
 
     setBusy(true)
-    const result = await (mode === 'login' ? login(email, password) : register({ name, email, password, role }))
+    const result: { ok: boolean; error?: string; notice?: string } = await (mode === 'login' ? login(email, password) : register({ name, email, password, role }))
     setBusy(false)
 
+    if (result.notice) {
+      setNotice(result.notice)
+      return
+    }
     if (!result.ok) {
       setErrors({ form: result.error ?? t('something_went_wrong_try_again') })
       return
@@ -92,6 +98,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
                   onClick={() => {
                     setMode(m)
                     setErrors({})
+                    setNotice('')
                   }}
                   className={`relative flex-1 px-4 py-2 text-sm font-semibold transition ${mode === m ? 'fill-strong text-ink-900 shadow-[0_1px_2px_rgb(11_18_32/0.12)]' : 'text-ink-600'}`}
                 >
@@ -132,6 +139,12 @@ export default function Login({ register: startOnRegister }: { register?: boolea
               {errors.form && (
                 <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
                   {errors.form}
+                </p>
+              )}
+
+              {notice && (
+                <p role="status" className="border border-brand-200 bg-brand-100/60 px-3.5 py-2.5 text-sm font-medium text-brand-700">
+                  {notice}
                 </p>
               )}
 

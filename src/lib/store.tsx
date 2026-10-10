@@ -26,7 +26,8 @@ interface Ctx {
   ready: boolean
   user: Me | null
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  register: (input: { name: string; email: string; password: string; role: Role }) => Promise<{ ok: boolean; error?: string }>
+  /** `notice` is not a failure: the account exists and is waiting on the emailed link. */
+  register: (input: { name: string; email: string; password: string; role: Role }) => Promise<{ ok: boolean; error?: string; notice?: string }>
   logout: () => Promise<void>
   /** Re-read the profile after a change made elsewhere — a role switch, a payout account. */
   refreshMe: () => Promise<void>
@@ -100,12 +101,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase().auth.signUp({
           email: input.email.trim().toLowerCase(),
           password: input.password,
-          options: { data: { name: input.name.trim(), role: input.role } },
+          // The confirmation link returns to the site the person signed up on — localhost, a
+          // preview or production — provided Supabase lists that origin among its redirect URLs.
+          options: { data: { name: input.name.trim(), role: input.role }, emailRedirectTo: window.location.origin },
         })
         if (error || !data.user) return { ok: false, error: error?.message ?? translate('something_went_wrong_try_again') }
         // With email confirmation on, signUp succeeds and hands back no session. Carrying on
         // would mark the person signed in while every request answers 401.
-        if (!data.session) return { ok: false, error: translate('confirm_email_then_sign_in') }
+        if (!data.session) return { ok: false, notice: translate('confirm_email_then_sign_in') }
         await refreshMe()
         return { ok: true }
       },
