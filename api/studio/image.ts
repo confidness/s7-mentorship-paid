@@ -11,7 +11,7 @@
  * Row level security would refuse the write anyway — this says so before an image is spent.
  */
 
-import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
+import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateImage } from '../_lib/images.js'
 import { loadKit, storeImage } from '../_lib/studio.js'
@@ -53,7 +53,8 @@ async function handler(req: Request): Promise<Response> {
     })
 
     const [width, height] = IMAGE_SHAPES[shape]
-    const image = await generateImage(prompt, width, height)
+    const { background, inks } = logoColours(kit.palette_json ?? [])
+    const image = await generateImage(prompt, width, height, { purpose, colors: inks.map((c) => c.hex), background: background?.hex })
     const url = await storeImage(caller.id, image)
 
     if (purpose === 'logo') {

@@ -405,6 +405,12 @@ const LOGO_STYLE_WORDS: Record<LogoStyle, string> = {
   playful: 'playful friendly style, rounded shapes',
 }
 
+/** What a logo is drawn in: up to three of the kit's colours, on the kit's background. */
+export function logoColours(palette: PaletteColor[]) {
+  const background = palette.find((c) => c.role === 'background')
+  return { background, inks: palette.filter((c) => c !== background).slice(0, 3) }
+}
+
 /** Up to three initials, from words in any script: "Crumb & Co" is "CC". */
 function initialsOf(name: string): string {
   const words = name.match(/[\p{L}\p{N}]+/gu) ?? []
@@ -462,12 +468,8 @@ export function buildImagePrompt(input: {
   let parts: string[]
   if (input.purpose === 'logo') {
     const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> = input.logo ?? { type: 'symbol', style: 'auto', avoid: '' }
-    const background = input.palette.find((c) => c.role === 'background')
-    const inks = input.palette
-      .filter((c) => c !== background)
-      .slice(0, 3)
-      .map((c) => `${c.name} ${c.hex}`)
-      .join(', ')
+    const { background, inks: inkColours } = logoColours(input.palette)
+    const inks = inkColours.map((c) => `${c.name} ${c.hex}`).join(', ')
     parts = [
       ...LOGO_RULES,
       // Shorter than a photo's subject: the rules at either end must survive the length cap.

@@ -320,6 +320,34 @@ console.log('image providers')
   check('with the safety filter on', seen[0]?.url.includes('safe=true'), seen[0])
 }
 
+console.log('recraft')
+{
+  process.env.RECRAFT_API_KEY = 'recraft_not_real'
+  eq('Recraft goes first when it has a key', imageProviders()[0]?.name, 'recraft')
+
+  type Sent = { auth: string | null; body: { model?: string; size?: string; controls?: { colors?: unknown; background_color?: unknown } } }
+  const sent: Sent[] = []
+  const webp = new Uint8Array(2048).fill(9)
+  globalThis.fetch = (async (_input: RequestInfo | URL, init: RequestInit = {}) => {
+    sent.push({ auth: new Headers(init.headers).get('authorization'), body: JSON.parse(String(init.body)) })
+    return new Response(JSON.stringify({ data: [{ b64_json: btoa(String.fromCharCode(...webp)) }] }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }) as typeof fetch
+
+  const logo = await generateImage('a mug', 1024, 1024, { purpose: 'logo', colors: ['#C65D3B'], background: '#F7F1E8' })
+  eq('the logo comes from Recraft', logo.provider, 'recraft')
+  eq('its bytes are decoded', logo.bytes.byteLength, 2048)
+  eq('a logo is drawn by V4.1', sent[0]?.body.model, 'recraftv4_1')
+  eq('in the kit’s colours', JSON.stringify(sent[0]?.body.controls?.colors), JSON.stringify([{ rgb: [198, 93, 59] }]))
+  eq('on the kit’s background', JSON.stringify(sent[0]?.body.controls?.background_color), JSON.stringify({ rgb: [247, 241, 232] }))
+  eq('the key goes in a header', sent[0]?.auth, 'Bearer recraft_not_real')
+
+  await generateImage('bread on a counter', 896, 1152, { purpose: 'photo', colors: ['#C65D3B'] })
+  eq('a photo is drawn by V4.1 Flash', sent[1]?.body.model, 'recraftv4_1_flash')
+  eq('at its own size', sent[1]?.body.size, '896x1152')
+  eq('and is not held to the palette', sent[1]?.body.controls, undefined)
+  delete process.env.RECRAFT_API_KEY
+}
+
 if (failures) {
   console.error(`${NL}${failures} check(s) failed`)
   process.exitCode = 1
