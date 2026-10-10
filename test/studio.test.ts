@@ -151,6 +151,7 @@ process.env.GEMINI_API_KEY = KEY
   check('the kit’s own banned word is in it', system.includes('artisanal'))
   check('so is the house list', system.includes('delve') && system.includes('synergy'))
   check('the kit’s tone travels', system.includes('Say what it costs up front'))
+  check('the model is told not to invent prices or offers', system.includes('Never invent prices'))
   check('the brief is the user turn, not the system prompt', call.body.contents?.[0]?.parts?.[0]?.text === 'Cardamom buns this Saturday')
 }
 

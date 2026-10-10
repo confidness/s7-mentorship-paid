@@ -55,9 +55,13 @@ export function voiceInstructions(kit: BrandKitRow, format: CopyFormat, language
     `NEVER USE these words or phrases, or any form of them: ${(voice?.banned_words ?? []).join(', ')}.`,
     'No em dashes. At most two emoji in total. At most one exclamation mark.',
     '',
+    // An invented "20% off until Sunday" is a promise the owner never made, posted under their name.
+    'FACTS: use only what the brief and the lines above say. Never invent prices, discounts, dates, opening hours, addresses, phone numbers, quantities, statistics or awards. If the copy needs a fact you were not given, write a placeholder in square brackets, like [price] or [date], for the owner to fill in.',
+    '',
     `FORMAT: ${COPY_GUIDANCE[format]}`,
     `Write in ${language}.`,
-    'Write three variants that take genuinely different angles — not the same sentence reworded.',
+    'Write three variants that take genuinely different angles — not the same sentence reworded. Make them different lengths too: one short, one medium, one near the longest the format allows.',
+    'Each variant names at least one concrete thing from the brief or the business (a product, a material, a place, a time) instead of a general claim, and ends with one clear next step the reader can take, where the format has room for it.',
   ]
     .filter((line) => line !== '')
     .join('\n')
