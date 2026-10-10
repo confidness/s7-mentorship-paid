@@ -43,9 +43,10 @@ into the JavaScript every visitor downloads.
 | `SUPABASE_SERVICE_ROLE_KEY` | server | Bypasses RLS. Writes contracts, Stripe ids and Storage files. Treat it like a root password. |
 | `GEMINI_API_KEY` | server | Brand kits and copy. Free tier at aistudio.google.com. |
 | `GEMINI_MODEL` | server, optional | Pins one model. Empty means the built-in list, newest first. |
-| `POLLINATIONS_API_KEY` | server, optional | `sk_…` from enter.pollinations.ai. First choice for images. |
-| `HF_TOKEN` | server, optional | Hugging Face token; FLUX.1-schnell on the serverless router. Second choice. |
-| `POLLINATIONS_MODEL`, `POLLINATIONS_LEGACY=off` | server, optional | Override the Pollinations model; turn off the anonymous fallback. |
+| `RECRAFT_API_KEY` | server, optional | Paid. First choice for images: logos on Recraft V4.1, photos on V4.1 Flash. |
+| `POLLINATIONS_API_KEY` | server, optional | `sk_…` from enter.pollinations.ai; works on free Quest Pollen. Logos on GPT Image, photos on Z-Image. |
+| `HF_TOKEN` | server, optional | Hugging Face token; FLUX.1-schnell on the serverless router. |
+| `POLLINATIONS_LEGACY=off` | server, optional | Turn off the anonymous, watermarked fallback. |
 | `STRIPE_SECRET_KEY` | server | Prefer a restricted key (`rk_…`) with Checkout Sessions, Customers, Accounts v2 and Account Links. |
 | `STRIPE_WEBHOOK_SECRET` | server | Signing secret of the snapshot webhook at `/api/webhook`. |
 | `STRIPE_CONNECT_WEBHOOK_SECRET` | server | Signing secret of the Accounts v2 event destination at `/api/connect/events`. |

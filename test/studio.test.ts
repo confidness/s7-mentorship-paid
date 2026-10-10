@@ -318,6 +318,11 @@ console.log('image providers')
   check('and not in the URL', !seen[0]?.url.includes('sk_pollinations_not_real'), seen[0])
   check('the new host is used', seen[0]?.url.startsWith('https://gen.pollinations.ai/image/'), seen[0])
   check('with the safety filter on', seen[0]?.url.includes('safe=true'), seen[0])
+  check('a photo is drawn by Z-Image', seen[0]?.url.includes('model=zimage'), seen[0])
+
+  answer = 1
+  await generateImage('a mug', 1024, 1024, { purpose: 'logo' })
+  check('a logo is drawn by GPT Image, which free credits can pay for', seen[2]?.url.includes('model=gptimage'), seen[2])
 }
 
 console.log('recraft')

@@ -54,6 +54,14 @@ async function readImage(res: Response) {
  */
 export const recraftModel = (purpose?: ImageOptions['purpose']) => (purpose === 'logo' ? 'recraftv4_1' : 'recraftv4_1_flash')
 
+/**
+ * Which Pollinations model draws what, from the ones its free Quest Pollen may pay for —
+ * Recraft and Ideogram there are paid-only. GPT Image follows a logo brief and spells a name
+ * better than any free alternative (~0.002–0.006 pollen); Z-Image Turbo is their own photo
+ * model (0.004).
+ */
+export const pollinationsModel = (purpose?: ImageOptions['purpose']) => (purpose === 'logo' ? 'gptimage' : 'zimage')
+
 /** `#C65D3B` as Recraft's `{ rgb: [198, 93, 59] }`. Hexes reach here normalised by the kit. */
 const rgb = (hex: string) => ({ rgb: [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) })
 
@@ -65,8 +73,6 @@ const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 export function imageProviders(): Provider[] {
   const providers: Provider[] = []
-  const model = process.env.POLLINATIONS_MODEL?.trim() || 'flux'
-
   const recraftKey = process.env.RECRAFT_API_KEY?.trim()
   if (recraftKey) {
     providers.push({
@@ -104,8 +110,8 @@ export function imageProviders(): Provider[] {
   if (pollinationsKey) {
     providers.push({
       name: 'pollinations',
-      request: (prompt, width, height, seed) => ({
-        url: `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?${new URLSearchParams({ model, width: String(width), height: String(height), seed: String(seed), safe: 'true' })}`,
+      request: (prompt, width, height, seed, { purpose }) => ({
+        url: `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?${new URLSearchParams({ model: pollinationsModel(purpose), width: String(width), height: String(height), seed: String(seed), safe: 'true' })}`,
         init: { headers: { authorization: `Bearer ${pollinationsKey}` } },
       }),
     })
