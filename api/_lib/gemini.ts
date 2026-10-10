@@ -58,7 +58,18 @@ export interface GeminiSchema {
  * remaining candidate would fail the same way, only slower.
  */
 function tryNext(status: number, detail: string) {
-  return status === 404 || status === 429 || status === 503 || /not found|not supported|is not available|overloaded|quota/i.test(detail)
+  // "thinking": a model refusing the thinking level it was sent. The next may take it, or
+  // be an older one that is not sent one at all.
+  return status === 404 || status === 429 || status === 503 || /not found|not supported|is not available|overloaded|quota|thinking/i.test(detail)
+}
+
+/**
+ * Gemini 3 models think before answering, at "medium" by default — enough, on a brand kit's
+ * schema, to run past an attempt's time limit. "low" is what Google recommends for latency.
+ * Only the 3.x ids get it: older models know a different field and refuse this one.
+ */
+function thinkingFor(model: string): { thinkingConfig?: { thinkingLevel: 'low' } } {
+  return /^gemini-3/.test(model) ? { thinkingConfig: { thinkingLevel: 'low' } } : {}
 }
 
 async function errorDetail(res: Response): Promise<string> {
@@ -93,14 +104,15 @@ export async function generateJson<T = unknown>(input: { system: string; prompt:
   if (!key) throw new HttpError(501, 'not_configured', 'GEMINI_API_KEY is not set.')
 
   const deadline = input.deadline ?? Date.now() + BUDGET_MS
-  const tried: string[] = []
-  let status = 0
-  let detail = ''
+  // Every attempt and why it failed. The last failure alone hides the one that mattered: a
+  // retired fallback answering 404 says nothing about why the model before it did not answer.
+  const failures: string[] = []
+  const fail = (model: string, status: number, detail: string) => failures.push(`${model} ${status}${detail ? `: ${detail.slice(0, 160)}` : ''}`)
 
   for (const model of geminiModels()) {
     const left = deadline - Date.now()
     if (left < MIN_ATTEMPT_MS) break
-    tried.push(model)
+    const started = Date.now()
 
     let res: Response
     try {
@@ -119,20 +131,20 @@ export async function generateJson<T = unknown>(input: { system: string; prompt:
             // thinking is billed against this same ceiling. Too low, and the JSON is cut off
             // mid-object with finishReason MAX_TOKENS.
             maxOutputTokens: 8192,
+            ...thinkingFor(model),
           },
         }),
       })
     } catch {
       // A timeout or a dropped connection says nothing about the next model.
-      status = 504
-      detail = 'timeout'
+      fail(model, 504, `timeout after ${Math.round((Date.now() - started) / 1000)}s`)
       continue
     }
 
     if (!res.ok) {
-      status = res.status
-      detail = await errorDetail(res)
-      if (tryNext(status, detail)) continue
+      const detail = await errorDetail(res)
+      fail(model, res.status, detail)
+      if (tryNext(res.status, detail)) continue
       break
     }
 
@@ -143,14 +155,18 @@ export async function generateJson<T = unknown>(input: { system: string; prompt:
     }
 
     const raw = (candidate?.content?.parts ?? []).map((part) => part.text ?? '').join('')
+    let data: T
     try {
-      return { data: JSON.parse(raw) as T, model }
+      data = JSON.parse(raw) as T
     } catch {
-      status = 502
-      detail = candidate?.finishReason === 'MAX_TOKENS' ? 'truncated' : 'unparseable'
+      fail(model, 502, candidate?.finishReason === 'MAX_TOKENS' ? 'truncated' : 'unparseable')
       continue
     }
+    // An answer that came only after others failed came slowly, and the logs should say why.
+    if (failures.length) console.warn(`[gemini] ${model} answered after: ${failures.join(' | ')}`)
+    return { data, model }
   }
 
-  throw new HttpError(502, 'upstream', `No model answered (${status || 'no attempt'}${detail ? `: ${detail}` : ''}). Tried ${tried.join(', ') || 'nothing'}.`)
+  console.warn(`[gemini] no model answered: ${failures.join(' | ') || 'no attempt'}`)
+  throw new HttpError(502, 'upstream', `No model answered. ${failures.join('; ') || 'Nothing was tried.'}`)
 }

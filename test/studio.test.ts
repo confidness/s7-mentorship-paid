@@ -145,6 +145,7 @@ process.env.GEMINI_API_KEY = KEY
   check('and never in the URL, where logs would keep it', !call.url.includes(KEY), call.url)
   eq('JSON is required', call.body.generationConfig?.responseMimeType, 'application/json')
   eq('and held to a schema', call.body.generationConfig?.responseSchema?.type, 'OBJECT')
+  eq('a Gemini 3 model is asked to think lightly', (call.body.generationConfig as { thinkingConfig?: { thinkingLevel?: string } })?.thinkingConfig?.thinkingLevel, 'low')
   const system = call.body.systemInstruction?.parts?.[0]?.text ?? ''
   check('the spec’s copy directive is sent word for word', system.includes(COPY_DIRECTIVE))
   check('the kit’s own banned word is in it', system.includes('artisanal'))
@@ -187,6 +188,14 @@ console.log('model fallthrough')
 
   reset([{ status: 429, json: { error: { message: 'Quota exceeded for metric generate_content_free_tier_requests' } } }, { json: CLEAN }])
   eq('a per-model free-tier quota also moves on', (await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))).status, 200)
+
+  reset([
+    { status: 503, json: { error: { message: 'The model is overloaded.' } } },
+    { status: 404, json: { error: { message: 'models/gemini-2.5-flash is no longer available to new users' } } },
+  ])
+  const none = (await (await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))).json()) as { message?: string }
+  const reported = none.message ?? ''
+  check('when nothing answers, every model’s own reason is reported', GEMINI_MODELS.every((m) => reported.includes(m)) && reported.includes('overloaded'), reported)
 
   reset([{ status: 400, json: { error: { message: 'API key not valid. Please pass a valid API key.' } } }])
   const bad = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))
