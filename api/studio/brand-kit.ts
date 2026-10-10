@@ -68,7 +68,7 @@ async function handler(req: Request): Promise<Response> {
       .filter(Boolean)
       .join('\n')
 
-    const { data, model } = await generateJson({ system: STRATEGIST_DIRECTIVE, prompt, schema: BRAND_KIT_SCHEMA, temperature: 1, deadline: Date.now() + 50_000 })
+    const { data, model } = await generateJson({ system: STRATEGIST_DIRECTIVE, prompt, schema: BRAND_KIT_SCHEMA, temperature: 1, deadline: Date.now() + 140_000 })
     const draft = normalizeBrandKit(data, brandName)
     if (!draft) throw new HttpError(502, 'unusable', 'The model’s answer could not be turned into a brand kit. Try again.')
 

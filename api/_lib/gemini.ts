@@ -22,12 +22,17 @@ export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-fl
 const endpoint = (model: string) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`
 
 /**
- * Per attempt, and the default for all of them together. Routes run under a 60 second
- * ceiling and may make two calls, so a route passes its own `deadline` and every attempt is
- * cut to fit what is left of it — a request Vercel kills mid-flight is quota spent for a 504.
+ * Per attempt, and the default for all of them together. Routes run under a 150 second
+ * ceiling (vercel.json) and may make two calls, so a route passes its own `deadline` and
+ * every attempt is cut to fit what is left of it — a request Vercel kills mid-flight is
+ * quota spent for a 504.
+ *
+ * A minute per attempt, not less. In production gemini-3.8-flash took longer than 25 seconds
+ * over a brand kit's schema while the next model answered 503 "high demand"; a shorter limit
+ * gave up on a model that would have answered and fell through to ones that could not.
  */
-const ATTEMPT_MS = 25_000
-const BUDGET_MS = 45_000
+const ATTEMPT_MS = 60_000
+const BUDGET_MS = 140_000
 /** Not worth starting an attempt with less than this left. */
 const MIN_ATTEMPT_MS = 4_000
 

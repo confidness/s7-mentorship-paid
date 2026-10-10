@@ -3,7 +3,7 @@
   "framework": "vite",
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "functions": {
-    "api/studio/*.ts": { "maxDuration": 60 }
+    "api/studio/*.ts": { "maxDuration": 150 }
   },
   "headers": [
     {

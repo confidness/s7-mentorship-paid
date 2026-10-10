@@ -90,8 +90,8 @@ async function handler(req: Request): Promise<Response> {
     const system = voiceInstructions(kit, format, language)
     const banned = kit.voice_rules_json?.banned_words ?? []
 
-    // Both calls share one clock, ending well inside the route's 60 seconds.
-    const deadline = Date.now() + 50_000
+    // Both calls share one clock, ending well inside the route's 150 seconds.
+    const deadline = Date.now() + 140_000
     const first = await generateJson({ system, prompt: brief, schema: COPY_SCHEMA, deadline })
     let variants = asVariants(first.data)
     let model = first.model
