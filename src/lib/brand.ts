@@ -49,11 +49,37 @@ export interface VoiceRules {
   image_style: string[]
 }
 
+/**
+ * The kinds of logo there are. Symbol is the safe one: the others ask an image model to
+ * letter the name, and image models still misspell — the owner may choose that risk, and a
+ * Redraw is how they recover from it.
+ */
+export const LOGO_KINDS = ['symbol', 'wordmark', 'combination', 'monogram', 'emblem'] as const
+export type LogoKind = (typeof LOGO_KINDS)[number]
+
+export const LOGO_STYLES = ['modern', 'handmade', 'classic', 'bold', 'playful'] as const
+export type LogoStyle = (typeof LOGO_STYLES)[number]
+
+/** What the owner said about their logo, and the brief the strategist wrote from it. */
+export interface LogoBrief {
+  /** The owner's own pick, or 'auto' for "you decide". */
+  kind: LogoKind | 'auto'
+  style: LogoStyle | 'auto'
+  /** What the owner would like it to show, in their words. */
+  idea: string
+  avoid: string
+  /** The kind actually drawn: the owner's pick when they made one, else the strategist's. */
+  type: LogoKind
+  /** The strategist's drawable description. Kept so a Redraw draws the same idea again. */
+  concept: string
+}
+
 export interface BusinessInfo {
   offering: string
   audience: string
   location: string
   vibe_words: string[]
+  logo: LogoBrief
 }
 
 /** A brand_kits row as the browser reads it. */
@@ -78,6 +104,7 @@ export interface BrandKitDraft {
   palette_json: PaletteColor[]
   typography_json: Typography
   voice_rules_json: VoiceRules
+  logo_type: LogoKind
   logo_concept: string
 }
 
@@ -207,6 +234,23 @@ export function normalizePalette(raw: unknown): PaletteColor[] {
   return out
 }
 
+/** `value` if it is one of `options`, else null. Own entries only, never a prototype key. */
+const oneOf = <T extends string>(options: readonly T[], value: unknown): T | null => ((options as readonly string[]).includes(String(value)) ? (value as T) : null)
+
+export function normalizeLogo(raw: unknown): LogoBrief {
+  const obj = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const kind = oneOf(LOGO_KINDS, obj.kind) ?? 'auto'
+  return {
+    kind,
+    style: oneOf(LOGO_STYLES, obj.style) ?? 'auto',
+    idea: text(obj.idea, 200),
+    avoid: text(obj.avoid, 200),
+    // A kit from before the questions has neither: it gets a symbol, the kind that never has to spell.
+    type: oneOf(LOGO_KINDS, obj.type) ?? (kind === 'auto' ? 'symbol' : kind),
+    concept: text(obj.concept, 400),
+  }
+}
+
 export function normalizeBusiness(raw: unknown): BusinessInfo {
   const obj = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   return {
@@ -214,6 +258,7 @@ export function normalizeBusiness(raw: unknown): BusinessInfo {
     audience: text(obj.audience, 300),
     location: text(obj.location, 120),
     vibe_words: list(obj.vibe_words, 6, 30),
+    logo: normalizeLogo(obj.logo),
   }
 }
 
@@ -266,7 +311,8 @@ export function normalizeBrandKit(raw: unknown, fallbackName = ''): BrandKitDraf
     palette_json,
     typography_json: normalizeTypography(obj.typography),
     voice_rules_json: normalizeVoiceRules(obj.voice_rules),
-    logo_concept: text(obj.logo_concept, 300),
+    logo_type: oneOf(LOGO_KINDS, obj.logo_type) ?? 'symbol',
+    logo_concept: text(obj.logo_concept, 400),
   }
 }
 
@@ -339,46 +385,112 @@ export type ImageShape = keyof typeof IMAGE_SHAPES
 export const MAX_IMAGE_PROMPT = 900
 
 /**
+ * The logo's system instructions, as far as an image model has any: the fixed rules every
+ * logo prompt opens with. FLUX weighs the start of a prompt most, and left to itself it
+ * answers "logo for a pottery" with a photograph of pots — so the medium is said first, and
+ * the photographic look is refused by name at the end.
+ */
+export const LOGO_RULES = [
+  'Professional logo design, flat 2D vector graphic',
+  'one idea, bold simple shapes, clean crisp edges, still clear at 32 pixels',
+  'centered on a plain solid background with generous empty margin',
+]
+export const LOGO_NEVER = 'not a photo, no photographic texture, no 3D render, no shadows, no gradients, no mockup, no watermark'
+
+const LOGO_STYLE_WORDS: Record<LogoStyle, string> = {
+  modern: 'minimal modern geometric style',
+  handmade: 'warm hand-drawn style, slightly imperfect lines',
+  classic: 'classic timeless style, balanced and traditional',
+  bold: 'bold high-contrast style, heavy shapes',
+  playful: 'playful friendly style, rounded shapes',
+}
+
+/** Up to three initials, from words in any script: "Crumb & Co" is "CC". */
+function initialsOf(name: string): string {
+  const words = name.match(/[\p{L}\p{N}]+/gu) ?? []
+  return (
+    words
+      .slice(0, 3)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() || name.slice(0, 2).toUpperCase()
+  )
+}
+
+/**
+ * What the logo is, by kind. Lettered kinds spell the name out twice in quotes — the most
+ * an image model can be held to it. A symbol never sees the name at all: a name in the
+ * prompt is an invitation to letter it, and a garbled one is worse than none.
+ */
+function logoSubject(type: LogoKind, name: string, concept: string): string {
+  // The strategist writes sentences; inside a prompt clause the closing full stop is noise.
+  const symbol = concept.replace(/[\s.;,]+$/, '') || 'a simple memorable symbol'
+  switch (type) {
+    case 'wordmark':
+      return `wordmark logo: the name "${name}" in custom lettering, spelled exactly "${name}", no other words, no symbol`
+    case 'combination':
+      return `combination logo: a simple symbol (${symbol}) beside the name "${name}", spelled exactly "${name}", no other words`
+    case 'monogram':
+      return `monogram logo: the letters "${initialsOf(name)}" joined into one mark, no other letters or words`
+    case 'emblem':
+      return `emblem logo: a badge or stamp shape holding a simple symbol (${symbol}) and the name "${name}", spelled exactly "${name}", no other words`
+    default:
+      return `symbol logo: one pictorial mark, ${symbol}, no text, no letters, no words`
+  }
+}
+
+/**
  * Writes the prompt an image model is given, with the brand folded in.
  *
  * The kit's image_style directives go into every photo, which is the whole point of having a
  * kit: the tenth image looks like it came from the same shop as the first. Colours are named
  * with their hex, because "sage" alone means a different green to every model.
  *
- * A logo is asked for without lettering. Image models still cannot spell, and a garbled
- * brand name is worse than no name — the name is set in the kit's own heading font instead.
+ * A logo gets none of the photo style. It opens with LOGO_RULES, says what kind of logo it
+ * is, and is drawn in at most three of the kit's colours on the kit's own background.
  */
 export function buildImagePrompt(input: {
   purpose: ImagePurpose
   subject: string
   brandName: string
-  offering?: string
   palette: PaletteColor[]
   imageStyle: string[]
+  logo?: Pick<LogoBrief, 'type' | 'style' | 'avoid'>
 }): string {
-  const colours = input.palette
-    .slice(0, 5)
-    .map((c) => `${c.name} ${c.hex}`)
-    .join(', ')
-  const style = (input.imageStyle.length ? input.imageStyle : DEFAULT_IMAGE_STYLE).join(', ')
   const subject = text(input.subject, 400)
 
-  const parts =
-    input.purpose === 'logo'
-      ? [
-          `Minimal flat vector logo mark for "${text(input.brandName, 80)}"${input.offering ? `, ${text(input.offering, 120)}` : ''}`,
-          subject,
-          'one simple memorable symbol, centered, plain solid background, crisp edges',
-          colours && `colours: ${colours}`,
-          'no text, no letters, no words, no mockup, no gradients, no 3D render',
-        ]
-      : [
-          subject,
-          style,
-          colours && `colour palette: ${colours}`,
-          'candid composition, true-to-life colour, real textures',
-          'no text, no watermark, no logos, no plastic skin, no oversaturated HDR',
-        ]
+  let parts: string[]
+  if (input.purpose === 'logo') {
+    const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> = input.logo ?? { type: 'symbol', style: 'auto', avoid: '' }
+    const background = input.palette.find((c) => c.role === 'background')
+    const inks = input.palette
+      .filter((c) => c !== background)
+      .slice(0, 3)
+      .map((c) => `${c.name} ${c.hex}`)
+      .join(', ')
+    parts = [
+      ...LOGO_RULES,
+      // Shorter than a photo's subject: the rules at either end must survive the length cap.
+      logoSubject(logo.type, text(input.brandName, 80), text(subject, 250)),
+      logo.style !== 'auto' ? LOGO_STYLE_WORDS[logo.style] : '',
+      inks && `colours: ${inks}`,
+      background ? `background: ${background.name} ${background.hex}` : '',
+      LOGO_NEVER,
+      logo.avoid && `avoid: ${text(logo.avoid, 120)}`,
+    ]
+  } else {
+    const colours = input.palette
+      .slice(0, 5)
+      .map((c) => `${c.name} ${c.hex}`)
+      .join(', ')
+    parts = [
+      subject,
+      (input.imageStyle.length ? input.imageStyle : DEFAULT_IMAGE_STYLE).join(', '),
+      colours && `colour palette: ${colours}`,
+      'candid composition, true-to-life colour, real textures',
+      'no text, no watermark, no logos, no plastic skin, no oversaturated HDR',
+    ]
+  }
 
   return parts
     .filter(Boolean)

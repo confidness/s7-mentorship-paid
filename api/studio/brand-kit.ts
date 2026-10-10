@@ -14,7 +14,7 @@
  * saved when the drawing fails is worth more than one that is lost with it.
  */
 
-import { normalizeBrandKit, normalizeBusiness } from '../../src/lib/brand.js'
+import { normalizeBrandKit, normalizeBusiness, type LogoBrief } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str } from '../_lib/server.js'
 import { generateJson } from '../_lib/gemini.js'
 import { BRAND_KIT_SCHEMA, KIT_COLUMNS, STRATEGIST_DIRECTIVE } from '../_lib/studio.js'
@@ -25,6 +25,18 @@ interface Body {
   audience?: unknown
   location?: unknown
   vibeWords?: unknown
+  /** The owner's answers to the logo questions: kind, style, idea, avoid. All optional. */
+  logo?: unknown
+}
+
+/** The owner's logo answers, as lines of the prompt. "Let us decide" is said, not skipped. */
+function logoAnswers(logo: LogoBrief): string[] {
+  return [
+    logo.kind === 'auto' ? 'Logo kind: the owner left it to you.' : `Logo kind the owner chose: ${logo.kind}.`,
+    logo.style === 'auto' ? '' : `Logo style the owner wants: ${logo.style}.`,
+    logo.idea && `The owner would like the logo to show: ${logo.idea}`,
+    logo.avoid && `The owner does not want in the logo: ${logo.avoid}`,
+  ]
 }
 
 async function handler(req: Request): Promise<Response> {
@@ -34,7 +46,15 @@ async function handler(req: Request): Promise<Response> {
     const body = await readJson<Body>(req)
 
     const brandName = str(body.brandName, 120)
-    const business = normalizeBusiness({ offering: body.offering, audience: body.audience, location: body.location, vibe_words: body.vibeWords })
+    const answers = (body.logo && typeof body.logo === 'object' ? body.logo : {}) as Record<string, unknown>
+    // Only the owner's half of the brief is read from the request; type and concept are ours to write.
+    const business = normalizeBusiness({
+      offering: body.offering,
+      audience: body.audience,
+      location: body.location,
+      vibe_words: body.vibeWords,
+      logo: { kind: answers.kind, style: answers.style, idea: answers.idea, avoid: answers.avoid },
+    })
     if (business.offering.length < 10) throw new HttpError(400, 'invalid_input', 'Say what the business sells in a sentence or two.')
 
     const prompt = [
@@ -43,6 +63,7 @@ async function handler(req: Request): Promise<Response> {
       business.audience && `Who buys: ${business.audience}`,
       business.location && `Where: ${business.location}`,
       business.vibe_words.length ? `How the owner describes the feel: ${business.vibe_words.join(', ')}` : '',
+      ...logoAnswers(business.logo),
     ]
       .filter(Boolean)
       .join('\n')
@@ -50,6 +71,10 @@ async function handler(req: Request): Promise<Response> {
     const { data, model } = await generateJson({ system: STRATEGIST_DIRECTIVE, prompt, schema: BRAND_KIT_SCHEMA, temperature: 1, deadline: Date.now() + 50_000 })
     const draft = normalizeBrandKit(data, brandName)
     if (!draft) throw new HttpError(502, 'unusable', 'The model’s answer could not be turned into a brand kit. Try again.')
+
+    // Saved with the kit, so a Redraw draws the same kind of logo from the same idea.
+    // The owner's own pick of kind wins over the model's, as their name does.
+    business.logo = { ...business.logo, type: business.logo.kind === 'auto' ? draft.logo_type : business.logo.kind, concept: draft.logo_concept }
 
     const { data: kit, error } = await caller.db
       .from('brand_kits')

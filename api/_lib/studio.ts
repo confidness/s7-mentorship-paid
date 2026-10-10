@@ -6,7 +6,7 @@
  * hold the model to it, and two copies of the rules would drift.
  */
 
-import { normalizeKitRow, type BrandKitRow } from '../../src/lib/brand.js'
+import { LOGO_KINDS, normalizeKitRow, type BrandKitRow } from '../../src/lib/brand.js'
 import { HttpError, adminClient, type Caller } from './server.js'
 import type { GeminiSchema } from './gemini.js'
 import { extensionFor, type GeneratedImage } from './images.js'
@@ -17,6 +17,21 @@ import { extensionFor, type GeneratedImage } from './images.js'
 export const COPY_DIRECTIVE =
   "You are the Brandyzer Copy Engine. Strip robotic transitions, corporate buzzwords ('delve', 'tapestry', 'synergy'), and excessive emojis. Output conversational, grounded, small-business marketing text."
 
+/**
+ * The logo half of the strategist's instructions. The owner's answers to the logo questions
+ * arrive in the prompt; this says how to turn them into a kind of logo and a brief an image
+ * model can draw from. The image prompt adds its own fixed rules (LOGO_RULES) on top.
+ */
+export const LOGO_DIRECTIVE = [
+  'LOGO:',
+  '- The owner may have answered questions about their logo: the kind, the style, what it should show and what to avoid. Their answers outrank your taste. Never put in what they asked to avoid.',
+  '- logo_type is one of: symbol (a pictorial mark, no lettering), wordmark (the name in custom lettering), combination (a symbol beside the name), monogram (the initials as one mark), emblem (a badge or stamp holding a symbol and the name).',
+  '- If the owner chose a kind, use exactly that kind. If they left it to you, choose for the business: a symbol for most shops and makers; a wordmark only for a short, distinctive name of about ten letters or fewer; a monogram for a long name or a professional service; an emblem for traditional trades, food and drink, and crafts with a heritage feel.',
+  '- logo_concept: one or two sentences an illustrator could draw from without asking a question. Name the single subject, how it is simplified, its outline shape, and which two or three palette colours it uses, by their names. Describe shapes only, never lettering: the name is added separately, exactly as written.',
+  '- Draw from what the business really sells or a detail of its place. No stock icons (light bulbs, globes, swooshes, abstract arrows, generic leaves, gears) unless the owner asked for one.',
+  '- It must still read at 32 pixels: one idea, few shapes, no fine detail, no more than three colours, nothing photographic.',
+].join('\n')
+
 export const STRATEGIST_DIRECTIVE = [
   'You are the Brandyzer brand strategist. You build a small business a brand kit it can use for years: a palette, two fonts, and rules for how it talks and how its photos look.',
   '',
@@ -26,9 +41,10 @@ export const STRATEGIST_DIRECTIVE = [
   '- Typography: two fonts that exist on Google Fonts, spelled exactly as Google Fonts spells them. A heading font with character and a body font that is easy to read small. Say in one sentence why they fit.',
   '- Voice: three to six tone directives, each a concrete instruction ("say what it costs up front"), not an adjective. Two or three example lines already written in the voice. Extra banned words this particular brand should never use, beyond the obvious marketing clichés.',
   '- Image style: three to five photography directives about light, lens, film, setting and composition, specific enough that two photographers would shoot alike. Prefer real places, natural light and real textures over studio gloss.',
-  '- Logo concept: one sentence describing a simple symbol (no lettering) that could be drawn as a flat vector mark.',
   '- Vibe summary: two or three plain sentences an owner would recognise as their business.',
   '- Write like a person. No buzzwords: never use delve, tapestry, synergy, elevate, unlock, seamless, game-changer, testament or realm.',
+  '',
+  LOGO_DIRECTIVE,
 ].join('\n')
 
 export const BRAND_KIT_SCHEMA: GeminiSchema = {
@@ -69,9 +85,10 @@ export const BRAND_KIT_SCHEMA: GeminiSchema = {
       },
       required: ['tone', 'banned_words', 'examples', 'image_style'],
     },
-    logo_concept: { type: 'STRING' },
+    logo_type: { type: 'STRING', enum: [...LOGO_KINDS] },
+    logo_concept: { type: 'STRING', description: 'One or two sentences describing shapes and palette colours. No lettering.' },
   },
-  required: ['brand_name', 'vibe_summary', 'palette', 'typography', 'voice_rules', 'logo_concept'],
+  required: ['brand_name', 'vibe_summary', 'palette', 'typography', 'voice_rules', 'logo_type', 'logo_concept'],
 }
 
 export const COPY_SCHEMA: GeminiSchema = {

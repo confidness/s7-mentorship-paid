@@ -11,7 +11,7 @@
  * the decision is really the server's and this is the cached copy.
  */
 
-import { normalizeKitRow, type BrandKitRow, type CopyFormat, type ImagePurpose, type ImageShape } from './brand'
+import { normalizeKitRow, type BrandKitRow, type CopyFormat, type ImagePurpose, type ImageShape, type LogoBrief } from './brand'
 import type { ContractAction, Role, Split } from './bazaar'
 import type { ContractRow, Me, ServiceRow } from './types'
 import { accessToken, backendConfigured, supabase } from './supabase'
@@ -112,6 +112,7 @@ export interface KitRequest {
   audience?: string
   location?: string
   vibeWords?: string[]
+  logo?: Pick<LogoBrief, 'kind' | 'style' | 'idea' | 'avoid'>
 }
 
 export const createKit = (input: KitRequest) =>

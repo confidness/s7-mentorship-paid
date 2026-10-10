@@ -40,14 +40,16 @@ async function handler(req: Request): Promise<Response> {
     const kit = await loadKit(caller, kitId)
     if (purpose === 'logo' && kit.user_id !== caller.id) throw new HttpError(403, 'forbidden', 'Only the owner can change a brand’s logo.')
 
+    const logo = kit.business_json.logo
     const prompt = buildImagePrompt({
       purpose,
-      // A logo with no direction of its own leans on the kit's description of itself.
-      subject: subject || kit.vibe_summary,
+      // A logo with no direction of its own is drawn from the brief saved with the kit, and a
+      // kit from before there were briefs leans on its description of itself.
+      subject: subject || (purpose === 'logo' ? logo.concept : '') || kit.vibe_summary,
       brandName: kit.brand_name,
-      offering: kit.business_json?.offering,
       palette: kit.palette_json ?? [],
       imageStyle: kit.voice_rules_json?.image_style ?? [],
+      logo,
     })
 
     const [width, height] = IMAGE_SHAPES[shape]

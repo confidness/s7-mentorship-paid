@@ -12,7 +12,7 @@
 
 import { POST as copyRoute } from '../api/studio/copy.ts'
 import { POST as kitRoute } from '../api/studio/brand-kit.ts'
-import { COPY_DIRECTIVE } from '../api/_lib/studio.ts'
+import { COPY_DIRECTIVE, LOGO_DIRECTIVE } from '../api/_lib/studio.ts'
 import { GEMINI_MODELS } from '../api/_lib/gemini.ts'
 import { generateImage, imageProviders } from '../api/_lib/images.ts'
 import { DEFAULT_BANNED_WORDS } from '../src/lib/brand.ts'
@@ -230,6 +230,7 @@ console.log('a kit the model wrote is repaired, then saved as the caller')
         ],
         typography: { heading: { family: 'Fraunces', weight: 700, fallback: 'serif' }, body: { family: 'Inter</style><script>', weight: 400, fallback: 'sans-serif' }, rationale: 'Readable.' },
         voice_rules: { tone: ['Short sentences'], banned_words: ['Artisanal'], examples: ['Bread at seven.'], image_style: ['window light'] },
+        logo_type: 'symbol',
         logo_concept: 'A single wheat stalk',
       }),
     },
@@ -237,8 +238,14 @@ console.log('a kit the model wrote is repaired, then saved as the caller')
   const req = new Request('https://brandyzer.test/api/studio/brand-kit', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer valid-token' },
-    // user_id in the body is an attempt to be somebody else. It must be ignored.
-    body: JSON.stringify({ brandName: 'Crumb & Co', offering: 'Sourdough and pastries, baked every morning', user_id: 'someone-else' }),
+    // user_id in the body is an attempt to be somebody else. It must be ignored, and so must a
+    // logo concept: the owner answers the questions, the strategist writes the brief.
+    body: JSON.stringify({
+      brandName: 'Crumb & Co',
+      offering: 'Sourdough and pastries, baked every morning',
+      user_id: 'someone-else',
+      logo: { kind: 'emblem', style: 'classic', idea: 'the old stone oven', avoid: 'wheat', concept: 'injected' },
+    }),
   })
   const res = await kitRoute(req)
   const body = (await res.json()) as { logoConcept?: string }
@@ -255,6 +262,15 @@ console.log('a kit the model wrote is repaired, then saved as the caller')
   const bannedSaved = (row?.voice_rules_json as { banned_words: string[] })?.banned_words ?? []
   check('the house banned list is saved with the kit', DEFAULT_BANNED_WORDS.every((w) => bannedSaved.includes(w)), bannedSaved)
   eq('the logo concept comes back for the next request', body.logoConcept, 'A single wheat stalk')
+
+  const sent = geminiCalls[0]?.body
+  const prompt = sent?.contents?.[0]?.parts?.[0]?.text ?? ''
+  check('the strategist is given the logo rules', (sent?.systemInstruction?.parts?.[0]?.text ?? '').includes(LOGO_DIRECTIVE), sent?.systemInstruction)
+  check('and the owner’s logo answers', prompt.includes('emblem') && prompt.includes('the old stone oven') && prompt.includes('does not want in the logo: wheat'), prompt)
+  const logo = (row?.business_json as { logo?: Record<string, string> })?.logo
+  eq('the owner’s kind of logo beats the model’s', logo?.type, 'emblem')
+  eq('the brief is saved for the next Redraw', logo?.concept, 'A single wheat stalk')
+  eq('a style the owner chose is saved', logo?.style, 'classic')
 
   reset([{ json: CLEAN }])
   const tooShort = await kitRoute(new Request('https://brandyzer.test/api/studio/brand-kit', { method: 'POST', headers: { authorization: 'Bearer valid-token' }, body: JSON.stringify({ offering: 'bread' }) }))

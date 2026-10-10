@@ -10,12 +10,15 @@
 import {
   DEFAULT_BANNED_WORDS,
   DEFAULT_IMAGE_STYLE,
+  LOGO_NEVER,
+  LOGO_RULES,
   MAX_IMAGE_PROMPT,
   buildImagePrompt,
   googleFontsHrefs,
   normalizeBrandKit,
   normalizeHex,
   normalizeKitRow,
+  normalizeLogo,
   safeFontFamily,
   slopCheck,
   type BrandKitRow,
@@ -174,10 +177,44 @@ const palette = [
 }
 
 {
-  const prompt = buildImagePrompt({ purpose: 'logo', subject: 'a wheat stalk', brandName: 'Crumb', offering: 'a bakery', palette, imageStyle: ['35mm film grain'] })
-  check('a logo asks for no lettering', prompt.includes('no text, no letters'), prompt)
+  const prompt = buildImagePrompt({ purpose: 'logo', subject: 'a wheat stalk', brandName: 'Crumb', palette, imageStyle: ['35mm film grain'] })
+  check('a logo opens with the logo rules', prompt.startsWith(LOGO_RULES[0]), prompt)
+  check('a symbol asks for no lettering', prompt.includes('no text, no letters'), prompt)
+  check('a symbol never sees the name, so it cannot letter it', !prompt.includes('Crumb'), prompt)
   check('a logo does not get photo grain', !prompt.includes('35mm'), prompt)
-  check('a logo names the brand it is for', prompt.includes('"Crumb"'), prompt)
+  check('a logo refuses the photographic look', prompt.includes(LOGO_NEVER), prompt)
+  check('the kit’s background is the logo’s background', prompt.includes('background: flour #F7F1E8'), prompt)
+}
+
+{
+  const prompt = buildImagePrompt({ purpose: 'logo', subject: 'a wheat stalk', brandName: 'Crumb', palette, imageStyle: [], logo: { type: 'wordmark', style: 'handmade', avoid: 'gold' } })
+  check('a wordmark spells the name out exactly', prompt.includes('spelled exactly "Crumb"'), prompt)
+  check('the owner’s style is carried', prompt.includes('hand-drawn'), prompt)
+  check('and what they want avoided', prompt.includes('avoid: gold'), prompt)
+}
+
+{
+  const prompt = buildImagePrompt({ purpose: 'logo', subject: '', brandName: 'Crumb & Co', palette, imageStyle: [], logo: { type: 'monogram', style: 'auto', avoid: '' } })
+  check('a monogram is drawn from the initials', prompt.includes('"CC"'), prompt)
+}
+
+{
+  const prompt = buildImagePrompt({ purpose: 'logo', subject: 'y'.repeat(5000), brandName: 'B'.repeat(500), palette, imageStyle: [], logo: { type: 'emblem', style: 'bold', avoid: 'z'.repeat(500) } })
+  check('a long logo prompt keeps under the ceiling', prompt.length <= MAX_IMAGE_PROMPT, prompt.length)
+}
+
+console.log('logo answers')
+{
+  const fresh = normalizeLogo({ kind: 'constructor', style: 'sparkly', idea: '  a   cup ', avoid: 7 })
+  eq('an unknown kind means "you decide"', fresh.kind, 'auto')
+  eq('an unknown style means "you decide"', fresh.style, 'auto')
+  eq('the idea is tidied', fresh.idea, 'a cup')
+  eq('an avoid that is not text is empty', fresh.avoid, '')
+  eq('with nothing decided, a symbol is drawn', fresh.type, 'symbol')
+  eq('the owner’s pick stands until the strategist writes one', normalizeLogo({ kind: 'monogram' }).type, 'monogram')
+  eq('a kit from before the questions gets a logo brief', normalizeKitRow({ business_json: { offering: 'x' } } as unknown as BrandKitRow).business_json.logo.type, 'symbol')
+  eq('the strategist’s logo type is kept', normalizeBrandKit({ ...modelReply, logo_type: 'emblem' })?.logo_type, 'emblem')
+  eq('an invented logo type becomes a symbol', normalizeBrandKit({ ...modelReply, logo_type: '3d mascot' })?.logo_type, 'symbol')
 }
 
 {
