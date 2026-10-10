@@ -168,6 +168,11 @@ export async function saveService(draft: ServiceDraft, serviceId?: string): Prom
   return row.id
 }
 
+/** One column, so pausing cannot write back a price or title edited in another tab. */
+export async function setServiceActive(serviceId: string, active: boolean) {
+  check(await supabase().from('bazaar_services').update({ active }).eq('id', serviceId).select('id').single())
+}
+
 /** Refused by the database once anybody has hired it — pause it instead. */
 export async function deleteService(serviceId: string) {
   check(await supabase().from('bazaar_services').delete().eq('id', serviceId))

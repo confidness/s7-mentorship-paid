@@ -299,7 +299,9 @@ export function slopCheck(text: string, bannedWords: readonly string[]): SlopRep
     // the dropped e of "leverage" → "leveraging".
     const forms = [`${escape(w)}(?:s|d|ed|es|ing)?`]
     if (w.endsWith('e')) forms.push(`${escape(w.slice(0, -1))}ing`)
-    const re = new RegExp(`(?:^|[^a-z])(?:${forms.join('|')})(?![a-z])`, 'i')
+    // Any letter or digit counts as part of a word, not only a–z, so copy written in Russian
+    // or Kazakh does not see a word boundary inside every Cyrillic word.
+    const re = new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${forms.join('|')})(?![\\p{L}\\p{N}])`, 'iu')
     if (re.test(lower)) issues.push(`banned:${w}`)
   }
   const emoji = text.match(/\p{Extended_Pictographic}/gu)?.length ?? 0

@@ -50,6 +50,7 @@ eq('the caller’s own kit may be shared', code(decideHire({ callerId: CLIENT, s
 // The case the composite foreign key exists for: naming somebody else's kit on your contract.
 eq('somebody else’s kit may not be shared', code(decideHire({ callerId: CLIENT, service: open, freelancerCanReceive: true, kitOwnerId: STRANGER })), 'kit_not_found')
 eq('a kit id that does not exist is refused the same way', code(decideHire({ callerId: CLIENT, service: open, freelancerCanReceive: true, kitOwnerId: null })), 'kit_not_found')
+eq('a freelancer who switched to client-only cannot be hired', code(decideHire({ callerId: CLIENT, service: open, freelancerCanReceive: true, freelancerSells: false })), 'seller_unavailable')
 // Order matters: the route asks Stripe only after the cheap refusals, by calling this twice.
 eq('the cheap refusals come before the Stripe one', code(decideHire({ callerId: FREELANCER, service: open, freelancerCanReceive: false })), 'own_service')
 

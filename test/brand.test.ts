@@ -142,6 +142,8 @@ check('"leveraging" drops the e and is still caught', issues('Leveraging local g
 check('phrases are caught', issues("In today's fast-paced world, bread matters.").includes("banned:in today's fast-paced world"))
 check('case does not matter', issues('SYNERGY at the bakery').includes('banned:synergy'))
 eq('a word inside another word is not a hit', issues('Realmente bueno.').length, 0)
+eq('Cyrillic letters count as part of the word, so no boundary is invented', slopCheck('delveться', ['delve']).issues.length, 0)
+check('a banned word next to Cyrillic text is still caught', slopCheck('Мы delve в детали', ['delve']).issues.includes('banned:delve'))
 eq('plain good copy is clean', slopCheck('Cardamom buns are back on Saturday. Two for the price of one until ten.', banned).clean, true)
 check('three emoji is too many', issues('Fresh 🍞🥐🎉').includes('emoji:3'))
 eq('two is allowed', issues('Fresh 🍞🥐').length, 0)

@@ -20,7 +20,7 @@
  *   Stripe confirms the money arrived, and only then does the brand kit open to the freelancer.
  */
 
-import { decideHire, splitPayment } from '../../src/lib/bazaar.js'
+import { decideHire, sells, splitPayment } from '../../src/lib/bazaar.js'
 import { HttpError, adminClient, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull, type Caller } from '../_lib/server.js'
 import { HIRE_INTEGRATION_ID, retrieveRecipient, siteOrigin, stripe } from '../_lib/stripe.js'
 
@@ -77,16 +77,17 @@ async function handler(req: Request): Promise<Response> {
       kitOwnerId = kit?.user_id ?? null
     }
 
+    const { data: freelancer } = service ? await db.from('profiles').select('stripe_connect_id, role').eq('id', service.freelancer_id).single() : { data: null }
     const facts = {
       callerId: caller.id,
       service: service ? { active: service.active, freelancerId: service.freelancer_id } : null,
       kitOwnerId,
+      freelancerSells: sells(freelancer?.role),
     }
     // Everything that can be refused without asking Stripe is refused first.
     const early = decideHire({ ...facts, freelancerCanReceive: true })
     if (!early.ok) throw new HttpError(early.status, early.code, early.message)
 
-    const { data: freelancer } = await db.from('profiles').select('stripe_connect_id').eq('id', service!.freelancer_id).single()
     let canReceive = false
     if (freelancer?.stripe_connect_id) {
       const state = await retrieveRecipient(freelancer.stripe_connect_id)
@@ -99,6 +100,21 @@ async function handler(req: Request): Promise<Response> {
 
     const svc = service!
     const split = splitPayment(svc.price_usd_cents)
+
+    /**
+     * One open checkout per client per service. A second tab, or the back button and a second
+     * click, gets the checkout already open rather than a new one — two open sessions for one
+     * job can both be paid. A session Stripe has closed unpaid is retired so a fresh one can
+     * start; one already paid is waiting on the webhook and must not be sold again.
+     */
+    const { data: open } = await db.from('bazaar_contracts').select('id, stripe_checkout_session_id').eq('client_id', caller.id).eq('service_id', svc.id).eq('status', 'pending').maybeSingle()
+    if (open) {
+      const existing = open.stripe_checkout_session_id ? await stripe().checkout.sessions.retrieve(open.stripe_checkout_session_id).catch(() => null) : null
+      if (existing?.status === 'open' && existing.url) return json({ url: existing.url, contractId: open.id, split, resumed: true })
+      if (existing?.status === 'complete') throw new HttpError(409, 'payment_confirming', 'Your payment for this service is being confirmed. Check your contracts in a minute.')
+      await db.from('bazaar_contracts').update({ status: 'canceled' }).eq('id', open.id).eq('status', 'pending')
+    }
+
     const customer = await ensureCustomer(caller)
 
     // The contract first, so its id can name everything Stripe creates for it.
@@ -119,6 +135,9 @@ async function handler(req: Request): Promise<Response> {
       })
       .select('id')
       .single()
+    // The partial unique index lets only one pending contract per client and service exist;
+    // losing that race means another request is opening this same checkout right now.
+    if (contractError?.code === '23505') throw new HttpError(409, 'checkout_in_progress', 'A checkout for this service is already open. Try again in a moment.')
     if (contractError) throw new HttpError(500, 'write_failed', contractError.message)
 
     const origin = siteOrigin(req)

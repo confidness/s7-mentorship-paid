@@ -213,6 +213,26 @@ create index if not exists bazaar_contracts_kit on bazaar_contracts (brand_kit_i
 drop trigger if exists bazaar_contracts_touch on bazaar_contracts;
 create trigger bazaar_contracts_touch before update on bazaar_contracts for each row execute function touch_updated_at();
 
+-- One open checkout per client per service. Two tabs, or a back button and a second click,
+-- would otherwise open two Checkout Sessions for one job, and both can be paid. The hire
+-- route resumes the open one instead; this index is what makes a race lose rather than charge.
+create unique index if not exists bazaar_contracts_one_pending on bazaar_contracts (client_id, service_id) where status = 'pending';
+
+-- A kit on an open contract is the freelancer's working brief. Deleting it mid-job would null
+-- the contract's reference and close the kit to the person paid to use it, so the database
+-- refuses with a reason, rather than a policy that would quietly delete nothing.
+create or replace function keep_shared_kits()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if exists (select 1 from bazaar_contracts c where c.brand_kit_id = old.id and c.status in ('funded', 'in_review')) then
+    raise exception 'This brand kit is shared on an open contract and cannot be deleted until that work is finished.' using errcode = 'P0001';
+  end if;
+  return old;
+end;
+$$;
+
+create or replace trigger brand_kits_keep_shared before delete on brand_kits for each row execute function keep_shared_kits();
+
 -- ---------------------------------------------------------------------------
 -- predicates the policies use
 -- ---------------------------------------------------------------------------
@@ -312,6 +332,23 @@ create policy contracts_read_party on bazaar_contracts for select to authenticat
   using (client_id = auth.uid() or freelancer_id = auth.uid() or is_admin());
 
 revoke insert, update, delete on bazaar_contracts from authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Function privileges
+-- ---------------------------------------------------------------------------
+-- Everything in `public` is reachable at /rest/v1/rpc/<name>, and Supabase grants EXECUTE to
+-- anon and authenticated by default. The trigger functions are nobody's to call. The three
+-- policy predicates have to stay executable by `authenticated` — row level security runs
+-- them as the caller — and each answers only a question about that caller; a visitor who is
+-- not signed in has no use for any of them.
+
+revoke execute on function handle_new_user() from public, anon, authenticated;
+revoke execute on function touch_updated_at() from public, anon, authenticated;
+revoke execute on function keep_shared_kits() from public, anon, authenticated;
+revoke execute on function is_admin() from public, anon;
+revoke execute on function is_freelancer() from public, anon;
+revoke execute on function shares_brand_kit(uuid) from public, anon;
+revoke execute on function all_https(text[]) from public, anon;
 
 -- ---------------------------------------------------------------------------
 -- Storage

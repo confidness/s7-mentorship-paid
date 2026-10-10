@@ -21,9 +21,15 @@ export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-fl
 
 const endpoint = (model: string) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`
 
-/** Per attempt, and for all of them together. Routes run with a 60 second ceiling. */
+/**
+ * Per attempt, and the default for all of them together. Routes run under a 60 second
+ * ceiling and may make two calls, so a route passes its own `deadline` and every attempt is
+ * cut to fit what is left of it — a request Vercel kills mid-flight is quota spent for a 504.
+ */
 const ATTEMPT_MS = 25_000
 const BUDGET_MS = 45_000
+/** Not worth starting an attempt with less than this left. */
+const MIN_ATTEMPT_MS = 4_000
 
 export const geminiKey = () => process.env.GEMINI_API_KEY?.trim() || ''
 
@@ -82,17 +88,18 @@ export interface JsonResult<T> {
  * candidate produced anything usable — carrying what was tried, which is the first question
  * anybody debugging this will ask.
  */
-export async function generateJson<T = unknown>(input: { system: string; prompt: string; schema: GeminiSchema; temperature?: number }): Promise<JsonResult<T>> {
+export async function generateJson<T = unknown>(input: { system: string; prompt: string; schema: GeminiSchema; temperature?: number; deadline?: number }): Promise<JsonResult<T>> {
   const key = geminiKey()
   if (!key) throw new HttpError(501, 'not_configured', 'GEMINI_API_KEY is not set.')
 
-  const started = Date.now()
+  const deadline = input.deadline ?? Date.now() + BUDGET_MS
   const tried: string[] = []
   let status = 0
   let detail = ''
 
   for (const model of geminiModels()) {
-    if (Date.now() - started > BUDGET_MS) break
+    const left = deadline - Date.now()
+    if (left < MIN_ATTEMPT_MS) break
     tried.push(model)
 
     let res: Response
@@ -100,7 +107,7 @@ export async function generateJson<T = unknown>(input: { system: string; prompt:
       res = await fetch(endpoint(model), {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-        signal: AbortSignal.timeout(ATTEMPT_MS),
+        signal: AbortSignal.timeout(Math.min(ATTEMPT_MS, left)),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: input.system }] },
           contents: [{ role: 'user', parts: [{ text: input.prompt }] }],

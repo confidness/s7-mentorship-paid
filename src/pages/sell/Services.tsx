@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { BriefcaseBusiness, Pause, PenLine, Play, Plus } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { sells } from '../../lib/bazaar'
-import { myServices, saveService } from '../../lib/api'
+import { myServices, setServiceActive } from '../../lib/api'
 import { errorMessage, useAsync } from '../../lib/hooks'
 import { Badge, Button, Card, EmptyState, SkeletonCard, btn } from '../../components/ui'
 import { ErrorNote, InfoNote, PageHeader } from '../../components/kit'
@@ -30,10 +30,8 @@ export default function MyServices() {
   }
 
   async function toggle(id: string, active: boolean) {
-    const s = services?.find((x) => x.id === id)
-    if (!s) return
     try {
-      await saveService({ title: s.title, description: s.description, price_usd_cents: s.price_usd_cents, delivery_days: s.delivery_days, portfolio_urls: s.portfolio_urls, active }, id)
+      await setServiceActive(id, active)
       await reload()
     } catch (err) {
       toast({ title: t('could_not_save'), body: errorMessage(err), tone: 'error' })

@@ -48,6 +48,8 @@ export interface HireFacts {
   service: { active: boolean; freelancerId: string } | null
   /** Whether Stripe, asked just now, will move money to this freelancer. */
   freelancerCanReceive: boolean
+  /** False once the freelancer has switched their account to client-only. */
+  freelancerSells?: boolean
   /** Undefined when no kit was named; null when one was named and is not the caller's. */
   kitOwnerId?: string | null
 }
@@ -66,6 +68,8 @@ export function decideHire(f: HireFacts): { ok: true } | Refusal {
     // caller's business either.
     return { ok: false, status: 404, code: 'kit_not_found', message: 'That brand kit is not yours to share.' }
   }
+  // A listing outlives its owner's role switch; the hire must not.
+  if (f.freelancerSells === false) return { ok: false, status: 409, code: 'seller_unavailable', message: 'This freelancer is not taking work right now.' }
   if (!f.freelancerCanReceive) return { ok: false, status: 409, code: 'seller_unavailable', message: 'This freelancer cannot take payments yet.' }
   return { ok: true }
 }

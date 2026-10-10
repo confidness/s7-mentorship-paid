@@ -87,17 +87,30 @@ async function fund(session: Stripe.Checkout.Session) {
   }
   const paymentIntent = typeof session.payment_intent === 'string' ? session.payment_intent : (session.payment_intent?.id ?? null)
 
-  const { data, error } = await adminClient()
+  // `canceled` too: a contract retired by an expired or failed session, whose payment Stripe
+  // then confirms after all, has money behind it and must be funded rather than stranded.
+  const db = adminClient()
+  const { data, error } = await db
     .from('bazaar_contracts')
     .update({ status: 'funded', funded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent, stripe_checkout_session_id: session.id })
     .eq('id', contractId)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'canceled'])
     .select('id, total_amount_cents')
     .maybeSingle()
   if (error) throw error
 
-  // No row is usually a redelivery of an event already applied. An amount that disagrees is
-  // never usual, and is worth a line in the logs before anybody's books are reconciled.
+  // No row is normally a redelivery of an event already applied. Anything else is money with
+  // no contract to show for it, and is said out loud.
+  if (!data) {
+    const { data: current } = await db.from('bazaar_contracts').select('status').eq('id', contractId).maybeSingle()
+    if (!current || !['funded', 'in_review', 'completed'].includes(current.status)) {
+      console.error('paid session matched no fundable contract:', session.id, contractId, current?.status ?? 'missing')
+    }
+    return
+  }
+
+  // An amount that disagrees is never usual, and is worth a line in the logs before anybody's
+  // books are reconciled.
   if (data && session.amount_total !== null && session.amount_total !== data.total_amount_cents) {
     console.error('funded amount differs from contract:', contractId, session.amount_total, data.total_amount_cents)
   }

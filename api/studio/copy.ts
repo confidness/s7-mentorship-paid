@@ -90,7 +90,9 @@ async function handler(req: Request): Promise<Response> {
     const system = voiceInstructions(kit, format, language)
     const banned = kit.voice_rules_json?.banned_words ?? []
 
-    const first = await generateJson({ system, prompt: brief, schema: COPY_SCHEMA })
+    // Both calls share one clock, ending well inside the route's 60 seconds.
+    const deadline = Date.now() + 50_000
+    const first = await generateJson({ system, prompt: brief, schema: COPY_SCHEMA, deadline })
     let variants = asVariants(first.data)
     let model = first.model
     if (!variants.length) throw new HttpError(502, 'unusable', 'The model returned no copy. Try again.')
@@ -115,6 +117,7 @@ async function handler(req: Request): Promise<Response> {
           .filter(Boolean)
           .join('\n'),
         schema: COPY_SCHEMA,
+        deadline,
       }).catch(() => null)
       const second = retry ? asVariants(retry.data) : []
       if (second.length) {
