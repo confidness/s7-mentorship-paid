@@ -167,7 +167,8 @@ const palette = [
   const prompt = buildImagePrompt({ purpose: 'photo', subject: 'sourdough on a counter', brandName: 'Crumb', palette, imageStyle: ['window light', 'Portra 400 grain'] })
   check('the subject is there', prompt.startsWith('sourdough on a counter'), prompt)
   check('the kit’s photo style is added automatically', prompt.includes('window light') && prompt.includes('Portra 400 grain'), prompt)
-  check('colours are named with their hex', prompt.includes('crust #C65D3B'), prompt)
+  check('colours go in as hex', prompt.includes('#C65D3B'), prompt)
+  check('never by name, which an image model may letter into the picture', !prompt.includes('crust'), prompt)
   check('the anti-slop negatives are there', prompt.includes('no watermark') && prompt.includes('no plastic skin'), prompt)
 }
 
@@ -183,7 +184,7 @@ const palette = [
   check('a symbol never sees the name, so it cannot letter it', !prompt.includes('Crumb'), prompt)
   check('a logo does not get photo grain', !prompt.includes('35mm'), prompt)
   check('a logo refuses the photographic look', prompt.includes(LOGO_NEVER), prompt)
-  check('the kit’s background is the logo’s background', prompt.includes('background: flour #F7F1E8'), prompt)
+  check('the kit’s background is the logo’s background', prompt.includes('background: #F7F1E8'), prompt)
 }
 
 {

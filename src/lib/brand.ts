@@ -449,8 +449,9 @@ function logoSubject(type: LogoKind, name: string, concept: string): string {
  * Writes the prompt an image model is given, with the brand folded in.
  *
  * The kit's image_style directives go into every photo, which is the whole point of having a
- * kit: the tenth image looks like it came from the same shop as the first. Colours are named
- * with their hex, because "sage" alone means a different green to every model.
+ * kit: the tenth image looks like it came from the same shop as the first. Colours go in as
+ * hex only: a colour's name is in the owner's language, means a different green to every model,
+ * and is a word an image model may letter into the picture.
  *
  * A logo gets none of the photo style. It opens with LOGO_RULES, says what kind of logo it
  * is, and is drawn in at most three of the kit's colours on the kit's own background.
@@ -469,21 +470,21 @@ export function buildImagePrompt(input: {
   if (input.purpose === 'logo') {
     const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> = input.logo ?? { type: 'symbol', style: 'auto', avoid: '' }
     const { background, inks: inkColours } = logoColours(input.palette)
-    const inks = inkColours.map((c) => `${c.name} ${c.hex}`).join(', ')
+    const inks = inkColours.map((c) => c.hex).join(', ')
     parts = [
       ...LOGO_RULES,
       // Shorter than a photo's subject: the rules at either end must survive the length cap.
       logoSubject(logo.type, text(input.brandName, 80), text(subject, 250)),
       logo.style !== 'auto' ? LOGO_STYLE_WORDS[logo.style] : '',
       inks && `colours: ${inks}`,
-      background ? `background: ${background.name} ${background.hex}` : '',
+      background ? `background: ${background.hex}` : '',
       LOGO_NEVER,
       logo.avoid && `avoid: ${text(logo.avoid, 120)}`,
     ]
   } else {
     const colours = input.palette
       .slice(0, 5)
-      .map((c) => `${c.name} ${c.hex}`)
+      .map((c) => c.hex)
       .join(', ')
     parts = [
       subject,

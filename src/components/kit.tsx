@@ -136,7 +136,8 @@ export function Swatches({ palette }: { palette: PaletteColor[] }) {
   )
 }
 
-export function TypeSpecimen({ typography, brandName }: { typography: Typography; brandName: string }) {
+/** `sample` is a line in the brand's own voice and language; a fixed bakery sentence fits no one else. */
+export function TypeSpecimen({ typography, brandName, sample }: { typography: Typography; brandName: string; sample?: string }) {
   return (
     <div className="space-y-4">
       <div>
@@ -152,7 +153,7 @@ export function TypeSpecimen({ typography, brandName }: { typography: Typography
           {t('body_font')} · {typography.body.family} {typography.body.weight}
         </p>
         <p className="mt-1 max-w-xl text-[15px] leading-relaxed text-ink-700" style={{ fontFamily: fontStack(typography.body), fontWeight: typography.body.weight }}>
-          {t('type_specimen_sentence')}
+          {sample || t('type_specimen_sentence')}
         </p>
       </div>
       {typography.rationale && <p className="text-sm text-ink-600">{typography.rationale}</p>}
@@ -241,7 +242,7 @@ export function KitPreview({ kit }: { kit: BrandKitRow }) {
 
       <Card className="p-5 sm:p-6">
         <SectionHeading title={t('typography')} icon={Type} />
-        <TypeSpecimen typography={kit.typography_json} brandName={kit.brand_name} />
+        <TypeSpecimen typography={kit.typography_json} brandName={kit.brand_name} sample={kit.voice_rules_json.examples[0]} />
       </Card>
 
       <Card className="p-5 sm:p-6">

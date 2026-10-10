@@ -110,7 +110,7 @@ export default function KitPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-5 sm:p-6">
           <SectionHeading title={t('typography')} icon={Type} />
-          <TypeSpecimen typography={kit.typography_json} brandName={kit.brand_name} />
+          <TypeSpecimen typography={kit.typography_json} brandName={kit.brand_name} sample={kit.voice_rules_json.examples[0]} />
         </Card>
         <Card className="p-5 sm:p-6">
           <SectionHeading title={t('voice_and_photos')} />
