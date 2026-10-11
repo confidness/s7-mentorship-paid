@@ -376,6 +376,14 @@ console.log('recraft')
 
   const free = await generateImage('a mug', 1024, 1024, { purpose: 'logo' })
   check('a free account never spends paid Recraft credits', free.provider !== 'recraft', free.provider)
+
+  // A Recraft key with no credits on it: Pro still gets its picture, from Pollinations.
+  globalThis.fetch = (async (input: RequestInfo | URL) =>
+    String(input).includes('recraft')
+      ? new Response(JSON.stringify({ code: 'not_enough_credits' }), { status: 402 })
+      : new Response(new Uint8Array(2048).fill(7), { status: 200, headers: { 'content-type': 'image/jpeg' } })) as typeof fetch
+  const broke = await generateImage('a mug', 1024, 1024, { purpose: 'logo', pro: true })
+  eq('Recraft out of credits falls back to Pollinations', broke.provider, 'pollinations')
   delete process.env.RECRAFT_API_KEY
 }
 
