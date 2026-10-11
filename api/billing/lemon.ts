@@ -18,7 +18,7 @@ import { proUntilFor, validSignature } from '../_lib/billing.js'
 
 interface LemonEvent {
   meta?: { event_name?: unknown; custom_data?: { user_id?: unknown } }
-  data?: { id?: unknown; attributes?: { status?: unknown; renews_at?: unknown; ends_at?: unknown } }
+  data?: { type?: unknown; id?: unknown; attributes?: { status?: unknown; renews_at?: unknown; ends_at?: unknown } }
 }
 
 async function handler(req: Request): Promise<Response> {
@@ -31,8 +31,9 @@ async function handler(req: Request): Promise<Response> {
 
     const event = JSON.parse(raw) as LemonEvent
     const name = String(event.meta?.event_name ?? '')
-    // Orders, refunds and the rest are Lemon Squeezy's business; access follows the subscription.
-    if (!name.startsWith('subscription_')) return json({ ok: true, ignored: name })
+    // Access follows the subscription object alone. Orders are Lemon Squeezy's business, and the
+    // subscription_payment_* events carry an invoice, whose "paid" would read as no Pro at all.
+    if (event.data?.type !== 'subscriptions') return json({ ok: true, ignored: name })
 
     const attributes = event.data?.attributes ?? {}
     const status = String(attributes.status ?? '')

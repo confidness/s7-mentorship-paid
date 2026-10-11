@@ -97,12 +97,17 @@ const deliver = async (body: string, signature?: string) =>
   eq('and writes nothing', writes.length, 0)
 
   writes = []
-  const order = await deliver(event('order_created'))
+  const order = await deliver(JSON.stringify({ meta: { event_name: 'order_created', custom_data: { user_id: USER_ID } }, data: { type: 'orders', id: '1', attributes: { status: 'paid' } } }))
   eq('an order event is acknowledged', order.status, 200)
   eq('but makes nobody Pro', writes.length, 0)
 
   writes = []
-  const anonymous = JSON.stringify({ meta: { event_name: 'subscription_expired' }, data: { id: '777', attributes: { status: 'expired' } } })
+  const invoice = JSON.stringify({ meta: { event_name: 'subscription_payment_success', custom_data: { user_id: USER_ID } }, data: { type: 'subscription-invoices', id: '9', attributes: { status: 'paid' } } })
+  eq('a payment event is acknowledged', (await deliver(invoice)).status, 200)
+  eq('and its invoice never touches who is Pro', writes.length, 0)
+
+  writes = []
+  const anonymous = JSON.stringify({ meta: { event_name: 'subscription_expired' }, data: { type: 'subscriptions', id: '777', attributes: { status: 'expired' } } })
   await deliver(anonymous)
   check('an event with no buyer id updates the row by subscription id', writes[0]?.method === 'PATCH' && writes[0]?.url.includes('ls_subscription_id=eq.777'), writes[0])
   eq('and an expired one ends Pro', writes[0]?.body.pro_until, null)
