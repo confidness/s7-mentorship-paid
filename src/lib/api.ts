@@ -12,6 +12,7 @@
  */
 
 import { normalizeKitRow, type BrandKitRow, type CopyFormat, type ImagePurpose, type ImageShape, type LogoBrief } from './brand'
+import { USAGE_KINDS, type Plan, type UsageKind } from './plans'
 import type { ContractAction, Role, Split } from './bazaar'
 import type { ContractRow, Me, ServiceRow } from './types'
 import { accessToken, backendConfigured, supabase } from './supabase'
@@ -78,6 +79,42 @@ export async function getMe(): Promise<Me | null> {
   const row = check(await supabase().from('profiles').select(PROFILE_COLUMNS).eq('id', data.user.id).maybeSingle())
   if (!row) return null
   return { ...(row as Omit<Me, 'email'>), email: data.user.email ?? '' }
+}
+
+export interface PlanState {
+  plan: Plan
+  proUntil: string | null
+  /** This calendar month's (UTC) use, by kind. */
+  used: Record<UsageKind, number>
+}
+
+/** The caller's plan and this month's use. Row level security shows each person only their own rows. */
+export async function getPlan(userId: string): Promise<PlanState> {
+  const month = `${new Date().toISOString().slice(0, 7)}-01`
+  const [membership, usage] = await Promise.all([
+    supabase().from('memberships').select('pro_until').eq('user_id', userId).maybeSingle(),
+    supabase().from('usage_monthly').select('kind, used').eq('user_id', userId).eq('month', month),
+  ])
+  const proUntil = (check(membership) as { pro_until: string | null } | null)?.pro_until ?? null
+  const used: Record<UsageKind, number> = { kit: 0, copy: 0, image: 0 }
+  for (const row of (check(usage) as { kind: string; used: number }[] | null) ?? []) {
+    if ((USAGE_KINDS as string[]).includes(row.kind)) used[row.kind as UsageKind] = row.used
+  }
+  return { plan: proUntil && Date.parse(proUntil) > Date.now() ? 'pro' : 'free', proUntil, used }
+}
+
+/**
+ * The Lemon Squeezy checkout for Pro, carrying who is buying. The id comes back on every
+ * webhook as meta.custom_data.user_id; the email only saves typing it again. Null until
+ * VITE_LEMONSQUEEZY_CHECKOUT_URL is set.
+ */
+export function proCheckoutUrl(user: { id: string; email: string }): string | null {
+  const base = import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL as string | undefined
+  if (!base) return null
+  const url = new URL(base)
+  url.searchParams.set('checkout[custom][user_id]', user.id)
+  if (user.email) url.searchParams.set('checkout[email]', user.email)
+  return url.toString()
 }
 
 export async function updateMe(patch: { name?: string; bio?: string | null; role?: Role }) {

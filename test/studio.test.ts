@@ -71,8 +71,8 @@ interface GeminiCall {
 let geminiCalls: GeminiCall[] = []
 let geminiReplies: { status?: number; json: unknown }[] = []
 let inserted: Record<string, unknown> | null = null
-/** What take_usage answers: true while under the cap, null once it is reached. */
-let usageAnswer: true | null = true
+/** What take_quota answers: the plan a unit came from, or that plan's month being used up. */
+let usageAnswer: 'free' | 'pro' | 'free_full' | 'pro_full' = 'free'
 let givenBack = 0
 
 const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -88,8 +88,8 @@ globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => 
     return jsonResponse({ id: USER_ID, aud: 'authenticated', role: 'authenticated', email: 'owner@example.test' })
   }
 
-  if (url.includes('/rest/v1/rpc/take_usage')) return jsonResponse(usageAnswer)
-  if (url.includes('/rest/v1/rpc/give_back_usage')) {
+  if (url.includes('/rest/v1/rpc/take_quota')) return jsonResponse(usageAnswer)
+  if (url.includes('/rest/v1/rpc/give_back_quota')) {
     givenBack++
     return new Response(null, { status: 204 })
   }
@@ -126,7 +126,7 @@ const reset = (replies: { status?: number; json: unknown }[]) => {
   geminiCalls = []
   geminiReplies = replies
   inserted = null
-  usageAnswer = true
+  usageAnswer = 'free'
   givenBack = 0
 }
 
@@ -229,11 +229,12 @@ console.log('nothing is spent for a request that should not be served')
   eq('a kit id that is not an id is refused', (await copyRoute(post({ brandKitId: "' or 1=1 --", format: 'email', brief: 'x y z' }))).status, 400)
   eq('and none of it reached Gemini', geminiCalls.length, 0)
 
-  usageAnswer = null
+  usageAnswer = 'free_full'
   const capped = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'x y z' }))
-  eq('an account at today’s cap is told so', capped.status, 429)
+  eq('a free account at its monthly limit is told so', capped.status, 429)
+  check('and told what Pro gives', ((await capped.json()) as { message?: string }).message?.includes('Pro has') === true)
   eq('before Gemini is asked', geminiCalls.length, 0)
-  usageAnswer = true
+  usageAnswer = 'free'
 
   delete process.env.GEMINI_API_KEY
   const unconfigured = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'x y z' }))
@@ -353,12 +354,14 @@ console.log('recraft')
   type Sent = { auth: string | null; body: { model?: string; size?: string; controls?: { colors?: unknown; background_color?: unknown } } }
   const sent: Sent[] = []
   const webp = new Uint8Array(2048).fill(9)
-  globalThis.fetch = (async (_input: RequestInfo | URL, init: RequestInit = {}) => {
+  globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    // Everything but Recraft answers with the image itself.
+    if (!String(input).includes('recraft')) return new Response(new Uint8Array(2048).fill(7), { status: 200, headers: { 'content-type': 'image/jpeg' } })
     sent.push({ auth: new Headers(init.headers).get('authorization'), body: JSON.parse(String(init.body)) })
     return new Response(JSON.stringify({ data: [{ b64_json: btoa(String.fromCharCode(...webp)) }] }), { status: 200, headers: { 'content-type': 'application/json' } })
   }) as typeof fetch
 
-  const logo = await generateImage('a mug', 1024, 1024, { purpose: 'logo', colors: ['#C65D3B'], background: '#F7F1E8' })
+  const logo = await generateImage('a mug', 1024, 1024, { purpose: 'logo', pro: true, colors: ['#C65D3B'], background: '#F7F1E8' })
   eq('the logo comes from Recraft', logo.provider, 'recraft')
   eq('its bytes are decoded', logo.bytes.byteLength, 2048)
   eq('a logo is drawn by V4.1', sent[0]?.body.model, 'recraftv4_1')
@@ -366,10 +369,13 @@ console.log('recraft')
   eq('on the kit’s background', JSON.stringify(sent[0]?.body.controls?.background_color), JSON.stringify({ rgb: [247, 241, 232] }))
   eq('the key goes in a header', sent[0]?.auth, 'Bearer recraft_not_real')
 
-  await generateImage('bread on a counter', 896, 1152, { purpose: 'photo', colors: ['#C65D3B'] })
+  await generateImage('bread on a counter', 896, 1152, { purpose: 'photo', pro: true, colors: ['#C65D3B'] })
   eq('a photo is drawn by V4.1 Flash', sent[1]?.body.model, 'recraftv4_1_flash')
   eq('at its own size', sent[1]?.body.size, '896x1152')
   eq('and is not held to the palette', sent[1]?.body.controls, undefined)
+
+  const free = await generateImage('a mug', 1024, 1024, { purpose: 'logo' })
+  check('a free account never spends paid Recraft credits', free.provider !== 'recraft', free.provider)
   delete process.env.RECRAFT_API_KEY
 }
 

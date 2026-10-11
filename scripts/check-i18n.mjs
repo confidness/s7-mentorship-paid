@@ -38,6 +38,7 @@ const families = {
   format_: ['instagram_caption', 'product_description', 'email', 'website_hero', 'google_ad'],
   shape_: ['square', 'portrait', 'landscape'],
   logo_kind_: ['auto', 'symbol', 'wordmark', 'combination', 'monogram', 'emblem'],
+  usage_: ['kit', 'copy', 'image'],
   logo_style_: ['auto', 'modern', 'handmade', 'classic', 'bold', 'playful'],
   done_: ['deliver', 'request_changes', 'accept'],
   '': ['light', 'dark', 'system', 'how_it_works_kit', 'how_it_works_create', 'how_it_works_hire'],

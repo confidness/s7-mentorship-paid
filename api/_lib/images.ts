@@ -9,7 +9,8 @@
  *
  * Providers, in order, each only when it can run:
  *
- *   recraft              Recraft V4.1 with RECRAFT_API_KEY — built for logos and brand work
+ *   recraft              Recraft V4.1 with RECRAFT_API_KEY, Pro only — paid per image, so a
+ *                        free account never spends it
  *   pollinations         gen.pollinations.ai with POLLINATIONS_API_KEY
  *   huggingface          FLUX.1-schnell on HF's serverless router with HF_TOKEN
  *   pollinations-legacy  the old anonymous image.pollinations.ai endpoint — no key, heavily
@@ -31,6 +32,8 @@ export interface GeneratedImage {
 /** What the picture is for, and the kit's colours as hex. Recraft takes the colours as controls; the rest read them in the prompt. */
 export interface ImageOptions {
   purpose?: 'photo' | 'logo'
+  /** The caller is on Pro, which unlocks the paid providers. */
+  pro?: boolean
   colors?: string[]
   background?: string
 }
@@ -50,7 +53,7 @@ async function readImage(res: Response) {
 /**
  * Which Recraft model draws what. A logo is drawn a few times per kit and is the kit's face,
  * so it gets V4.1 ($0.035); photos are drawn by the dozen and get V4.1 Flash ($0.007).
- * A paid plan with better models would be decided here.
+ * Pro only: see generateImage.
  */
 export const recraftModel = (purpose?: ImageOptions['purpose']) => (purpose === 'logo' ? 'recraftv4_1' : 'recraftv4_1_flash')
 
@@ -148,7 +151,8 @@ export function imageProviders(): Provider[] {
 }
 
 export async function generateImage(prompt: string, width: number, height: number, options: ImageOptions = {}): Promise<GeneratedImage> {
-  const providers = imageProviders()
+  // Paid providers draw for Pro alone; everybody else gets the free ones.
+  const providers = imageProviders().filter((p) => p.name !== 'recraft' || options.pro)
   if (!providers.length) throw new HttpError(501, 'not_configured', 'No image provider is configured.')
 
   // A fresh seed each time: asking again is how somebody says "not that one".

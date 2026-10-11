@@ -14,7 +14,7 @@
 import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateImage } from '../_lib/images.js'
-import { loadKit, storeImage, takeUsage } from '../_lib/studio.js'
+import { loadKit, storeImage, takeQuota } from '../_lib/studio.js'
 
 interface Body {
   brandKitId?: unknown
@@ -40,7 +40,8 @@ async function handler(req: Request): Promise<Response> {
 
     const kit = await loadKit(caller, kitId)
     if (purpose === 'logo' && kit.user_id !== caller.id) throw new HttpError(403, 'forbidden', 'Only the owner can change a brand’s logo.')
-    giveBack = await takeUsage(caller.id, 'image')
+    const quota = await takeQuota(caller.id, 'image')
+    giveBack = quota.giveBack
 
     const logo = kit.business_json.logo
     const prompt = buildImagePrompt({
@@ -56,7 +57,7 @@ async function handler(req: Request): Promise<Response> {
 
     const [width, height] = IMAGE_SHAPES[shape]
     const { background, inks } = logoColours(kit.palette_json ?? [])
-    const image = await generateImage(prompt, width, height, { purpose, colors: inks.map((c) => c.hex), background: background?.hex })
+    const image = await generateImage(prompt, width, height, { purpose, pro: quota.plan === 'pro', colors: inks.map((c) => c.hex), background: background?.hex })
     const url = await storeImage(caller.id, image)
 
     if (purpose === 'logo') {

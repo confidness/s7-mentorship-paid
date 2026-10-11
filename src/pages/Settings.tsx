@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BriefcaseBusiness, LogOut, Palette, Store, User as UserIcon, Users } from 'lucide-react'
+import { BriefcaseBusiness, LogOut, Palette, Sparkles, Store, User as UserIcon, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
 import type { Role } from '../lib/bazaar'
-import { updateMe } from '../lib/api'
-import { errorMessage } from '../lib/hooks'
-import { Button, Card, Field, SectionHeading, inputClass } from '../components/ui'
+import { getPlan, proCheckoutUrl, updateMe } from '../lib/api'
+import { PLAN_LIMITS, PRO_PRICE_USD, USAGE_KINDS } from '../lib/plans'
+import { errorMessage, useAsync } from '../lib/hooks'
+import { Button, Card, Field, ProgressBar, SectionHeading, btn, inputClass } from '../components/ui'
 import SkinPicker from '../components/SkinPicker'
 import ServerStatus from '../components/ServerStatus'
 import { PageHeader } from '../components/kit'
@@ -46,6 +47,59 @@ export function RolePicker({ value, onChange, compact }: { value: Role; onChange
   )
 }
 
+/**
+ * Free or Pro, this month's use against the plan's limits, and the way to change plan.
+ *
+ * Upgrading is Lemon Squeezy's hosted checkout; its webhook is what makes somebody Pro, so a
+ * page opened straight after paying may still say Free for a few seconds. Managing or
+ * cancelling is Lemon Squeezy's own customer page, reached with the email the buyer used.
+ */
+function PlanCard({ user }: { user: { id: string; email: string } }) {
+  const { data } = useAsync(() => getPlan(user.id), [user.id])
+  const plan = data?.plan ?? 'free'
+  const limits = PLAN_LIMITS[plan]
+  const checkout = proCheckoutUrl(user)
+
+  return (
+    <Card className="space-y-5 p-5 sm:p-6">
+      <SectionHeading
+        title={plan === 'pro' ? t('plan_pro') : t('plan_free')}
+        subtitle={plan === 'pro' && data?.proUntil ? t('pro_until', { date: new Date(data.proUntil).toLocaleDateString() }) : t('plan_resets_monthly')}
+        icon={Sparkles}
+      />
+      <div className="space-y-3">
+        {USAGE_KINDS.map((kind) => (
+          <div key={kind} className="space-y-1.5">
+            <div className="flex justify-between text-sm">
+              <span className="text-ink-700">{t(`usage_${kind}`)}</span>
+              <span className="font-semibold text-ink-900 tabular-nums">
+                {data?.used[kind] ?? 0} / {limits[kind]}
+              </span>
+            </div>
+            <ProgressBar value={((data?.used[kind] ?? 0) / limits[kind]) * 100} size="sm" label={t(`usage_${kind}`)} />
+          </div>
+        ))}
+      </div>
+      {plan === 'pro' ? (
+        <a href="https://app.lemonsqueezy.com/my-orders" target="_blank" rel="noreferrer" className={btn('secondary')}>
+          {t('manage_subscription')}
+        </a>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-ink-600">{t('pro_includes', { kit: PLAN_LIMITS.pro.kit, copy: PLAN_LIMITS.pro.copy, image: PLAN_LIMITS.pro.image })}</p>
+          {checkout ? (
+            <a href={checkout} className={btn('primary')}>
+              {t('upgrade_to_pro', { price: PRO_PRICE_USD })}
+            </a>
+          ) : (
+            <p className="text-sm text-ink-500">{t('pro_not_open_yet')}</p>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export default function Settings() {
   const { user, refreshMe, logout } = useApp()
   const toast = useToast()
@@ -77,6 +131,8 @@ export default function Settings() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader title={t('nav_settings')} subtitle={t('settings_subtitle')} />
+
+      <PlanCard user={user} />
 
       <Card className="space-y-4 p-5 sm:p-6">
         <SectionHeading title={t('profile')} subtitle={user.email} icon={UserIcon} />

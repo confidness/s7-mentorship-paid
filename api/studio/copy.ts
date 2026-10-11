@@ -14,7 +14,7 @@
 import { COPY_FORMATS, COPY_GUIDANCE, slopCheck, type BrandKitRow, type CopyFormat } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateJson } from '../_lib/gemini.js'
-import { COPY_DIRECTIVE, COPY_SCHEMA, loadKit, takeUsage } from '../_lib/studio.js'
+import { COPY_DIRECTIVE, COPY_SCHEMA, loadKit, takeQuota } from '../_lib/studio.js'
 
 /** A Map, not an object literal: `LANGUAGES["constructor"]` on a plain object is not undefined. */
 const LANGUAGES = new Map([
@@ -92,7 +92,7 @@ async function handler(req: Request): Promise<Response> {
     const language = LANGUAGES.get(String(body.language)) ?? 'English'
 
     const kit = await loadKit(caller, kitId)
-    giveBack = await takeUsage(caller.id, 'copy')
+    giveBack = (await takeQuota(caller.id, 'copy')).giveBack
     const system = voiceInstructions(kit, format, language)
     const banned = kit.voice_rules_json?.banned_words ?? []
 

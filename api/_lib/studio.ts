@@ -7,6 +7,7 @@
  */
 
 import { LOGO_KINDS, normalizeKitRow, type BrandKitRow } from '../../src/lib/brand.js'
+import { PLAN_LIMITS, type Plan, type UsageKind } from '../../src/lib/plans.js'
 import { HttpError, adminClient, type Caller } from './server.js'
 import type { GeminiSchema } from './gemini.js'
 import { extensionFor, type GeneratedImage } from './images.js'
@@ -115,32 +116,38 @@ export const COPY_SCHEMA: GeminiSchema = {
   required: ['variants'],
 }
 
-/* ------------------------------------------------------------------ daily caps */
-
-/**
- * What one account may spend per day (UTC). Every request draws on allowances the whole site
- * shares — Gemini's free tier, Pollinations' Quest Pollen — so a cap is what stops one account
- * or one bot from spending them for everybody.
- */
-export const DAILY_LIMITS = { kit: 5, copy: 40, image: 20 } as const
-export type UsageKind = keyof typeof DAILY_LIMITS
+/* ------------------------------------------------------------------ monthly limits */
 
 const LIMIT_NAMES: Record<UsageKind, string> = { kit: 'brand kits', copy: 'copy requests', image: 'images' }
 
+export interface Quota {
+  plan: Plan
+  /** Hands the unit back, for the route to call when the model fails. */
+  giveBack: () => Promise<void>
+}
+
 /**
- * Takes one of today's units for `kind`, or answers 429. Returns the function that gives it
- * back, for the route to call when the model fails: a timeout should not cost a day's kit.
+ * Takes one of this month's units for `kind` on the caller's plan, or answers 429.
+ *
+ * Every request draws on model allowances, the free plan's shared with everybody, so the
+ * limits are what stop one account or one bot from spending them for everybody else. A model
+ * that fails gets its unit handed back: a timeout should not cost a kit.
  *
  * Through the service role, because only the server may count. If the count cannot be read
- * the request is refused: a cap that opens when the database hiccups is no cap.
+ * the request is refused: a limit that opens when the database hiccups is no limit.
  */
-export async function takeUsage(callerId: string, kind: UsageKind): Promise<() => Promise<void>> {
+export async function takeQuota(callerId: string, kind: UsageKind): Promise<Quota> {
   const db = adminClient()
-  const { data, error } = await db.rpc('take_usage', { who: callerId, what: kind, cap: DAILY_LIMITS[kind] })
+  const { data, error } = await db.rpc('take_quota', { who: callerId, what: kind, free_cap: PLAN_LIMITS.free[kind], pro_cap: PLAN_LIMITS.pro[kind] })
   if (error) throw new HttpError(500, 'usage_failed', error.message)
-  if (data !== true) throw new HttpError(429, 'daily_limit', `You have used today's ${DAILY_LIMITS[kind]} ${LIMIT_NAMES[kind]}. More tomorrow.`)
-  return async () => {
-    await db.rpc('give_back_usage', { who: callerId, what: kind })
+  if (data === 'free_full') throw new HttpError(429, 'monthly_limit', `You have used this month's ${PLAN_LIMITS.free[kind]} ${LIMIT_NAMES[kind]}. Pro has ${PLAN_LIMITS.pro[kind]} a month.`)
+  if (data === 'pro_full') throw new HttpError(429, 'monthly_limit', `You have used this month's ${PLAN_LIMITS.pro[kind]} ${LIMIT_NAMES[kind]}. More next month.`)
+  if (data !== 'free' && data !== 'pro') throw new HttpError(500, 'usage_failed', 'The usage count gave no answer.')
+  return {
+    plan: data,
+    giveBack: async () => {
+      await db.rpc('give_back_quota', { who: callerId, what: kind })
+    },
   }
 }
 

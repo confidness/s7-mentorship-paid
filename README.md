@@ -47,6 +47,8 @@ into the JavaScript every visitor downloads.
 | `POLLINATIONS_API_KEY` | server, optional | `sk_…` from enter.pollinations.ai; works on free Quest Pollen. Logos on GPT Image, photos on Z-Image. |
 | `HF_TOKEN` | server, optional | Hugging Face token; FLUX.1-schnell on the serverless router. |
 | `POLLINATIONS_LEGACY=off` | server, optional | Turn off the anonymous, watermarked fallback. |
+| `VITE_LEMONSQUEEZY_CHECKOUT_URL` | public | The Pro variant's Lemon Squeezy checkout link. Empty: Settings says Pro opens soon. |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | server | Signing secret of the Lemon Squeezy webhook at `/api/billing/lemon`, which makes people Pro. |
 | `STRIPE_SECRET_KEY` | server | Prefer a restricted key (`rk_…`) with Checkout Sessions, Customers, Accounts v2 and Account Links. |
 | `STRIPE_WEBHOOK_SECRET` | server | Signing secret of the snapshot webhook at `/api/webhook`. |
 | `STRIPE_CONNECT_WEBHOOK_SECRET` | server | Signing secret of the Accounts v2 event destination at `/api/connect/events`. |
