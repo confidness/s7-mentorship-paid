@@ -41,10 +41,9 @@ into the JavaScript every visitor downloads.
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | public | The browser's client. Row level security decides what it can reach. |
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | server | The same project, for routes acting as the caller. |
 | `SUPABASE_SERVICE_ROLE_KEY` | server | Bypasses RLS. Writes contracts, Stripe ids and Storage files. Treat it like a root password. |
-| `GEMINI_API_KEY` | server | Brand kits and copy. Free tier at aistudio.google.com. |
-| `GEMINI_MODEL` | server, optional | Pins one model. Empty means the built-in list, newest first. |
 | `RECRAFT_API_KEY` | server, optional | Paid. First choice for images: logos on Recraft V4.1, photos on V4.1 Flash. |
-| `POLLINATIONS_API_KEY` | server, optional | `sk_…` from enter.pollinations.ai; works on free Quest Pollen. Logos on GPT Image, photos on Z-Image. |
+| `POLLINATIONS_API_KEY` | server | `sk_…` from enter.pollinations.ai; works on free Quest Pollen. Brand kits and copy, then logos on GPT Image and photos on Z-Image. |
+| `POLLINATIONS_TEXT_MODEL` | server, optional | Pins one text model. Empty means the built-in list in `api/_lib/text.ts`. |
 | `HF_TOKEN` | server, optional | Hugging Face token; FLUX.1-schnell on the serverless router. |
 | `POLLINATIONS_LEGACY=off` | server, optional | Turn off the anonymous, watermarked fallback. |
 | `VITE_LEMONSQUEEZY_CHECKOUT_URL` | public | The Pro variant's Lemon Squeezy checkout link. Empty: Settings says Pro opens soon. |
@@ -58,7 +57,7 @@ into the JavaScript every visitor downloads.
 
 ### Brand kits
 
-`POST /api/studio/brand-kit` asks Gemini for a kit against a `responseSchema`, then runs the
+`POST /api/studio/brand-kit` asks a Pollinations text model for a kit against a JSON schema, then runs the
 reply through `normalizeBrandKit` in `src/lib/brand.ts` before anything is saved. The model's
 output is untrusted input: a colour that is not a hex code is dropped, a font name that could
 break a stylesheet or a Google Fonts URL falls back to a safe default, and the house list of
@@ -85,10 +84,10 @@ returned marked, never silently hidden. Copy can be written in English, Russian 
 
 ### Models
 
-Gemini 1.5 Flash, which this was first specified against, has been retired, and 2.5 Flash is
-closed to new projects. `api/_lib/gemini.ts` tries a list of current Flash models in order,
-stepping to the next on a 404, a per-model free-tier 429 or an overload, and stopping at once
-on a bad key. The key travels in a header, never the URL.
+Text runs on Pollinations, on the same key and wallet as the images. `api/_lib/text.ts` tries a
+short list of models free Quest Pollen may pay for, in order, stepping to the next on any
+model-specific failure and stopping at once on a bad key (401/403) or an empty wallet (402),
+which every model shares. The key travels in a header, never the URL.
 
 ### Images
 
@@ -183,7 +182,7 @@ over.
 | `price_usd`, `total_amount`, … | `price_usd_cents`, `total_amount_cents`, … | Integer cents, unit in the name. A float does not hold 0.1 exactly. |
 | `status` with four values | plus `canceled` and `refunded` | An expired checkout and a refund have to end the contract, or a refunded freelancer keeps the kit. |
 | `stripe.paymentIntents.create` | Checkout Session with `payment_intent_data` | Same destination-charge PaymentIntent and fee; Stripe's hosted page instead of a card form to build and keep compliant. |
-| Gemini 1.5 Flash | current Flash models, tried in order | 1.5 is retired. |
+| Gemini 1.5 Flash | Pollinations text models, tried in order | 1.5 is retired; one provider and one wallet for text and images. |
 | Pollinations URL in the browser | fetched and stored by the server | Pollinations now needs a secret key. The original anonymous URL is the last fallback. |
 | — | `stripe_transfers_active` on profiles | The directory needs to show who can be hired; the Stripe ids themselves are not readable from a browser. |
 | — | `business_json`, `delivery_note`, `delivery_url`, `brief` | Copy needs to know what the business sells; review needs something to review. |
@@ -201,7 +200,7 @@ src/
   pages/          studio/, bazaar/, contracts/, sell/, Settings, Login
   components/     design system (ui.tsx), kit previews, chrome, skins and the 3D scene
 api/
-  _lib/           server.ts (callers and clients), stripe.ts, gemini.ts, images.ts, studio.ts
+  _lib/           server.ts (callers and clients), stripe.ts, text.ts, images.ts, studio.ts
   studio/         brand-kit, copy, image
   bazaar/         hire, contracts
   connect/        onboard, status, events
@@ -225,7 +224,7 @@ npx tsc --noEmit  types
 npm run build     production bundle
 ```
 
-`test/studio.test.ts` runs the real copy and brand-kit routes against stubbed Gemini and
+`test/studio.test.ts` runs the real copy and brand-kit routes against stubbed Pollinations and
 Supabase endpoints and asserts what leaves: the schema, the directive, the kit's banned words,
 the key in a header and never the URL, one rewrite for slop, a model fallthrough on 404 but
 not on a bad key, and a model-written kit repaired and saved under the caller's verified id.

@@ -9,7 +9,7 @@
 import { LOGO_KINDS, normalizeKitRow, type BrandKitRow } from '../../src/lib/brand.js'
 import { PLAN_LIMITS, type Plan, type UsageKind } from '../../src/lib/plans.js'
 import { HttpError, adminClient, type Caller } from './server.js'
-import type { GeminiSchema } from './gemini.js'
+import type { TextSchema } from './text.js'
 import { extensionFor, type GeneratedImage } from './images.js'
 
 /* ------------------------------------------------------------------ prompts */
@@ -52,7 +52,7 @@ export const STRATEGIST_DIRECTIVE = [
   LOGO_DIRECTIVE,
 ].join('\n')
 
-export const BRAND_KIT_SCHEMA: GeminiSchema = {
+export const BRAND_KIT_SCHEMA: TextSchema = {
   type: 'OBJECT',
   properties: {
     brand_name: { type: 'STRING' },
@@ -96,7 +96,7 @@ export const BRAND_KIT_SCHEMA: GeminiSchema = {
   required: ['brand_name', 'vibe_summary', 'palette', 'typography', 'voice_rules', 'logo_type', 'logo_concept'],
 }
 
-export const COPY_SCHEMA: GeminiSchema = {
+export const COPY_SCHEMA: TextSchema = {
   type: 'OBJECT',
   properties: {
     variants: {

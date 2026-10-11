@@ -16,7 +16,7 @@
 
 import { normalizeBrandKit, normalizeBusiness, type LogoBrief } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str } from '../_lib/server.js'
-import { generateJson } from '../_lib/gemini.js'
+import { generateJson } from '../_lib/text.js'
 import { BRAND_KIT_SCHEMA, KIT_COLUMNS, STRATEGIST_DIRECTIVE, takeQuota } from '../_lib/studio.js'
 
 interface Body {
@@ -70,7 +70,7 @@ async function handler(req: Request): Promise<Response> {
       .filter(Boolean)
       .join('\n')
 
-    const { data, model } = await generateJson({ system: STRATEGIST_DIRECTIVE, prompt, schema: BRAND_KIT_SCHEMA, temperature: 1, deadline: Date.now() + 140_000 })
+    const { data, model } = await generateJson({ system: STRATEGIST_DIRECTIVE, prompt, schema: BRAND_KIT_SCHEMA, deadline: Date.now() + 140_000 })
     const draft = normalizeBrandKit(data, brandName)
     if (!draft) throw new HttpError(502, 'unusable', 'The model’s answer could not be turned into a brand kit. Try again.')
 

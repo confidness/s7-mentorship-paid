@@ -194,11 +194,11 @@ const PRIVACY = (
         <li><strong>Supabase</strong>: database, sign-in and file storage.</li>
         <li><strong>Vercel</strong>: hosting and the server that talks to the providers below.</li>
         <li>
-          <strong>Google (Gemini API)</strong>: writes brand kits and copy from your business details. Brandyzer uses
-          Gemini's free tier, under which Google may use what is sent to improve its products, and people at Google may read it.
-          Do not put confidential information, or personal details about other people, into your business description.
+          <strong>Pollinations</strong>: writes brand kits and copy from your business details, passing them to the
+          OpenAI and DeepSeek models it runs, and draws images from a written description made from your brand kit. Do not
+          put confidential information, or personal details about other people, into your business description.
         </li>
-        <li><strong>Pollinations, Recraft and Hugging Face</strong>: draw images from a written description of the picture, made from your brand kit.</li>
+        <li><strong>Recraft and Hugging Face</strong>: may draw images instead of Pollinations, from the same description.</li>
         <li><strong>Lemon Squeezy</strong>: sells Pro as merchant of record and handles payment, tax and receipts.</li>
         <li><strong>Stripe</strong>: payments and payouts in the Bazaar, when enabled.</li>
         <li><strong>Google (Gmail)</strong>: sends account emails.</li>

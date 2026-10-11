@@ -13,7 +13,7 @@
 
 import { COPY_FORMATS, COPY_GUIDANCE, slopCheck, type BrandKitRow, type CopyFormat } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
-import { generateJson } from '../_lib/gemini.js'
+import { generateJson } from '../_lib/text.js'
 import { COPY_DIRECTIVE, COPY_SCHEMA, loadKit, takeQuota } from '../_lib/studio.js'
 
 /** A Map, not an object literal: `LANGUAGES["constructor"]` on a plain object is not undefined. */

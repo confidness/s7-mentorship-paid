@@ -8,14 +8,14 @@
 
 declare const process: { env: Record<string, string | undefined> }
 
-import { geminiKey, geminiModels } from './_lib/gemini.js'
+import { textKey, textModels } from './_lib/text.js'
 import { imageProviders } from './_lib/images.js'
 
 async function handler(): Promise<Response> {
   const stripeKey = Boolean(process.env.STRIPE_SECRET_KEY)
   const body = {
     ok: true,
-    text: { configured: Boolean(geminiKey()), models: geminiModels() },
+    text: { configured: Boolean(textKey()), models: textModels() },
     images: { providers: imageProviders().map((p) => p.name) },
     payments: {
       configured: stripeKey && Boolean(process.env.STRIPE_WEBHOOK_SECRET),

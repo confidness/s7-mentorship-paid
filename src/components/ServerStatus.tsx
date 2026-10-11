@@ -36,7 +36,7 @@ export default function ServerStatus() {
         <p className="mt-4 border edge fill-soft p-4 text-sm text-rose-700">{t('functions_not_deployed')}</p>
       ) : data ? (
         <ul className="mt-4 space-y-3">
-          <Row ok={data.text.configured} label={t('feature_text')} keyName="GEMINI_API_KEY" detail={data.text.models.join(' → ')} />
+          <Row ok={data.text.configured} label={t('feature_text')} keyName="POLLINATIONS_API_KEY" detail={data.text.models.join(' → ')} />
           {/* The anonymous Pollinations fallback is always last, so "configured" means a keyed provider is there too. */}
           <Row ok={data.images.providers.some((p) => p !== 'pollinations-legacy')} label={t('feature_images')} keyName="POLLINATIONS_API_KEY / HF_TOKEN" detail={data.images.providers.join(' → ') || '—'} />
           <Row ok={data.payments.configured} label={t('feature_payments')} keyName="STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET" />
