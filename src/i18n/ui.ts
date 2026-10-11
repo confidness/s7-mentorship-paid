@@ -76,7 +76,7 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   usage_kit: { en: 'Brand kits' },
   usage_copy: { en: 'Copy requests' },
   usage_image: { en: 'Images' },
-  pro_includes: { en: 'Pro gives you {kit} brand kits, {copy} copy requests and {image} images a month, drawn with the better image models.' },
+  pro_includes: { en: 'Pro gives you {kit} brand kits, {copy} copy requests and {image} images a month.' },
   upgrade_to_pro: { en: 'Upgrade to Pro, ${price}/month' },
   pro_not_open_yet: { en: 'Pro opens soon.' },
   manage_subscription: { en: 'Manage subscription' },
