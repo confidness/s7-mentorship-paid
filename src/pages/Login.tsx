@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
+import { supabase } from '../lib/supabase'
 import type { Role } from '../lib/bazaar'
 import { Button, Field, inputClass } from '../components/ui'
 import { Logo } from '../components/Layout'
@@ -50,6 +51,23 @@ export default function Login({ register: startOnRegister }: { register?: boolea
     }
     toast({ title: mode === 'login' ? t('welcome_back') : t('account_created'), tone: 'success' })
     navigate(mode === 'register' && role === 'freelancer' ? '/sell' : '/', { replace: true })
+  }
+
+  /**
+   * Emails a link to /reset-password. The notice reads the same whether or not the address has
+   * an account, so the form cannot be used to find out who has signed up.
+   */
+  async function sendReset() {
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setErrors({ email: t('enter_a_valid_email_address') })
+      return
+    }
+    setErrors({})
+    setBusy(true)
+    const { error } = await supabase().auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/reset-password` })
+    setBusy(false)
+    if (error) setErrors({ form: error.message })
+    else setNotice(t('reset_link_sent'))
   }
 
   return (
@@ -128,6 +146,12 @@ export default function Login({ register: startOnRegister }: { register?: boolea
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
               </Field>
+
+              {mode === 'login' && (
+                <button type="button" onClick={() => void sendReset()} disabled={busy} className="-mt-2 text-sm font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50">
+                  {t('forgot_password')}
+                </button>
+              )}
 
               {mode === 'register' && (
                 <fieldset>

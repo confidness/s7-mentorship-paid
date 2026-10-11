@@ -32,6 +32,7 @@ const eq = (name: string, actual: unknown, expected: unknown) => check(name, Obj
 
 process.env.SUPABASE_URL = 'https://stub.supabase.test'
 process.env.SUPABASE_ANON_KEY = 'anon-not-a-real-key'
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-not-a-real-key'
 const KEY = 'AIza-test-key-not-real'
 
 const KIT_ID = '11111111-1111-4111-8111-111111111111'
@@ -70,6 +71,9 @@ interface GeminiCall {
 let geminiCalls: GeminiCall[] = []
 let geminiReplies: { status?: number; json: unknown }[] = []
 let inserted: Record<string, unknown> | null = null
+/** What take_usage answers: true while under the cap, null once it is reached. */
+let usageAnswer: true | null = true
+let givenBack = 0
 
 const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 const geminiText = (payload: unknown) => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] }, finishReason: 'STOP' }] })
@@ -82,6 +86,12 @@ globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => 
   if (url.includes('/auth/v1/user')) {
     if (!(headers.get('authorization') ?? '').includes('valid-token')) return jsonResponse({ msg: 'invalid JWT' }, 401)
     return jsonResponse({ id: USER_ID, aud: 'authenticated', role: 'authenticated', email: 'owner@example.test' })
+  }
+
+  if (url.includes('/rest/v1/rpc/take_usage')) return jsonResponse(usageAnswer)
+  if (url.includes('/rest/v1/rpc/give_back_usage')) {
+    givenBack++
+    return new Response(null, { status: 204 })
   }
 
   if (url.includes('/rest/v1/brand_kits')) {
@@ -116,6 +126,8 @@ const reset = (replies: { status?: number; json: unknown }[]) => {
   geminiCalls = []
   geminiReplies = replies
   inserted = null
+  usageAnswer = true
+  givenBack = 0
 }
 
 const CLEAN = geminiText({
@@ -197,6 +209,7 @@ console.log('model fallthrough')
   const none = (await (await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))).json()) as { message?: string }
   const reported = none.message ?? ''
   check('when nothing answers, every model’s own reason is reported', GEMINI_MODELS.every((m) => reported.includes(m)) && reported.includes('overloaded'), reported)
+  eq('and the request’s unit is handed back', givenBack, 1)
 
   reset([{ status: 400, json: { error: { message: 'API key not valid. Please pass a valid API key.' } } }])
   const bad = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))
@@ -215,6 +228,12 @@ console.log('nothing is spent for a request that should not be served')
   eq('an unknown format is refused', (await copyRoute(post({ brandKitId: KIT_ID, format: 'constructor', brief: 'x y z' }))).status, 400)
   eq('a kit id that is not an id is refused', (await copyRoute(post({ brandKitId: "' or 1=1 --", format: 'email', brief: 'x y z' }))).status, 400)
   eq('and none of it reached Gemini', geminiCalls.length, 0)
+
+  usageAnswer = null
+  const capped = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'x y z' }))
+  eq('an account at today’s cap is told so', capped.status, 429)
+  eq('before Gemini is asked', geminiCalls.length, 0)
+  usageAnswer = true
 
   delete process.env.GEMINI_API_KEY
   const unconfigured = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'x y z' }))

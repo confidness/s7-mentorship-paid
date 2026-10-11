@@ -17,7 +17,7 @@
 import { normalizeBrandKit, normalizeBusiness, type LogoBrief } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str } from '../_lib/server.js'
 import { generateJson } from '../_lib/gemini.js'
-import { BRAND_KIT_SCHEMA, KIT_COLUMNS, STRATEGIST_DIRECTIVE } from '../_lib/studio.js'
+import { BRAND_KIT_SCHEMA, KIT_COLUMNS, STRATEGIST_DIRECTIVE, takeUsage } from '../_lib/studio.js'
 
 interface Body {
   brandName?: unknown
@@ -40,6 +40,7 @@ function logoAnswers(logo: LogoBrief): string[] {
 }
 
 async function handler(req: Request): Promise<Response> {
+  let giveBack: (() => Promise<void>) | undefined
   try {
     requireMethod(req, 'POST')
     const caller = await requireUser(req)
@@ -56,6 +57,7 @@ async function handler(req: Request): Promise<Response> {
       logo: { kind: answers.kind, style: answers.style, idea: answers.idea, avoid: answers.avoid },
     })
     if (business.offering.length < 10) throw new HttpError(400, 'invalid_input', 'Say what the business sells in a sentence or two.')
+    giveBack = await takeUsage(caller.id, 'kit')
 
     const prompt = [
       brandName ? `Business name: ${brandName} (keep it exactly as written).` : 'The business has no name yet. Suggest one that is short, plain and easy to say.',
@@ -94,6 +96,8 @@ async function handler(req: Request): Promise<Response> {
 
     return json({ kit, logoConcept: draft.logo_concept, model })
   } catch (error) {
+    // A kit the model failed to write is not one of today's five.
+    await giveBack?.().catch(() => {})
     return fail(error)
   }
 }

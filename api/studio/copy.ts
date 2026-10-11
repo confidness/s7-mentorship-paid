@@ -14,7 +14,7 @@
 import { COPY_FORMATS, COPY_GUIDANCE, slopCheck, type BrandKitRow, type CopyFormat } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateJson } from '../_lib/gemini.js'
-import { COPY_DIRECTIVE, COPY_SCHEMA, loadKit } from '../_lib/studio.js'
+import { COPY_DIRECTIVE, COPY_SCHEMA, loadKit, takeUsage } from '../_lib/studio.js'
 
 /** A Map, not an object literal: `LANGUAGES["constructor"]` on a plain object is not undefined. */
 const LANGUAGES = new Map([
@@ -77,6 +77,7 @@ const asVariants = (data: unknown): Variant[] => {
 }
 
 async function handler(req: Request): Promise<Response> {
+  let giveBack: (() => Promise<void>) | undefined
   try {
     requireMethod(req, 'POST')
     const caller = await requireUser(req)
@@ -91,6 +92,7 @@ async function handler(req: Request): Promise<Response> {
     const language = LANGUAGES.get(String(body.language)) ?? 'English'
 
     const kit = await loadKit(caller, kitId)
+    giveBack = await takeUsage(caller.id, 'copy')
     const system = voiceInstructions(kit, format, language)
     const banned = kit.voice_rules_json?.banned_words ?? []
 
@@ -135,6 +137,7 @@ async function handler(req: Request): Promise<Response> {
       model,
     })
   } catch (error) {
+    await giveBack?.().catch(() => {})
     return fail(error)
   }
 }

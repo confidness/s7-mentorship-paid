@@ -8,6 +8,7 @@ import { backendConfigured } from './lib/supabase'
 
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import ResetPassword from './pages/ResetPassword'
 import Settings from './pages/Settings'
 import StudioHome from './pages/studio/Home'
 import NewKit from './pages/studio/NewKit'
@@ -68,6 +69,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Login register />} />
+        {/* Outside Protected: the reset link signs the person in, and a dead link must still say so. */}
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route
           element={

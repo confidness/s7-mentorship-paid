@@ -115,6 +115,35 @@ export const COPY_SCHEMA: GeminiSchema = {
   required: ['variants'],
 }
 
+/* ------------------------------------------------------------------ daily caps */
+
+/**
+ * What one account may spend per day (UTC). Every request draws on allowances the whole site
+ * shares — Gemini's free tier, Pollinations' Quest Pollen — so a cap is what stops one account
+ * or one bot from spending them for everybody.
+ */
+export const DAILY_LIMITS = { kit: 5, copy: 40, image: 20 } as const
+export type UsageKind = keyof typeof DAILY_LIMITS
+
+const LIMIT_NAMES: Record<UsageKind, string> = { kit: 'brand kits', copy: 'copy requests', image: 'images' }
+
+/**
+ * Takes one of today's units for `kind`, or answers 429. Returns the function that gives it
+ * back, for the route to call when the model fails: a timeout should not cost a day's kit.
+ *
+ * Through the service role, because only the server may count. If the count cannot be read
+ * the request is refused: a cap that opens when the database hiccups is no cap.
+ */
+export async function takeUsage(callerId: string, kind: UsageKind): Promise<() => Promise<void>> {
+  const db = adminClient()
+  const { data, error } = await db.rpc('take_usage', { who: callerId, what: kind, cap: DAILY_LIMITS[kind] })
+  if (error) throw new HttpError(500, 'usage_failed', error.message)
+  if (data !== true) throw new HttpError(429, 'daily_limit', `You have used today's ${DAILY_LIMITS[kind]} ${LIMIT_NAMES[kind]}. More tomorrow.`)
+  return async () => {
+    await db.rpc('give_back_usage', { who: callerId, what: kind })
+  }
+}
+
 /* ------------------------------------------------------------------ kits */
 
 export const KIT_COLUMNS = 'id, user_id, brand_name, vibe_summary, business_json, palette_json, typography_json, voice_rules_json, logo_url, created_at, updated_at'

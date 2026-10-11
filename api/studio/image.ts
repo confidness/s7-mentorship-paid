@@ -14,7 +14,7 @@
 import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateImage } from '../_lib/images.js'
-import { loadKit, storeImage } from '../_lib/studio.js'
+import { loadKit, storeImage, takeUsage } from '../_lib/studio.js'
 
 interface Body {
   brandKitId?: unknown
@@ -24,6 +24,7 @@ interface Body {
 }
 
 async function handler(req: Request): Promise<Response> {
+  let giveBack: (() => Promise<void>) | undefined
   try {
     requireMethod(req, 'POST')
     const caller = await requireUser(req)
@@ -39,6 +40,7 @@ async function handler(req: Request): Promise<Response> {
 
     const kit = await loadKit(caller, kitId)
     if (purpose === 'logo' && kit.user_id !== caller.id) throw new HttpError(403, 'forbidden', 'Only the owner can change a brand’s logo.')
+    giveBack = await takeUsage(caller.id, 'image')
 
     const logo = kit.business_json.logo
     const prompt = buildImagePrompt({
@@ -64,6 +66,7 @@ async function handler(req: Request): Promise<Response> {
 
     return json({ url, prompt, provider: image.provider })
   } catch (error) {
+    await giveBack?.().catch(() => {})
     return fail(error)
   }
 }
