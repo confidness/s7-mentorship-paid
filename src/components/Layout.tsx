@@ -186,6 +186,7 @@ export default function Layout() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 pt-7 pb-36 sm:px-6 lg:pb-16">
+        <p className="mb-5 text-center text-xs text-ink-500">{t('demo_notice')}</p>
         {sectionTabs && <SectionTabs tabs={sectionTabs} />}
         <PageTransition routeKey={location.pathname}>
           <Outlet />
