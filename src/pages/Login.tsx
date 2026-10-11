@@ -12,6 +12,7 @@ import { Mark } from '../components/Mark'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
 import AtelierSceneGate from '../components/AtelierSceneGate'
 import { RolePicker } from './Settings'
+import { LegalLinks } from './Legal'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
   const { login, register } = useApp()
@@ -180,6 +181,10 @@ export default function Login({ register: startOnRegister }: { register?: boolea
             <p className="relative mt-6 flex items-center justify-center gap-1.5 text-xs text-ink-500">
               <ShieldCheck size={13} aria-hidden="true" />
               {t('payments_are_handled_by_stripe')}
+            </p>
+            <p className="relative mt-3 text-center text-xs text-ink-500">
+              {mode === 'register' && <span className="mb-1 block">{t('agree_to_terms')}</span>}
+              <LegalLinks />
             </p>
           </div>
         </div>

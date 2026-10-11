@@ -10,6 +10,7 @@ import { PageTransition } from './motion'
 import { SectionTabs, tabsForPath } from './sections'
 import { isNavActive, navFor, type NavItem } from './nav'
 import { NavRail, UserMenu, useEscape } from './menubar'
+import { LegalLinks } from '../pages/Legal'
 
 /** The mark on its disc. Under the orbit skin a slow ring of light turns behind it. */
 function BrandMark({ size = 38 }: { size?: number }) {
@@ -186,7 +187,9 @@ export default function Layout() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 pt-7 pb-36 sm:px-6 lg:pb-16">
-        <p className="mb-5 text-center text-xs text-ink-500">{t('demo_notice')}</p>
+        <p className="mb-5 flex flex-wrap justify-center gap-x-2 text-center text-xs text-ink-500">
+          {t('demo_notice')} <LegalLinks />
+        </p>
         {sectionTabs && <SectionTabs tabs={sectionTabs} />}
         <PageTransition routeKey={location.pathname}>
           <Outlet />

@@ -80,6 +80,10 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   upgrade_to_pro: { en: 'Upgrade to Pro, ${price}/month' },
   pro_not_open_yet: { en: 'Pro opens soon.' },
   demo_notice: { en: 'Brandyzer is a demo. Payments run in test mode.' },
+  legal_terms: { en: 'Terms' },
+  legal_privacy: { en: 'Privacy' },
+  legal_refunds: { en: 'Refunds' },
+  agree_to_terms: { en: 'By creating an account, you agree to the Terms and the Privacy Policy.' },
   manage_subscription: { en: 'Manage subscription' },
   forgot_password: { en: 'Forgot password?' },
   reset_link_sent: { en: 'If an account uses that email, a link to set a new password is on its way.' },
@@ -97,7 +101,7 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   confirm_email_then_sign_in: { en: 'Account created. Confirm the link in your email, then sign in.' },
   welcome_back: { en: 'Welcome back' },
   account_created: { en: 'Account created' },
-  payments_are_handled_by_stripe: { en: 'Payments and payouts are handled by Stripe. We never see card or bank details.' },
+  payments_are_handled_by_stripe: { en: 'Payments are handled by Lemon Squeezy and Stripe. We never see card or bank details.' },
 
   /* ----------------------------------------------------------------- not found */
   nothing_at_this_address: { en: 'Nothing at this address' },
