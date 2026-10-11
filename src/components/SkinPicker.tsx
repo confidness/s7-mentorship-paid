@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { HOUSE_SKINS, INDUSTRY_SKINS, useSkin, type SkinChoice } from '../lib/theme'
+import { HOUSE_SKINS, INDUSTRY_SKINS, isOrbitAllowed, useSkin, type SkinChoice } from '../lib/theme'
 import { t } from '../i18n'
 
 /**
@@ -62,7 +62,8 @@ function Group({ heading, subtitle, options, skin, onPick }: { heading: string; 
             role="radio"
             aria-checked={active}
             onClick={() => onPick(id)}
-            className={`flex items-start gap-3.5 rounded-[var(--ui-radius-sm)] border p-3.5 text-left transition ${
+            disabled={id === 'orbit' && !isOrbitAllowed()}
+            className={`flex items-start gap-3.5 rounded-[var(--ui-radius-sm)] border p-3.5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
               active ? 'border-[var(--color-accent-400)] fill-strong ring-2 ring-[var(--color-accent-400)]' : 'edge fill-soft hover:fill'
             }`}
           >

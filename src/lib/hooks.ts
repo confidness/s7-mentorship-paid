@@ -40,6 +40,11 @@ export function useAsync<T>(load: () => Promise<T>, deps: DependencyList) {
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.code === 'api_unavailable' || err.code === 'not_configured') return t('server_functions_not_running')
+    // The server's own wording is English; these say the same in the reader's language.
+    if (err.code === 'free_limit') return t('free_limit_reached')
+    if (err.code === 'monthly_limit') return t('pro_limit_reached')
+    if (err.code === 'pro_still_billing') return t('delete_cancel_pro_first')
+    if (err.code === 'has_contracts') return t('delete_has_contracts')
     return err.message
   }
   return err instanceof Error && err.message ? err.message : t('something_went_wrong_try_again')

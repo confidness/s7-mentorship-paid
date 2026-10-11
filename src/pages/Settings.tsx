@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BriefcaseBusiness, LogOut, Palette, Sparkles, Store, User as UserIcon, Users } from 'lucide-react'
+import { BriefcaseBusiness, LogOut, Palette, Sparkles, Store, Trash2, User as UserIcon, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
 import type { Role } from '../lib/bazaar'
-import { getPlan, proCheckoutUrl, updateMe } from '../lib/api'
+import { deleteAccount, getPlan, proCheckoutUrl, updateMe } from '../lib/api'
 import { PLAN_LIMITS, PRO_PRICE_USD, USAGE_KINDS } from '../lib/plans'
 import { errorMessage, useAsync } from '../lib/hooks'
-import { Button, Card, Field, ProgressBar, SectionHeading, btn, inputClass } from '../components/ui'
+import { Button, Card, Field, Modal, ProgressBar, SectionHeading, btn, inputClass } from '../components/ui'
 import SkinPicker from '../components/SkinPicker'
 import ServerStatus from '../components/ServerStatus'
 import { PageHeader } from '../components/kit'
@@ -100,6 +100,51 @@ function PlanCard({ user }: { user: { id: string; email: string } }) {
   )
 }
 
+/** Asks once, then deletes. The server refuses while Pro still bills, or with Bazaar contracts, and says why. */
+function DeleteAccount({ onDeleted }: { onDeleted: () => void }) {
+  const toast = useToast()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function remove() {
+    setBusy(true)
+    try {
+      await deleteAccount()
+      onDeleted()
+    } catch (err) {
+      setBusy(false)
+      setOpen(false)
+      toast({ title: t('could_not_delete'), body: errorMessage(err), tone: 'error' })
+    }
+  }
+
+  return (
+    <>
+      <Button variant="ghost" icon={Trash2} onClick={() => setOpen(true)}>
+        {t('delete_account')}
+      </Button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t('delete_account_title')}
+        subtitle={t('delete_account_body')}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t('keep_it')}
+            </Button>
+            <Button variant="danger" icon={Trash2} loading={busy} onClick={() => void remove()}>
+              {t('delete_account')}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-600">{t('delete_account_note')}</p>
+      </Modal>
+    </>
+  )
+}
+
 export default function Settings() {
   const { user, refreshMe, logout } = useApp()
   const toast = useToast()
@@ -161,15 +206,23 @@ export default function Settings() {
         <ServerStatus />
       </Card>
 
-      <Button
-        variant="danger"
-        icon={LogOut}
-        onClick={() => {
-          void logout().then(() => navigate('/login'))
-        }}
-      >
-        {t('sign_out')}
-      </Button>
+      <div className="flex flex-wrap gap-3">
+        <Button
+          variant="danger"
+          icon={LogOut}
+          onClick={() => {
+            void logout().then(() => navigate('/login'))
+          }}
+        >
+          {t('sign_out')}
+        </Button>
+        <DeleteAccount
+          onDeleted={() => {
+            toast({ title: t('account_deleted'), tone: 'success' })
+            void logout().then(() => navigate('/login'))
+          }}
+        />
+      </div>
     </div>
   )
 }

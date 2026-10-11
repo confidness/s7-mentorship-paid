@@ -117,6 +117,9 @@ export function proCheckoutUrl(user: { id: string; email: string }): string | nu
   return url.toString()
 }
 
+/** Deletes the caller's account and everything in it. See api/account/delete.ts for what refuses it. */
+export const deleteAccount = () => call<{ ok: true }>('/api/account/delete', { method: 'POST' })
+
 export async function updateMe(patch: { name?: string; bio?: string | null; role?: Role }) {
   const id = await myId()
   check(await supabase().from('profiles').update(patch).eq('id', id).select('id').single())

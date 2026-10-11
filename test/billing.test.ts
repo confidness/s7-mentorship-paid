@@ -6,6 +6,7 @@
 
 import { proUntilFor, validSignature } from '../api/_lib/billing.ts'
 import { POST as lemonRoute } from '../api/billing/lemon.ts'
+import { POST as deleteRoute } from '../api/account/delete.ts'
 
 declare const process: { env: Record<string, string | undefined>; exitCode?: number }
 
@@ -111,6 +112,43 @@ const deliver = async (body: string, signature?: string) =>
   await deliver(anonymous)
   check('an event with no buyer id updates the row by subscription id', writes[0]?.method === 'PATCH' && writes[0]?.url.includes('ls_subscription_id=eq.777'), writes[0])
   eq('and an expired one ends Pro', writes[0]?.body.pro_until, null)
+}
+
+/* ------------------------------------------------------------------ deleting an account */
+
+console.log('deleting an account')
+{
+  process.env.SUPABASE_ANON_KEY = 'anon-not-a-real-key'
+  let status = 'active'
+  let files = [{ name: 'logo.webp' }]
+  const calls: string[] = []
+  globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    const url = String(input)
+    const method = (init.method ?? 'GET').toUpperCase()
+    calls.push(`${method} ${new URL(url).pathname}`)
+    if (url.includes('/auth/v1/user')) return Response.json({ id: USER_ID, email: 'owner@example.com' })
+    if (url.includes('/rest/v1/memberships')) return Response.json({ status })
+    if (url.includes('/rest/v1/bazaar_contracts')) return new Response(null, { status: 200, headers: { 'content-range': '*/0' } })
+    if (url.includes('/storage/v1/object/list/')) return Response.json(files)
+    if (method === 'DELETE' && url.includes('/storage/v1/object/')) {
+      files = []
+      return Response.json([])
+    }
+    if (url.includes('/auth/v1/admin/users/')) return Response.json({})
+    throw new Error(`unexpected fetch: ${method} ${url}`)
+  }) as typeof fetch
+
+  const ask = () => deleteRoute(new Request('https://brandyzer.test/api/account/delete', { method: 'POST', headers: { authorization: 'Bearer valid-token' } }))
+
+  const refused = await ask()
+  eq('a Pro subscription that still bills blocks deletion', refused.status, 409)
+  check('and nothing is deleted', !calls.some((c) => c.startsWith('DELETE')), calls)
+
+  status = 'cancelled'
+  calls.length = 0
+  eq('once cancelled, the account is deleted', (await ask()).status, 200)
+  check('its images first', calls.some((c) => c.startsWith('DELETE /storage/v1/object/brand-assets')), calls)
+  check('then the user', calls.some((c) => c === `DELETE /auth/v1/admin/users/${USER_ID}`), calls)
 }
 
 if (failures) {

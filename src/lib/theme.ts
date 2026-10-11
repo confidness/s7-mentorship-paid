@@ -100,13 +100,23 @@ export function useTheme() {
  * the editorial skin at night, not a different one — so a skin defines both themes and the
  * two choices never collapse into a single list of five hybrid options.
  *
- * `orbit` is the default: the platform's own world, a live 3D scene under frosted glass. The
- * rest are a choice taken in settings — `plain` among them, for anyone who would rather the
- * interface got out of the way.
+ * `plain` is the default. `orbit`, the platform's own world — a live 3D scene under frosted
+ * glass — is Pro's; the rest are a choice taken in settings.
  */
 export type SkinChoice = 'orbit' | 'plain' | 'editorial' | 'atelier' | 'brutal' | 'terminal' | 'marketplace' | 'academy' | 'streak' | 'cinema' | 'poster'
 
-export const DEFAULT_SKIN: SkinChoice = 'orbit'
+export const DEFAULT_SKIN: SkinChoice = 'plain'
+
+/**
+ * Orbit is Pro's. Until App has asked for the plan it is not allowed; a saved `orbit` stays
+ * saved, so it comes back the moment the plan says Pro — and after a sign-out and back in.
+ */
+let orbitAllowed = false
+export const isOrbitAllowed = () => orbitAllowed
+export function allowOrbit(on: boolean) {
+  orbitAllowed = on
+  document.documentElement.dataset.skin = readSkin()
+}
 
 /**
  * Two families, and the split is where they came from.
@@ -127,7 +137,7 @@ const SKIN_KEY = 'brandyzer-skin'
 export function readSkin(): SkinChoice {
   try {
     const saved = localStorage.getItem(SKIN_KEY)
-    if (saved && (SKINS as string[]).includes(saved)) return saved as SkinChoice
+    if (saved && (SKINS as string[]).includes(saved) && (saved !== 'orbit' || orbitAllowed)) return saved as SkinChoice
   } catch {
     /* storage blocked — fall through to the default */
   }

@@ -232,7 +232,9 @@ console.log('nothing is spent for a request that should not be served')
   usageAnswer = 'free_full'
   const capped = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'x y z' }))
   eq('a free account at its monthly limit is told so', capped.status, 429)
-  check('and told what Pro gives', ((await capped.json()) as { message?: string }).message?.includes('Pro has') === true)
+  const cappedBody = (await capped.json()) as { error?: string; message?: string }
+  eq('with its own code, which the Studio answers with an upgrade link', cappedBody.error, 'free_limit')
+  check('and told what Pro gives', cappedBody.message?.includes('Pro has') === true)
   eq('before Gemini is asked', geminiCalls.length, 0)
   usageAnswer = 'free'
 

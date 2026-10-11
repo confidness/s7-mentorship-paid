@@ -6,13 +6,14 @@ export type Locale = 'kk' | 'ru' | 'en'
 /**
  * Only the languages the dictionary is complete in.
  *
- * Brandyzer's interface is written in English so far. The machinery for Kazakh and Russian
- * is all still here — `t()`, the Kazakh date names, the switch in the menu — and turning one
- * back on is a matter of writing its strings in ui.ts and adding it to this list. Offering a
- * language before then would show a Russian date beside an English sentence, which reads as
- * broken rather than as partly translated. The Studio still *writes copy* in all three.
+ * Kazakh, Russian and English, each complete in ui.ts. A new language goes here only once
+ * every string has it: a Russian date beside an English sentence reads as broken.
  */
-export const LOCALES: { value: Locale; label: string; short: string }[] = [{ value: 'en', label: 'English', short: 'ENG' }]
+export const LOCALES: { value: Locale; label: string; short: string }[] = [
+  { value: 'kk', label: 'Қазақша', short: 'ҚАЗ' },
+  { value: 'ru', label: 'Русский', short: 'РУС' },
+  { value: 'en', label: 'English', short: 'ENG' },
+]
 
 const KEY = 'brandyzer-locale'
 const TAGS: Record<Locale, string> = { kk: 'kk-KZ', ru: 'ru-RU', en: 'en-US' }

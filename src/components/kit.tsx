@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Ban, Camera, Check, Copy, MessageSquareQuote, Type } from 'lucide-react'
 import { googleFontsHrefs, type BrandKitRow, type PaletteColor, type Typography, type VoiceRules } from '../lib/brand'
 import { Card, SectionHeading } from './ui'
@@ -28,6 +29,15 @@ export function ErrorNote({ children }: { children: ReactNode }) {
   return (
     <p role="alert" className="border border-rose-300/60 bg-rose-100/60 px-3.5 py-2.5 text-sm font-medium text-rose-700">
       {children}
+      {/* Running out on Free is the moment an upgrade is wanted; Settings holds the button. */}
+      {children === t('free_limit_reached') && (
+        <>
+          {' '}
+          <Link to="/settings" className="font-semibold underline underline-offset-2">
+            {t('see_pro')}
+          </Link>
+        </>
+      )}
     </p>
   )
 }
