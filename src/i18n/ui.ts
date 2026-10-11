@@ -391,7 +391,7 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   configured: { en: 'Configured.', ru: 'Настроено.', kk: 'Бапталған.' },
   set_key_then_redeploy: { en: 'Set {key} in Vercel, then redeploy.', ru: 'Укажите {key} в Vercel и переразверните.', kk: 'Vercel-де {key} орнатып, қайта жариялаңыз.' },
   functions_not_deployed: { en: 'The server functions did not answer. On a static preview they are not running; deploy to Vercel or run `vercel dev`.', ru: 'Серверные функции не ответили. В статическом превью они не работают; разверните на Vercel или запустите `vercel dev`.', kk: 'Серверлік функциялар жауап бермеді. Статикалық алдын ала қарауда олар жұмыс істемейді; Vercel-ге жариялаңыз немесе `vercel dev` іске қосыңыз.' },
-  feature_text: { en: 'Brand kits and copy (Pollinations)', ru: 'Брендбуки и тексты (Pollinations)', kk: 'Бренд-киттер мен мәтіндер (Pollinations)' },
+  feature_text: { en: 'Brand kits and copy (OpenRouter)', ru: 'Брендбуки и тексты (OpenRouter)', kk: 'Бренд-киттер мен мәтіндер (OpenRouter)' },
   feature_images: { en: 'Images', ru: 'Изображения', kk: 'Суреттер' },
   feature_payments: { en: 'Payments', ru: 'Платежи', kk: 'Төлемдер' },
   feature_connect_events: { en: 'Payout status updates', ru: 'Обновления статуса выплат', kk: 'Төлем күйінің жаңартулары' },

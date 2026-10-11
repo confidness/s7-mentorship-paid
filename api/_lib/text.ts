@@ -1,41 +1,41 @@
 /**
- * Text generation on Pollinations, asked for JSON and held to a schema.
+ * Text generation on OpenRouter's free models, asked for JSON and held to a schema.
  *
- * The same key and wallet as the images (POLLINATIONS_API_KEY): one provider, one balance to
- * watch. Pollinations speaks OpenAI's chat-completions shape, so this is one POST with a
- * `json_schema` response format. The key travels in the Authorization header, never the URL.
+ * OpenRouter speaks OpenAI's chat-completions shape, so this is one POST with a `json_schema`
+ * response format, routed only to providers that honour it. The key travels in the
+ * Authorization header, never the URL.
  *
  * Candidates are tried in order and the first that answers wins — a busy or retired model
- * should cost a fallback, not a failed kit. All three are ones free Quest Pollen may pay for,
- * at about 0.003 pollen a brand kit. POLLINATIONS_TEXT_MODEL pins one and is never substituted.
+ * should cost a fallback, not a failed kit.
+ *
+ * ponytail: free models cap the whole account at 50 requests a day and 20 a minute (1,000 a
+ * day once $10 of credits has ever been bought). Enough for a demo, not for a launch: add
+ * credits, or a paid model at the head of TEXT_MODELS, when real traffic comes.
  */
 
 declare const process: { env: Record<string, string | undefined> }
 
 import { HttpError } from './server.js'
 
-/** From gen.pollinations.ai/text/models on 2026-10-11: not paid-only, response_format supported, healthy. */
-export const TEXT_MODELS = ['openai/gpt-5.6-luna', 'deepseek/deepseek-v4.1-flash', 'openai/gpt-5.4-nano']
+/** From openrouter.ai/api/v1/models on 2026-10-11: the free models that take a JSON schema. Strongest first. */
+export const TEXT_MODELS = ['nvidia/nemotron-3-super-120b-a12b:free', 'dots-studio/dots-3-note-preview:free', 'apodex/apodex-1.1-mini:free']
 
-const ENDPOINT = 'https://gen.pollinations.ai/v1/chat/completions'
+const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 
 /**
  * Per attempt, and the default for all of them together. Routes run under a 150 second
  * ceiling (vercel.json) and may make two calls, so a route passes its own `deadline` and
  * every attempt is cut to fit what is left of it — a request Vercel kills mid-flight is
- * pollen spent for a 504.
+ * a request spent for a 504.
  */
 const ATTEMPT_MS = 60_000
 const BUDGET_MS = 140_000
 /** Not worth starting an attempt with less than this left. */
 const MIN_ATTEMPT_MS = 4_000
 
-export const textKey = () => process.env.POLLINATIONS_API_KEY?.trim() || ''
+export const textKey = () => process.env.OPENROUTER_API_KEY?.trim() || ''
 
-export function textModels(): string[] {
-  const pinned = process.env.POLLINATIONS_TEXT_MODEL?.trim()
-  return pinned ? [pinned] : TEXT_MODELS
-}
+export const textModels = () => TEXT_MODELS
 
 /**
  * The schema shape the Studio's schemas are written in: an OpenAPI subset with upper-case
@@ -63,8 +63,8 @@ export function toJsonSchema(schema: TextSchema): Record<string, unknown> {
 }
 
 /**
- * Not worth trying the next model for: a bad key (401/403) or an empty wallet (402). Every
- * candidate shares the key and the wallet, so each would fail the same way, only slower.
+ * Not worth trying the next model for: a bad key (401/403) or a negative balance (402). Every
+ * candidate shares the key and the account, so each would fail the same way, only slower.
  */
 const sharedFailure = (status: number) => status === 401 || status === 402 || status === 403
 
@@ -97,7 +97,7 @@ export interface JsonResult<T> {
  */
 export async function generateJson<T = unknown>(input: { system: string; prompt: string; schema: TextSchema; deadline?: number }): Promise<JsonResult<T>> {
   const key = textKey()
-  if (!key) throw new HttpError(501, 'not_configured', 'POLLINATIONS_API_KEY is not set.')
+  if (!key) throw new HttpError(501, 'not_configured', 'OPENROUTER_API_KEY is not set.')
 
   const deadline = input.deadline ?? Date.now() + BUDGET_MS
   // Every attempt and why it failed. The last failure alone hides the one that mattered.
@@ -122,11 +122,13 @@ export async function generateJson<T = unknown>(input: { system: string; prompt:
             { role: 'user', content: input.prompt },
           ],
           response_format: { type: 'json_schema', json_schema: { name: 'answer', schema: toJsonSchema(input.schema) } },
+          // Only to a provider that honours the schema, rather than one that ignores it.
+          provider: { require_parameters: true },
           // All three reason before answering; "low" keeps a brand kit inside an attempt's time.
-          reasoning_effort: 'low',
-          // Generous on purpose: the reasoning is billed against this same ceiling. Too low,
-          // and the JSON is cut off mid-object with finish_reason "length".
-          max_completion_tokens: 8192,
+          reasoning: { effort: 'low' },
+          // Generous on purpose: the reasoning counts against this same ceiling. Too low, and
+          // the JSON is cut off mid-object with finish_reason "length".
+          max_tokens: 8192,
         }),
       })
     } catch {

@@ -1,5 +1,5 @@
 /**
- * The Studio routes, run for real, with Pollinations, Supabase and the image providers stubbed.
+ * The Studio routes, run for real, with OpenRouter, Supabase and the image providers stubbed.
  *
  * What this answers is narrow and worth asking: does what the server sends the model carry the
  * schema, the spec's directive and the kit's own rules — and never the key in the URL? Does a
@@ -65,7 +65,8 @@ interface TextCall {
     model?: string
     messages?: { role?: string; content?: string }[]
     response_format?: { type?: string; json_schema?: { schema?: { type?: string } } }
-    reasoning_effort?: string
+    reasoning?: { effort?: string }
+    provider?: { require_parameters?: boolean }
   }
 }
 
@@ -142,7 +143,7 @@ const CLEAN = chatText({
 /* ------------------------------------------------------------------ what leaves */
 
 console.log('what the copy route sends the model')
-process.env.POLLINATIONS_API_KEY = KEY
+process.env.OPENROUTER_API_KEY = KEY
 {
   reset([{ json: CLEAN }])
   const res = await copyRoute(post({ brandKitId: KIT_ID, format: 'instagram_caption', brief: 'Cardamom buns this Saturday' }))
@@ -158,7 +159,8 @@ process.env.POLLINATIONS_API_KEY = KEY
   check('and never in the URL, where logs would keep it', !call.url.includes(KEY), call.url)
   eq('JSON is required', call.body.response_format?.type, 'json_schema')
   eq('and held to a schema, in JSON Schema’s own lower case', call.body.response_format?.json_schema?.schema?.type, 'object')
-  eq('the model is asked to reason lightly', call.body.reasoning_effort, 'low')
+  eq('the model is asked to reason lightly', call.body.reasoning?.effort, 'low')
+  eq('and only providers that honour the schema may answer', call.body.provider?.require_parameters, true)
   eq('the directive is the system message', call.body.messages?.[0]?.role, 'system')
   const system = call.body.messages?.[0]?.content ?? ''
   check('the spec’s copy directive is sent word for word', system.includes(COPY_DIRECTIVE))
@@ -218,9 +220,9 @@ console.log('model fallthrough')
   eq('a bad key stops at once rather than failing on every model', textCalls.length, 1)
   eq('and is reported as an upstream failure', bad.status, 502)
 
-  reset([{ status: 402, json: { error: { message: 'Insufficient pollen balance' } } }])
+  reset([{ status: 402, json: { error: { message: 'Insufficient credits' } } }])
   await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))
-  eq('so does an empty wallet, which every model shares', textCalls.length, 1)
+  eq('so does a negative balance, which every model shares', textCalls.length, 1)
 
   reset([{ json: { choices: [{ message: { content: null }, finish_reason: 'content_filter' }] } }])
   eq('a safety refusal is a 422 the owner can act on', (await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))).status, 422)
@@ -244,10 +246,10 @@ console.log('nothing is spent for a request that should not be served')
   eq('before the model is asked', textCalls.length, 0)
   usageAnswer = 'free'
 
-  delete process.env.POLLINATIONS_API_KEY
+  delete process.env.OPENROUTER_API_KEY
   const unconfigured = await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'x y z' }))
   eq('no key is a 501, not a crash', unconfigured.status, 501)
-  process.env.POLLINATIONS_API_KEY = KEY
+  process.env.OPENROUTER_API_KEY = KEY
 }
 
 /* ------------------------------------------------------------------ building a kit */
