@@ -39,8 +39,7 @@ export default function ServerStatus() {
           <Row ok={data.text.configured} label={t('feature_text')} keyName="OPENROUTER_API_KEY" detail={data.text.models.join(' → ')} />
           {/* The anonymous Pollinations fallback is always last, so "configured" means a keyed provider is there too. */}
           <Row ok={data.images.providers.some((p) => p !== 'pollinations-legacy')} label={t('feature_images')} keyName="POLLINATIONS_API_KEY / HF_TOKEN" detail={data.images.providers.join(' → ') || '—'} />
-          <Row ok={data.payments.configured} label={t('feature_payments')} keyName="STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET" />
-          <Row ok={data.payments.connectEvents} label={t('feature_connect_events')} keyName="STRIPE_CONNECT_WEBHOOK_SECRET" />
+          <Row ok={data.payments.configured} label={t('feature_payments')} keyName="LEMONSQUEEZY_WEBHOOK_SECRET" />
         </ul>
       ) : null}
       <div className="mt-4">

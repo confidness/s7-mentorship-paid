@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ImagePlus, PenLine, RefreshCw, Store, Trash2, Type } from 'lucide-react'
+import { ArrowLeft, ImagePlus, PenLine, RefreshCw, Trash2, Type } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { deleteKit, drawImage, getKit } from '../../lib/api'
 import { errorMessage, useAsync } from '../../lib/hooks'
-import { Button, Card, Modal, SectionHeading, SkeletonCard, Tabs, btn } from '../../components/ui'
+import { Button, Card, Modal, SectionHeading, SkeletonCard, Tabs } from '../../components/ui'
 import { ErrorNote, LogoTile, PageHeader, Swatches, TypeSpecimen, VoicePanel, useKitFonts } from '../../components/kit'
 import { CopyPanel, ImagePanel } from './panels'
 import { t } from '../../i18n'
@@ -87,17 +87,12 @@ export default function KitPage() {
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader title={kit.brand_name} subtitle={kit.vibe_summary} />
-          {!owner && <p className="mt-2 text-xs font-semibold text-ink-500">{t('shared_with_you_on_a_contract')}</p>}
         </div>
         {owner && (
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" size="sm" icon={RefreshCw} loading={drawing} onClick={() => void redrawLogo()}>
               {kit.logo_url ? t('redraw_logo') : t('draw_logo')}
             </Button>
-            <Link to="/bazaar" className={btn('secondary', 'sm')}>
-              <Store size={15} aria-hidden="true" />
-              {t('hire_with_this_kit')}
-            </Link>
           </div>
         )}
       </Card>
@@ -154,7 +149,6 @@ export default function KitPage() {
           </>
         }
       >
-        <p className="text-sm text-ink-600">{t('delete_kit_contracts_note')}</p>
       </Modal>
     </div>
   )

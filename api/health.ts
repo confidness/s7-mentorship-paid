@@ -21,17 +21,11 @@ async function handler(req: Request): Promise<Response> {
   )
   if (!signedIn) return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
 
-  const stripeKey = Boolean(process.env.STRIPE_SECRET_KEY)
   const body = {
     ok: true,
     text: { configured: Boolean(textKey()), models: textModels() },
     images: { providers: imageProviders().map((p) => p.name) },
-    payments: {
-      configured: stripeKey && Boolean(process.env.STRIPE_WEBHOOK_SECRET),
-      checkout: stripeKey,
-      webhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
-      connectEvents: Boolean(process.env.STRIPE_CONNECT_WEBHOOK_SECRET),
-    },
+    payments: { configured: Boolean(process.env.LEMONSQUEEZY_WEBHOOK_SECRET) },
   }
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
 }

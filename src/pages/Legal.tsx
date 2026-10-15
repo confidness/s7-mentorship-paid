@@ -67,7 +67,7 @@ const TERMS = (
     <Section title="3. What Brandyzer does">
       <p>
         Brandyzer uses AI models to draft brand kits (names, colours, fonts, voice, logos), marketing copy and images from the
-        details you give it. The Bazaar lets people who need design work find freelancers who offer it.
+        details you give it, and builds websites from ready-made templates filled with your brand.
       </p>
     </Section>
 
@@ -116,15 +116,8 @@ const TERMS = (
       </List>
     </Section>
 
-    <Section title="8. The Bazaar">
-      <p>
-        In the Bazaar, the contract for a piece of work is between the client and the freelancer. Brandyzer is not a party to
-        it and does not guarantee the work. Payments for Bazaar work, when enabled, go through Stripe, and any fee we take is
-        shown before you pay. If a client and freelancer disagree, we may try to help, but we do not have to.
-      </p>
-    </Section>
 
-    <Section title="9. The service as it is">
+    <Section title="8. The service as it is">
       <p>
         We run Brandyzer with care, but we provide it "as is". Features can change, and the service or one of the AI
         providers behind it can be slow or unavailable. We may change or stop the service; if we stop it, we will tell you
@@ -132,7 +125,7 @@ const TERMS = (
       </p>
     </Section>
 
-    <Section title="10. Liability">
+    <Section title="9. Liability">
       <p>
         As far as the law allows, we are not liable for indirect losses such as lost profit, lost business or lost data, and
         our total liability to you is limited to what you paid us in the three months before the claim. Nothing here takes
@@ -140,14 +133,14 @@ const TERMS = (
       </p>
     </Section>
 
-    <Section title="11. Ending your account">
+    <Section title="10. Ending your account">
       <p>
         You can stop using Brandyzer at any time and ask us to delete your account at <Mail />. We may suspend or close an
         account that breaks these Terms.
       </p>
     </Section>
 
-    <Section title="12. Law and changes">
+    <Section title="11. Law and changes">
       <p>
         These Terms are governed by the law of the Republic of Kazakhstan, without taking away the protection the law of your
         own country gives you as a consumer. We may update these Terms; the date at the top changes, and for a significant
@@ -172,7 +165,6 @@ const PRIVACY = (
       <List>
         <li><strong>Account:</strong> your email address, a password (stored only as a hash by our sign-in provider; we never see it), your name, an optional bio, and whether you hire, freelance or both.</li>
         <li><strong>Your business:</strong> what you tell the Studio about your business (what you sell, to whom, where, how it should feel, your answers about the logo), and the brand kits, copy and images made from it.</li>
-        <li><strong>Bazaar:</strong> services you list, contracts, briefs, delivery notes and links, and the ids Stripe gives your customer and payout accounts. We never see card or bank numbers.</li>
         <li><strong>Pro:</strong> your subscription's status and renewal date, sent to us by Lemon Squeezy. Lemon Squeezy holds your payment details; we never see them.</li>
         <li><strong>Usage:</strong> how many kits, copy requests and images you have used this month, to apply your plan's limits.</li>
         <li><strong>In your browser:</strong> your sign-in session, language, theme and look, kept in your browser's local storage. We use no advertising or analytics cookies and no trackers.</li>
@@ -183,7 +175,7 @@ const PRIVACY = (
     <Section title="What we use it for">
       <p>
         To run Brandyzer for you: sign you in, draft your kits, copy and images, apply plan limits, run your Pro subscription,
-        run the Bazaar, and send account emails (confirming your address, resetting your password). We do not sell your data,
+        and send account emails (confirming your address, resetting your password). We do not sell your data,
         show ads, or send marketing email.
       </p>
     </Section>
@@ -203,7 +195,6 @@ const PRIVACY = (
         </li>
         <li><strong>Recraft and Hugging Face</strong>: may draw images instead of Pollinations, from the same description.</li>
         <li><strong>Lemon Squeezy</strong>: sells Pro as merchant of record and handles payment, tax and receipts.</li>
-        <li><strong>Stripe</strong>: payments and payouts in the Bazaar, when enabled.</li>
         <li><strong>Google (Gmail)</strong>: sends account emails.</li>
       </List>
       <p>
@@ -215,14 +206,13 @@ const PRIVACY = (
     <Section title="What other people can see">
       <List>
         <li>Images we make for you are stored at long, unguessable links. Anyone you give a link to can open the image.</li>
-        <li>If you offer services in the Bazaar, your name, bio and services are visible to other signed-in users. A freelancer you hire sees the brief and the brand kit you share with them.</li>
       </List>
     </Section>
 
     <Section title="How long we keep it">
       <p>
         As long as your account exists. When you ask us to delete your account, we delete your data within 30 days; copies in
-        our providers' backups expire on their own schedule. Lemon Squeezy and Stripe keep payment records for as long as tax
+        our providers' backups expire on their own schedule. Lemon Squeezy keeps payment records for as long as tax
         and financial law requires.
       </p>
     </Section>

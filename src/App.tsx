@@ -16,13 +16,6 @@ import Settings from './pages/Settings'
 import StudioHome from './pages/studio/Home'
 import NewKit from './pages/studio/NewKit'
 import KitPage from './pages/studio/Kit'
-import Directory from './pages/bazaar/Directory'
-import ServicePage from './pages/bazaar/Service'
-import ContractList from './pages/contracts/List'
-import ContractDetail from './pages/contracts/Detail'
-import MyServices from './pages/sell/Services'
-import ServiceEditor from './pages/sell/ServiceEditor'
-import Payouts from './pages/sell/Payouts'
 
 function Protected({ children }: { children: ReactNode }) {
   const { user } = useApp()
@@ -94,18 +87,6 @@ export default function App() {
           <Route path="/" element={<StudioHome />} />
           <Route path="/studio/new" element={<NewKit />} />
           <Route path="/studio/:kitId" element={<KitPage />} />
-
-          <Route path="/bazaar" element={<Directory />} />
-          <Route path="/bazaar/:serviceId" element={<ServicePage />} />
-
-          <Route path="/contracts" element={<ContractList />} />
-          <Route path="/contracts/:contractId" element={<ContractDetail />} />
-
-          <Route path="/sell" element={<MyServices />} />
-          <Route path="/sell/new" element={<ServiceEditor />} />
-          <Route path="/sell/:serviceId/edit" element={<ServiceEditor />} />
-          <Route path="/sell/payouts" element={<Payouts />} />
-
           <Route path="/settings" element={<Settings />} />
         </Route>
 

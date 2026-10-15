@@ -11,7 +11,7 @@
 export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   /* ----------------------------------------------------------------- brand & chrome */
   brand: { en: 'Brandyzer' },
-  brand_tagline: { en: 'Brand studio & bazaar', ru: 'Бренд-студия и базар', kk: 'Бренд-студия және базар' },
+  brand_tagline: { en: 'AI brand studio', ru: 'ИИ-бренд-студия', kk: 'ЖИ бренд-студиясы' },
   main: { en: 'Main', ru: 'Основное', kk: 'Негізгі' },
   primary: { en: 'Primary', ru: 'Основная', kk: 'Негізгі' },
   more: { en: 'More', ru: 'Ещё', kk: 'Тағы' },
@@ -111,7 +111,7 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   confirm_email_then_sign_in: { en: 'Account created. Confirm the link in your email, then sign in.', ru: 'Аккаунт создан. Подтверди ссылку в письме и войди.', kk: 'Аккаунт құрылды. Поштадағы сілтемені растап, кір.' },
   welcome_back: { en: 'Welcome back', ru: 'С возвращением', kk: 'Қайта қош келдіңіз' },
   account_created: { en: 'Account created', ru: 'Аккаунт создан', kk: 'Аккаунт жасалды' },
-  payments_are_handled_by_stripe: { en: 'Payments are handled by Lemon Squeezy and Stripe. We never see card or bank details.', ru: 'Платежи обрабатывают Lemon Squeezy и Stripe. Мы не видим данные карт и счетов.', kk: 'Төлемдерді Lemon Squeezy мен Stripe өңдейді. Біз карта мен шот деректерін көрмейміз.' },
+  payments_are_handled_by_stripe: { en: 'Payments are handled by Lemon Squeezy. We never see card details.', ru: 'Платежи обрабатывает Lemon Squeezy. Мы не видим данные карт.', kk: 'Төлемдерді Lemon Squeezy өңдейді. Біз карта деректерін көрмейміз.' },
 
   /* ----------------------------------------------------------------- not found */
   nothing_at_this_address: { en: 'Nothing at this address', ru: 'По этому адресу ничего нет', kk: 'Бұл мекенжайда ештеңе жоқ' },

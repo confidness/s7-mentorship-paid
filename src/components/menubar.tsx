@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, LogOut, Settings, Sparkles } from 'lucide-react'
+import { ChevronDown, LogOut, Settings } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { Avatar, Badge } from './ui'
+import { Avatar } from './ui'
 import ThemeToggle from './ThemeToggle'
 import LocaleToggle from './LocaleToggle'
 import { t, useLocale } from '../i18n'
@@ -116,11 +116,6 @@ export function UserMenu() {
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-ink-900">{user.name}</p>
               <p className="truncate text-xs text-ink-500">{user.email}</p>
-              <span className="mt-2 inline-flex">
-                <Badge tone="brand" icon={Sparkles}>
-                  {t(`role_${user.role}`)}
-                </Badge>
-              </span>
             </div>
           </div>
 

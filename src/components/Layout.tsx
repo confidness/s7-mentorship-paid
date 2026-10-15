@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { MoreHorizontal, X } from 'lucide-react'
-import { useApp } from '../lib/store'
 import ThemeToggle from './ThemeToggle'
 import { t } from '../i18n'
 import { Mark } from './Mark'
@@ -138,13 +137,12 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
 }
 
 export default function Layout() {
-  const { user } = useApp()
   const location = useLocation()
   const [sheet, setSheet] = useState(false)
   const closeSheet = useCallback(() => setSheet(false), [])
   const scrolled = useScrolled()
   const sectionTabs = tabsForPath(location.pathname)
-  const nav = navFor(user?.role)
+  const nav = navFor()
   useEscape(sheet, closeSheet)
 
   useEffect(() => {
@@ -169,7 +167,7 @@ export default function Layout() {
                 <BrandMark />
                 <span className="min-w-0 leading-tight lg:hidden xl:block">
                   <span className="block truncate text-[15px] font-bold tracking-[-0.02em] text-ink-900">{t('brand')}</span>
-                  <span className="block truncate text-[11px] text-ink-500">{user ? t(`role_${user.role}`) : t('brand_tagline')}</span>
+                  <span className="block truncate text-[11px] text-ink-500">{t('brand_tagline')}</span>
                 </span>
               </Link>
             </div>

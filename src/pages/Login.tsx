@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
 import { supabase } from '../lib/supabase'
-import type { Role } from '../lib/bazaar'
 import { Button, Field, inputClass } from '../components/ui'
 import { Logo } from '../components/Layout'
 import ThemeToggle from '../components/ThemeToggle'
@@ -11,7 +10,6 @@ import { t } from '../i18n'
 import { Mark } from '../components/Mark'
 import LiquidMetalBackground from '../components/LiquidMetalBackground'
 import AtelierSceneGate from '../components/AtelierSceneGate'
-import { RolePicker } from './Settings'
 import { LegalLinks } from './Legal'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
@@ -23,7 +21,6 @@ export default function Login({ register: startOnRegister }: { register?: boolea
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [role, setRole] = useState<Role>('client')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -39,7 +36,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
     if (Object.keys(next).length) return
 
     setBusy(true)
-    const result: { ok: boolean; error?: string; notice?: string } = await (mode === 'login' ? login(email, password) : register({ name, email, password, role }))
+    const result: { ok: boolean; error?: string; notice?: string } = await (mode === 'login' ? login(email, password) : register({ name, email, password, role: 'client' }))
     setBusy(false)
 
     if (result.notice) {
@@ -51,7 +48,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
       return
     }
     toast({ title: mode === 'login' ? t('welcome_back') : t('account_created'), tone: 'success' })
-    navigate(mode === 'register' && role === 'freelancer' ? '/sell' : '/', { replace: true })
+    navigate('/', { replace: true })
   }
 
   /**
@@ -152,13 +149,6 @@ export default function Login({ register: startOnRegister }: { register?: boolea
                 <button type="button" onClick={() => void sendReset()} disabled={busy} className="-mt-2 text-sm font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50">
                   {t('forgot_password')}
                 </button>
-              )}
-
-              {mode === 'register' && (
-                <fieldset>
-                  <legend className="mb-2 text-sm font-semibold text-ink-800">{t('what_brings_you_here')}</legend>
-                  <RolePicker value={role} onChange={setRole} compact />
-                </fieldset>
               )}
 
               {errors.form && (

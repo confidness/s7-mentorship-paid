@@ -13,8 +13,8 @@
 
 import { normalizeKitRow, type BrandKitRow, type CopyFormat, type ImagePurpose, type ImageShape, type LogoBrief } from './brand'
 import { USAGE_KINDS, type Plan, type UsageKind } from './plans'
-import type { ContractAction, Role, Split } from './bazaar'
-import type { ContractRow, Me, ServiceRow } from './types'
+import type { Role } from './bazaar'
+import type { Me } from './types'
 import { accessToken, backendConfigured, supabase } from './supabase'
 
 export class ApiError extends Error {
@@ -167,92 +167,13 @@ export const writeCopy = (input: { brandKitId: string; format: CopyFormat; brief
 export const drawImage = (input: { brandKitId: string; purpose: ImagePurpose; subject?: string; shape?: ImageShape }) =>
   call<{ url: string; prompt: string; provider: string }>('/api/studio/image', { method: 'POST', body: JSON.stringify(input) })
 
-/* ---------------------------------------------------------------- bazaar */
-
-const SERVICE_COLUMNS = 'id, freelancer_id, title, description, price_usd_cents, delivery_days, portfolio_urls, active, created_at, updated_at'
-const SERVICE_WITH_FREELANCER = `${SERVICE_COLUMNS}, freelancer:profiles!freelancer_id(id, name, avatar, stripe_transfers_active)`
-
-export async function listServices(): Promise<ServiceRow[]> {
-  return check(await supabase().from('bazaar_services').select(SERVICE_WITH_FREELANCER).eq('active', true).order('created_at', { ascending: false }).limit(200)) as unknown as ServiceRow[]
-}
-
-export async function getService(serviceId: string): Promise<ServiceRow | null> {
-  return check(await supabase().from('bazaar_services').select(SERVICE_WITH_FREELANCER).eq('id', serviceId).maybeSingle()) as unknown as ServiceRow | null
-}
-
-export async function myServices(): Promise<ServiceRow[]> {
-  const id = await myId()
-  return check(await supabase().from('bazaar_services').select(SERVICE_COLUMNS).eq('freelancer_id', id).order('created_at', { ascending: false })) as ServiceRow[]
-}
-
-export interface ServiceDraft {
-  title: string
-  description: string
-  price_usd_cents: number
-  delivery_days: number
-  portfolio_urls: string[]
-  active: boolean
-}
-
-/** Written directly: the policy and the column grants are the whole of what may be written. */
-export async function saveService(draft: ServiceDraft, serviceId?: string): Promise<string> {
-  if (serviceId) {
-    check(await supabase().from('bazaar_services').update(draft).eq('id', serviceId).select('id').single())
-    return serviceId
-  }
-  const freelancer_id = await myId()
-  const row = check(await supabase().from('bazaar_services').insert({ ...draft, freelancer_id }).select('id').single()) as { id: string }
-  return row.id
-}
-
-/** One column, so pausing cannot write back a price or title edited in another tab. */
-export async function setServiceActive(serviceId: string, active: boolean) {
-  check(await supabase().from('bazaar_services').update({ active }).eq('id', serviceId).select('id').single())
-}
-
-/** Refused by the database once anybody has hired it — pause it instead. */
-export async function deleteService(serviceId: string) {
-  check(await supabase().from('bazaar_services').delete().eq('id', serviceId))
-}
-
-export const hire = (input: { serviceId: string; brandKitId?: string | null; brief?: string }) =>
-  call<{ url: string; contractId: string; split: Split }>('/api/bazaar/hire', { method: 'POST', body: JSON.stringify(input) })
-
-const CONTRACT_COLUMNS =
-  'id, client_id, freelancer_id, service_id, brand_kit_id, service_title, delivery_days, brief, currency, total_amount_cents, platform_fee_cents, freelancer_payout_cents, status, delivery_note, delivery_url, created_at, funded_at, delivered_at, completed_at'
-const CONTRACT_WITH_PEOPLE = `${CONTRACT_COLUMNS}, client:profiles!client_id(id, name, avatar), freelancer:profiles!freelancer_id(id, name, avatar)`
-
-/** Both sides at once: row level security returns exactly the contracts this person is party to. */
-export async function listContracts(): Promise<ContractRow[]> {
-  return check(await supabase().from('bazaar_contracts').select(CONTRACT_WITH_PEOPLE).order('created_at', { ascending: false }).limit(200)) as unknown as ContractRow[]
-}
-
-export async function getContract(contractId: string): Promise<ContractRow | null> {
-  return check(await supabase().from('bazaar_contracts').select(CONTRACT_WITH_PEOPLE).eq('id', contractId).maybeSingle()) as unknown as ContractRow | null
-}
-
-export const actOnContract = (id: string, action: ContractAction, extra: { note?: string; url?: string } = {}) =>
-  call<{ ok: true; status: string }>('/api/bazaar/contracts', { method: 'PATCH', body: JSON.stringify({ id, action, ...extra }) })
-
-/* ---------------------------------------------------------------- payouts */
-
-export interface PayoutStatus {
-  connected: boolean
-  transfersActive: boolean
-  status: string
-  requirements: string[]
-}
-
-export const startOnboarding = () => call<{ url: string }>('/api/connect/onboard', { method: 'POST' })
-export const payoutStatus = () => call<PayoutStatus>('/api/connect/status')
-
 /* ---------------------------------------------------------------- health */
 
 export interface Health {
   ok: boolean
   text: { configured: boolean; models: string[] }
   images: { providers: string[] }
-  payments: { configured: boolean; checkout: boolean; webhook: boolean; connectEvents: boolean }
+  payments: { configured: boolean }
 }
 
 export const getHealth = () => call<Health>('/api/health')

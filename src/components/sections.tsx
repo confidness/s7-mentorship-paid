@@ -27,15 +27,11 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
   return <Tabs className="mb-6" value={active} onChange={(to) => navigate(to)} tabs={tabs.map((tab) => ({ id: tab.to, label: t(tab.label) }))} />
 }
 
-export const SELL_TABS: SectionTab[] = [
-  { to: '/sell', label: 'my_services' },
-  { to: '/sell/payouts', label: 'payouts' },
-]
-
 /**
  * Which strip belongs above this page, if any. An exact match only: a detail page or an
  * editor gets the full width, and its own back link says more than a row of siblings.
  */
 export function tabsForPath(pathname: string): SectionTab[] | null {
-  return [SELL_TABS].find((group) => group.some((tab) => tab.to === pathname)) ?? null
+  const groups: SectionTab[][] = []
+  return groups.find((group) => group.some((tab) => tab.to === pathname)) ?? null
 }
