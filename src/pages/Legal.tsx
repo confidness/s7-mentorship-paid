@@ -104,7 +104,7 @@ const TERMS = (
       <List>
         <li>The Free plan has monthly limits on brand kits, copy requests and images, shown in Settings.</li>
         <li>
-          Pro costs $25 a month. Lemon Squeezy sells it to you as merchant of record: it takes the payment, charges any tax,
+          Pro costs $20 a month. Lemon Squeezy sells it to you as merchant of record: it takes the payment, charges any tax,
           and sends the receipt, and its buyer terms apply to the purchase.
         </li>
         <li>Pro renews every month until you cancel. Cancel any time from Settings → Manage subscription. Pro then lasts until the end of the month you paid for, and you are not charged again.</li>
