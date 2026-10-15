@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "check": "esbuild test/brand.test.ts test/studio.test.ts test/billing.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/brand.test.mjs && node node_modules/.cache/studio.test.mjs && node node_modules/.cache/billing.test.mjs && node scripts/check-api-imports.mjs && node scripts/check-i18n.mjs"
+    "check": "esbuild test/brand.test.ts test/studio.test.ts test/billing.test.ts test/site.test.ts --bundle --platform=node --format=esm --outdir=node_modules/.cache --out-extension:.js=.mjs --log-level=warning && node node_modules/.cache/brand.test.mjs && node node_modules/.cache/studio.test.mjs && node node_modules/.cache/billing.test.mjs && node node_modules/.cache/site.test.mjs && node scripts/check-api-imports.mjs && node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.81",

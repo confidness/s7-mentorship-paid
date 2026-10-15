@@ -12,6 +12,7 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import ResetPassword from './pages/ResetPassword'
 import Legal from './pages/Legal'
+import SitePage from './pages/Site'
 import Settings from './pages/Settings'
 import StudioHome from './pages/studio/Home'
 import NewKit from './pages/studio/NewKit'
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Login register />} />
         {/* Outside Protected: the reset link signs the person in, and a dead link must still say so. */}
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/s/:slug" element={<SitePage />} />
         <Route path="/terms" element={<Legal doc="terms" />} />
         <Route path="/privacy" element={<Legal doc="privacy" />} />
         <Route path="/refunds" element={<Legal doc="refunds" />} />

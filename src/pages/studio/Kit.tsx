@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ImagePlus, PenLine, RefreshCw, Trash2, Type } from 'lucide-react'
+import { ArrowLeft, Globe, ImagePlus, PenLine, RefreshCw, Trash2, Type } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { deleteKit, drawImage, getKit } from '../../lib/api'
 import { errorMessage, useAsync } from '../../lib/hooks'
 import { Button, Card, Modal, SectionHeading, SkeletonCard, Tabs } from '../../components/ui'
 import { ErrorNote, LogoTile, PageHeader, Swatches, TypeSpecimen, VoicePanel, useKitFonts } from '../../components/kit'
 import { CopyPanel, ImagePanel } from './panels'
+import { WebsitePanel } from './website'
 import { t } from '../../i18n'
 
 /**
@@ -24,7 +25,7 @@ export default function KitPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { data: kit, error, loading, setData } = useAsync(() => getKit(kitId), [kitId])
-  const [tab, setTab] = useState<'copy' | 'images'>('copy')
+  const [tab, setTab] = useState<'copy' | 'images' | 'website'>('copy')
   const [drawing, setDrawing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -120,9 +121,10 @@ export default function KitPage() {
           tabs={[
             { id: 'copy', label: t('write_copy'), icon: PenLine },
             { id: 'images', label: t('make_images'), icon: ImagePlus },
+            ...(owner ? [{ id: 'website' as const, label: t('website'), icon: Globe }] : []),
           ]}
         />
-        {tab === 'copy' ? <CopyPanel kitId={kit.id} /> : <ImagePanel kitId={kit.id} />}
+        {tab === 'copy' ? <CopyPanel kitId={kit.id} /> : tab === 'images' ? <ImagePanel kitId={kit.id} /> : <WebsitePanel kit={kit} />}
       </section>
 
       {owner && (
