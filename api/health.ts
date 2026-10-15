@@ -10,8 +10,17 @@ declare const process: { env: Record<string, string | undefined> }
 
 import { textKey, textModels } from './_lib/text.js'
 import { imageProviders } from './_lib/images.js'
+import { requireUser } from './_lib/server.js'
 
-async function handler(): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
+  // Anonymous callers learn only that the functions are up. Which models, providers and
+  // webhooks are wired is for signed-in members (Settings shows it), not for reconnaissance.
+  const signedIn = await requireUser(req).then(
+    () => true,
+    () => false,
+  )
+  if (!signedIn) return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
+
   const stripeKey = Boolean(process.env.STRIPE_SECRET_KEY)
   const body = {
     ok: true,

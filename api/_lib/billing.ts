@@ -30,6 +30,22 @@ export async function validSignature(raw: string, signature: string, secret: str
  * a few days so a renewal that lands late does not lock a paying customer out. Cancelled:
  * until the end of the period they paid for. Anything else — expired, unpaid, paused — none.
  */
+/**
+ * Binds a checkout link to the account that asked for it.
+ *
+ * The user id rides through Lemon Squeezy as checkout custom data and comes back on every
+ * webhook — but it is typed into a URL, so a buyer could put anybody's id there and point
+ * their own subscription at someone else's membership. The server signs the id when it hands
+ * out the link; the webhook trusts the id only with this signature beside it. The prefix keeps
+ * it from ever matching a webhook body signed with the same secret.
+ */
+export async function checkoutToken(userId: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`checkout:${userId}`)))
+}
+
+export const validCheckoutToken = (userId: string, token: string, secret: string) => validSignature(`checkout:${userId}`, token, secret)
+
 export function proUntilFor(status: string, renewsAt: unknown, endsAt: unknown): string | null {
   const date = (value: unknown) => {
     const time = typeof value === 'string' ? Date.parse(value) : NaN

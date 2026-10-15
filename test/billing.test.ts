@@ -4,7 +4,7 @@
  * real.
  */
 
-import { proUntilFor, validSignature } from '../api/_lib/billing.ts'
+import { checkoutToken, proUntilFor, validCheckoutToken, validSignature } from '../api/_lib/billing.ts'
 import { POST as lemonRoute } from '../api/billing/lemon.ts'
 import { POST as deleteRoute } from '../api/account/delete.ts'
 
@@ -73,9 +73,12 @@ globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => 
   return new Response(null, { status: 201 })
 }) as typeof fetch
 
+// What the server signs into the checkout link it hands out (see checkoutToken).
+const TOKEN = await checkoutToken(USER_ID, SECRET)
+
 const event = (name: string, extra: Record<string, unknown> = {}) =>
   JSON.stringify({
-    meta: { event_name: name, custom_data: { user_id: USER_ID }, ...extra },
+    meta: { event_name: name, custom_data: { user_id: USER_ID, token: TOKEN }, ...extra },
     data: { type: 'subscriptions', id: '777', attributes: { status: 'active', renews_at: '2026-11-11T10:00:00.000Z', ends_at: null } },
   })
 
@@ -91,6 +94,19 @@ const deliver = async (body: string, signature?: string) =>
   eq('who is Pro until renewal plus grace', writes[0]?.body.pro_until, '2026-11-14T10:00:00.000Z')
   eq('with the subscription id kept for later events', writes[0]?.body.ls_subscription_id, '777')
   check('as an upsert on user_id', writes[0]?.method === 'POST' && writes[0]?.url.includes('on_conflict=user_id'), writes[0])
+
+  // The buyer controls the user id in the checkout URL. Pointing a subscription at somebody
+  // else's membership needs a token for *their* id, which only this server can make.
+  writes = []
+  const hijack = JSON.stringify({
+    meta: { event_name: 'subscription_created', custom_data: { user_id: '33333333-3333-4333-8333-333333333333', token: TOKEN } },
+    data: { type: 'subscriptions', id: '888', attributes: { status: 'cancelled', renews_at: null, ends_at: null } },
+  })
+  eq('an id carrying another account’s token is acknowledged', (await deliver(hijack)).status, 200)
+  check('but claims no membership by user id', !writes.some((w) => w.url.includes('on_conflict=user_id')), writes)
+  check('it can only move the row its own subscription already has', writes.length === 1 && writes[0].method === 'PATCH' && writes[0].url.includes('ls_subscription_id=eq.888'), writes)
+  eq('a token for one id does not validate another', await validCheckoutToken('33333333-3333-4333-8333-333333333333', TOKEN, SECRET), false)
+  eq('and does for its own', await validCheckoutToken(USER_ID, TOKEN, SECRET), true)
 
   writes = []
   const forged = await deliver(event('subscription_created'), await sign(event('subscription_created'), 'guess'))

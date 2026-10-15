@@ -58,7 +58,7 @@ function PlanCard({ user }: { user: { id: string; email: string } }) {
   const { data } = useAsync(() => getPlan(user.id), [user.id])
   const plan = data?.plan ?? 'free'
   const limits = PLAN_LIMITS[plan]
-  const checkout = proCheckoutUrl(user)
+  const { data: checkout } = useAsync(() => (plan === 'pro' ? Promise.resolve(null) : proCheckoutUrl()), [user.id, plan])
 
   return (
     <Card className="space-y-5 p-5 sm:p-6">

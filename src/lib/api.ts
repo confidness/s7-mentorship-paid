@@ -104,17 +104,13 @@ export async function getPlan(userId: string): Promise<PlanState> {
 }
 
 /**
- * The Lemon Squeezy checkout for Pro, carrying who is buying. The id comes back on every
- * webhook as meta.custom_data.user_id; the email only saves typing it again. Null until
+ * The Lemon Squeezy checkout for Pro, carrying who is buying — built by the server, which
+ * signs the user id into it so the webhook can tell it was not typed in. Null until
  * VITE_LEMONSQUEEZY_CHECKOUT_URL is set.
  */
-export function proCheckoutUrl(user: { id: string; email: string }): string | null {
-  const base = import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL as string | undefined
-  if (!base) return null
-  const url = new URL(base)
-  url.searchParams.set('checkout[custom][user_id]', user.id)
-  if (user.email) url.searchParams.set('checkout[email]', user.email)
-  return url.toString()
+export async function proCheckoutUrl(): Promise<string | null> {
+  if (!import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL) return null
+  return (await call<{ url: string | null }>('/api/billing/lemon')).url
 }
 
 /** Deletes the caller's account and everything in it. See api/account/delete.ts for what refuses it. */

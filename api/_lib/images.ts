@@ -165,8 +165,10 @@ export async function generateImage(prompt: string, width: number, height: numbe
       const res = await fetch(url, { ...init, signal: AbortSignal.timeout(ATTEMPT_MS) })
       if (!res.ok) {
         // The provider's own words: "invalid key" and "out of credits" need different fixes.
+        // Logged, not returned: a provider's error body can name the account or its balance.
         const detail = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 120)
-        failures.push(`${provider.name} ${res.status}${detail ? ` ${detail}` : ''}`)
+        if (detail) console.warn(`[images] ${provider.name} ${res.status}: ${detail}`)
+        failures.push(`${provider.name} ${res.status}`)
         continue
       }
       const { type, bytes } = await (provider.read ?? readImage)(res)

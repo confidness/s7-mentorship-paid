@@ -13,15 +13,39 @@
  * unsigned body is an anonymous POST, not a payment.
  */
 
-import { adminClient, fail, json, requireEnv, uuidOrNull } from '../_lib/server.js'
-import { proUntilFor, validSignature } from '../_lib/billing.js'
+declare const process: { env: Record<string, string | undefined> }
+
+import { adminClient, fail, json, requireEnv, requireUser, uuidOrNull } from '../_lib/server.js'
+import { checkoutToken, proUntilFor, validCheckoutToken, validSignature } from '../_lib/billing.js'
 
 interface LemonEvent {
-  meta?: { event_name?: unknown; custom_data?: { user_id?: unknown } }
+  meta?: { event_name?: unknown; custom_data?: { user_id?: unknown; token?: unknown } }
   data?: { type?: unknown; id?: unknown; attributes?: { status?: unknown; renews_at?: unknown; ends_at?: unknown } }
 }
 
+/**
+ * GET: the Pro checkout link for the signed-in caller, with their id signed into it.
+ *
+ * Served from this function rather than a route of its own because the project is at Vercel
+ * Hobby's twelve-function limit, and it shares the one secret that matters with the webhook.
+ */
+async function checkoutLink(req: Request): Promise<Response> {
+  try {
+    const caller = await requireUser(req)
+    const base = process.env.VITE_LEMONSQUEEZY_CHECKOUT_URL?.trim()
+    if (!base) return json({ url: null })
+    const url = new URL(base)
+    url.searchParams.set('checkout[custom][user_id]', caller.id)
+    url.searchParams.set('checkout[custom][token]', await checkoutToken(caller.id, requireEnv('LEMONSQUEEZY_WEBHOOK_SECRET')))
+    if (caller.email) url.searchParams.set('checkout[email]', caller.email)
+    return json({ url: url.toString() })
+  } catch (error) {
+    return fail(error)
+  }
+}
+
 async function handler(req: Request): Promise<Response> {
+  if (req.method === 'GET') return checkoutLink(req)
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
   try {
     const raw = await req.text()
@@ -47,10 +71,21 @@ async function handler(req: Request): Promise<Response> {
     // ponytail: last delivery wins. Lemon Squeezy sends these in order in practice; if two ever
     // cross, the next subscription_updated puts the row right.
     const db = adminClient()
-    const userId = uuidOrNull(event.meta?.custom_data?.user_id)
-    const { error } = userId
-      ? await db.from('memberships').upsert({ user_id: userId, ...row }, { onConflict: 'user_id' })
+    // The id is trusted only with the signature this server put beside it (see checkoutToken).
+    // Without one the event can still move the row it already owns, by subscription id, but it
+    // cannot claim anybody's membership.
+    const claimed = uuidOrNull(event.meta?.custom_data?.user_id)
+    const signed = claimed !== null && (await validCheckoutToken(claimed, String(event.meta?.custom_data?.token ?? ''), requireEnv('LEMONSQUEEZY_WEBHOOK_SECRET')))
+    if (claimed && !signed) console.warn('[lemon] unsigned user_id ignored for subscription', row.ls_subscription_id)
+    const { error } = signed
+      ? await db.from('memberships').upsert({ user_id: claimed, ...row }, { onConflict: 'user_id' })
       : await db.from('memberships').update(row).eq('ls_subscription_id', row.ls_subscription_id)
+    // A subscription id already held by another row will never write, however often it is
+    // retried. Acknowledged and logged, so Lemon Squeezy stops redelivering it.
+    if (error?.code === '23505') {
+      console.error('[lemon] subscription conflicts with another membership:', row.ls_subscription_id, claimed)
+      return json({ ok: true, conflict: true })
+    }
     if (error) throw error
 
     return json({ ok: true })

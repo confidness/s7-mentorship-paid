@@ -58,6 +58,9 @@ async function handler(req: Request): Promise<Response> {
     const [width, height] = IMAGE_SHAPES[shape]
     const { background, inks } = logoColours(kit.palette_json ?? [])
     const image = await generateImage(prompt, width, height, { purpose, pro: quota.plan === 'pro', colors: inks.map((c) => c.hex), background: background?.hex })
+    // The provider has been paid for this one. A failure after this point — storage, the logo
+    // write — does not hand the unit back, or failing on purpose would be free generation.
+    giveBack = undefined
     const url = await storeImage(caller.id, image)
 
     if (purpose === 'logo') {

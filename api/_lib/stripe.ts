@@ -38,6 +38,9 @@ export const HIRE_INTEGRATION_ID = 'brandyzer-bazaar-hire-qkrvmzta'
 export function siteOrigin(req: Request): string {
   const configured = process.env.PUBLIC_SITE_URL
   if (configured) return configured.replace(/\/$/, '')
+  // In production the return URL must not come from the request's own headers, which the
+  // caller controls. Previews and local runs may still fall back to them.
+  if (process.env.VERCEL_ENV === 'production') throw new HttpError(500, 'not_configured', 'PUBLIC_SITE_URL is not set.')
   const origin = req.headers.get('origin')
   if (origin) return origin.replace(/\/$/, '')
   const host = req.headers.get('host')
