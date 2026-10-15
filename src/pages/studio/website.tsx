@@ -3,7 +3,7 @@ import { Download, ExternalLink, Globe, Plus, Sparkles, X } from 'lucide-react'
 import { Button, Card, Field, inputClass } from '../../components/ui'
 import { ErrorNote } from '../../components/kit'
 import { supabase } from '../../lib/supabase'
-import { writeCopy } from '../../lib/api'
+import { fillSite } from '../../lib/api'
 import { errorMessage } from '../../lib/hooks'
 import { useToast } from '../../lib/store'
 import { getLocale, t } from '../../i18n'
@@ -46,12 +46,12 @@ export function WebsitePanel({ kit }: { kit: BrandKitRow }) {
       })
   }, [kit.id])
 
-  async function writeTagline() {
+  async function fillFromKit() {
     setBusy('ai')
     setError('')
     try {
-      const { variants } = await writeCopy({ brandKitId: kit.id, format: 'website_hero', brief: c.about || kit.vibe_summary, language: c.lang })
-      if (variants[0]) set({ tagline: variants[0].text })
+      const filled = await fillSite({ brandKitId: kit.id, language: c.lang })
+      set({ tagline: filled.tagline || c.tagline, about: filled.about || c.about, items: filled.items.length ? filled.items : c.items })
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -96,6 +96,9 @@ export function WebsitePanel({ kit }: { kit: BrandKitRow }) {
             ))}
           </div>
         </Field>
+        <Button variant="secondary" icon={Sparkles} loading={busy === 'ai'} onClick={() => void fillFromKit()}>
+          {t('fill_from_kit')}
+        </Button>
         <Field label={t('site_language')}>
           <select className={inputClass} value={c.lang} onChange={(e) => set({ lang: e.target.value as SiteLang })}>
             {LANGS.map((l) => (
@@ -111,9 +114,6 @@ export function WebsitePanel({ kit }: { kit: BrandKitRow }) {
         <Field label={t('site_tagline')}>
           <textarea className={`${inputClass} min-h-16`} value={c.tagline} maxLength={240} onChange={(e) => set({ tagline: e.target.value })} />
         </Field>
-        <Button variant="secondary" size="sm" icon={Sparkles} loading={busy === 'ai'} onClick={() => void writeTagline()}>
-          {t('write_with_ai')}
-        </Button>
         <Field label={t('site_about')}>
           <textarea className={`${inputClass} min-h-24`} value={c.about} maxLength={1200} onChange={(e) => set({ about: e.target.value })} />
         </Field>

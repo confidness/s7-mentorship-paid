@@ -13,6 +13,8 @@ const hex = (bytes: ArrayBuffer) => [...new Uint8Array(bytes)].map((b) => b.toSt
  * as Lemon Squeezy sends it in X-Signature. Compared in constant time, so the check does not
  * tell an attacker how many leading characters they got right.
  */
+import { IMAGE_PACK } from '../../src/lib/plans.js'
+
 export async function validSignature(raw: string, signature: string, secret: string): Promise<boolean> {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const expected = hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(raw)))
@@ -39,12 +41,20 @@ export async function validSignature(raw: string, signature: string, secret: str
  * out the link; the webhook trusts the id only with this signature beside it. The prefix keeps
  * it from ever matching a webhook body signed with the same secret.
  */
-export async function checkoutToken(userId: string, secret: string): Promise<string> {
+export async function checkoutToken(userId: string, secret: string, kind?: OrderKind): Promise<string> {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`checkout:${userId}`)))
+  return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signed(userId, kind))))
 }
 
-export const validCheckoutToken = (userId: string, token: string, secret: string) => validSignature(`checkout:${userId}`, token, secret)
+export const validCheckoutToken = (userId: string, token: string, secret: string, kind?: OrderKind) => validSignature(signed(userId, kind), token, secret)
+
+/** A one-time product signs its kind too, so a link cannot be edited into the other product. */
+const signed = (userId: string, kind?: OrderKind) => (kind ? `checkout:${userId}:${kind}` : `checkout:${userId}`)
+
+/** The one-time $3 products, and what one purchase of each adds. */
+export const ORDER_CREDIT = { site: 1, images: IMAGE_PACK } as const
+export type OrderKind = keyof typeof ORDER_CREDIT
+export const isOrderKind = (v: unknown): v is OrderKind => v === 'site' || v === 'images'
 
 export function proUntilFor(status: string, renewsAt: unknown, endsAt: unknown): string | null {
   const date = (value: unknown) => {

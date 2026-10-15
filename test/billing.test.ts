@@ -167,6 +167,52 @@ console.log('deleting an account')
   check('then the user', calls.some((c) => c === `DELETE /auth/v1/admin/users/${USER_ID}`), calls)
 }
 
+/* ------------------------------------------------------------------ one-time $3 orders */
+
+console.log('one-time orders')
+{
+  const seen: string[] = []
+  let duplicate = false
+  globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    const url = String(input)
+    const method = (init.method ?? 'GET').toUpperCase()
+    const body = init.body ? JSON.parse(String(init.body)) : null
+    if (url.includes('/rest/v1/credit_orders')) {
+      seen.push(`${method} credit_orders`)
+      if (method === 'POST') return duplicate ? Response.json({ code: '23505', message: 'duplicate key' }, { status: 409 }) : new Response(null, { status: 201 })
+      return Response.json([{ order_id: '555' }])
+    }
+    if (url.includes('/rest/v1/rpc/add_credit')) {
+      seen.push(`add_credit ${body.what} ${body.n}`)
+      return new Response(null, { status: 204 })
+    }
+    throw new Error(`unexpected fetch: ${method} ${url}`)
+  }) as typeof fetch
+
+  const order = async (name: string, kind: string, tokenKind: 'site' | 'images' = kind as 'site' | 'images') =>
+    JSON.stringify({
+      meta: { event_name: name, custom_data: { user_id: USER_ID, kind, token: await checkoutToken(USER_ID, SECRET, tokenKind) } },
+      data: { type: 'orders', id: '555', attributes: { status: 'paid' } },
+    })
+
+  eq('a signed paid order is accepted', (await deliver(await order('order_created', 'images'))).status, 200)
+  check('and credits the image pack once', seen.join() === 'POST credit_orders,add_credit images 20', seen)
+
+  seen.length = 0
+  duplicate = true
+  await deliver(await order('order_created', 'images'))
+  check('a redelivered order credits nothing', !seen.some((s) => s.startsWith('add_credit')), seen)
+  duplicate = false
+
+  seen.length = 0
+  await deliver(await order('order_created', 'site', 'images'))
+  eq('a link edited into the other product is ignored', seen.length, 0)
+
+  seen.length = 0
+  await deliver(await order('order_refunded', 'site'))
+  check('a refund takes the website back', seen.join() === 'PATCH credit_orders,add_credit site -1', seen)
+}
+
 if (failures) {
   console.error(`${NL}${failures} check(s) failed`)
   process.exitCode = 1

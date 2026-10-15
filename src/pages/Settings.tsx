@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Palette, Sparkles, Trash2, User as UserIcon } from 'lucide-react'
 import { useApp, useToast } from '../lib/store'
-import { deleteAccount, getPlan, proCheckoutUrl, updateMe } from '../lib/api'
-import { PLAN_LIMITS, PRO_PRICE_USD, USAGE_KINDS } from '../lib/plans'
+import { deleteAccount, getPlan, oneTimeCheckoutUrl, proCheckoutUrl, updateMe, type PlanState } from '../lib/api'
+import { IMAGE_PACK, ONE_TIME_PRICE_USD, PLAN_LIMITS, PRO_PRICE_USD, USAGE_KINDS } from '../lib/plans'
 import { errorMessage, useAsync } from '../lib/hooks'
 import { Button, Card, Field, Modal, ProgressBar, SectionHeading, btn, inputClass } from '../components/ui'
 import SkinPicker from '../components/SkinPicker'
@@ -18,6 +18,31 @@ import { t } from '../i18n'
  * page opened straight after paying may still say Free for a few seconds. Managing or
  * cancelling is Lemon Squeezy's own customer page, reached with the email the buyer used.
  */
+/** The $3 one-time products, and what is left of earlier purchases. Hidden until a link is set. */
+function OneTimeOffers({ credits }: { credits?: PlanState['credits'] }) {
+  const { data: links } = useAsync(async () => ({ site: await oneTimeCheckoutUrl('site'), images: await oneTimeCheckoutUrl('images') }), [])
+  const left = (credits?.sites ?? 0) + (credits?.images ?? 0) > 0
+  if (!links?.site && !links?.images && !left) return null
+  return (
+    <div className="space-y-2.5 border-t edge pt-4">
+      <p className="text-sm font-semibold text-ink-800">{t('one_time_title')}</p>
+      {left && <p className="text-sm text-ink-600">{t('credits_left', { sites: credits?.sites ?? 0, images: credits?.images ?? 0 })}</p>}
+      <div className="flex flex-wrap gap-2">
+        {links?.site && (
+          <a href={links.site} className={btn('secondary', 'sm')}>
+            {t('buy_site', { price: ONE_TIME_PRICE_USD })}
+          </a>
+        )}
+        {links?.images && (
+          <a href={links.images} className={btn('secondary', 'sm')}>
+            {t('buy_images', { n: IMAGE_PACK, price: ONE_TIME_PRICE_USD })}
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function PlanCard({ user }: { user: { id: string; email: string } }) {
   const { data } = useAsync(() => getPlan(user.id), [user.id])
   const plan = data?.plan ?? 'free'
@@ -60,6 +85,7 @@ function PlanCard({ user }: { user: { id: string; email: string } }) {
           )}
         </div>
       )}
+      <OneTimeOffers credits={data?.credits} />
     </Card>
   )
 }

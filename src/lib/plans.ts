@@ -10,6 +10,9 @@
  */
 
 export const PRO_PRICE_USD = 25
+/** One-time purchases: +1 website for good, or a pack of images spent after the monthly allowance. */
+export const ONE_TIME_PRICE_USD = 3
+export const IMAGE_PACK = 20
 
 export const PLAN_LIMITS = {
   free: { kit: 3, copy: 30, image: 15 },

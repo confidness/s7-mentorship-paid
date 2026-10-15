@@ -16,10 +16,10 @@
 declare const process: { env: Record<string, string | undefined> }
 
 import { adminClient, fail, json, requireEnv, requireUser, uuidOrNull } from '../_lib/server.js'
-import { checkoutToken, proUntilFor, validCheckoutToken, validSignature } from '../_lib/billing.js'
+import { ORDER_CREDIT, checkoutToken, isOrderKind, proUntilFor, validCheckoutToken, validSignature } from '../_lib/billing.js'
 
 interface LemonEvent {
-  meta?: { event_name?: unknown; custom_data?: { user_id?: unknown; token?: unknown } }
+  meta?: { event_name?: unknown; custom_data?: { user_id?: unknown; token?: unknown; kind?: unknown } }
   data?: { type?: unknown; id?: unknown; attributes?: { status?: unknown; renews_at?: unknown; ends_at?: unknown } }
 }
 
@@ -32,16 +32,62 @@ interface LemonEvent {
 async function checkoutLink(req: Request): Promise<Response> {
   try {
     const caller = await requireUser(req)
-    const base = process.env.VITE_LEMONSQUEEZY_CHECKOUT_URL?.trim()
+    // ?kind=site or ?kind=images is a one-time $3 product; nothing is Pro.
+    const kind = new URL(req.url).searchParams.get('kind')
+    const order = isOrderKind(kind) ? kind : undefined
+    const base = (order === 'site' ? process.env.VITE_LEMONSQUEEZY_SITE_URL : order === 'images' ? process.env.VITE_LEMONSQUEEZY_IMAGES_URL : process.env.VITE_LEMONSQUEEZY_CHECKOUT_URL)?.trim()
     if (!base) return json({ url: null })
     const url = new URL(base)
     url.searchParams.set('checkout[custom][user_id]', caller.id)
-    url.searchParams.set('checkout[custom][token]', await checkoutToken(caller.id, requireEnv('LEMONSQUEEZY_WEBHOOK_SECRET')))
+    if (order) url.searchParams.set('checkout[custom][kind]', order)
+    url.searchParams.set('checkout[custom][token]', await checkoutToken(caller.id, requireEnv('LEMONSQUEEZY_WEBHOOK_SECRET'), order))
     if (caller.email) url.searchParams.set('checkout[email]', caller.email)
     return json({ url: url.toString() })
   } catch (error) {
     return fail(error)
   }
+}
+
+/**
+ * A one-time $3 purchase: credited once per order (credit_orders remembers it), taken back on
+ * a refund. Orders without a signed kind — Pro's own first order among them — are ignored.
+ */
+async function handleOrder(event: LemonEvent, name: string): Promise<Response> {
+  const custom = event.meta?.custom_data ?? {}
+  const kind = custom.kind
+  if (!isOrderKind(kind)) return json({ ok: true, ignored: name })
+  const userId = uuidOrNull(custom.user_id)
+  if (!userId || !(await validCheckoutToken(userId, String(custom.token ?? ''), requireEnv('LEMONSQUEEZY_WEBHOOK_SECRET'), kind))) {
+    console.warn('[lemon] unsigned one-time order ignored', event.data?.id)
+    return json({ ok: true, ignored: 'unsigned' })
+  }
+  const orderId = String(event.data?.id ?? '')
+  const db = adminClient()
+
+  if (name === 'order_created') {
+    if (event.data?.attributes?.status !== 'paid') return json({ ok: true, ignored: 'unpaid' })
+    const { error } = await db.from('credit_orders').insert({ order_id: orderId, user_id: userId, kind })
+    if (error?.code === '23505') return json({ ok: true, duplicate: true })
+    if (error) throw error
+    const { error: creditError } = await db.rpc('add_credit', { who: userId, what: kind, n: ORDER_CREDIT[kind] })
+    if (creditError) {
+      // Forget the order, so Lemon Squeezy's retry credits it instead of finding a duplicate.
+      await db.from('credit_orders').delete().eq('order_id', orderId)
+      throw creditError
+    }
+    return json({ ok: true })
+  }
+
+  if (name === 'order_refunded') {
+    const { data, error } = await db.from('credit_orders').update({ refunded: true }).eq('order_id', orderId).eq('refunded', false).select('order_id')
+    if (error) throw error
+    if (!data?.length) return json({ ok: true, duplicate: true })
+    const { error: creditError } = await db.rpc('add_credit', { who: userId, what: kind, n: -ORDER_CREDIT[kind] })
+    if (creditError) throw creditError
+    return json({ ok: true })
+  }
+
+  return json({ ok: true, ignored: name })
 }
 
 async function handler(req: Request): Promise<Response> {
@@ -57,6 +103,7 @@ async function handler(req: Request): Promise<Response> {
     const name = String(event.meta?.event_name ?? '')
     // Access follows the subscription object alone. Orders are Lemon Squeezy's business, and the
     // subscription_payment_* events carry an invoice, whose "paid" would read as no Pro at all.
+    if (event.data?.type === 'orders') return await handleOrder(event, name)
     if (event.data?.type !== 'subscriptions') return json({ ok: true, ignored: name })
 
     const attributes = event.data?.attributes ?? {}

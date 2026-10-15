@@ -140,6 +140,18 @@ export async function takeQuota(callerId: string, kind: UsageKind): Promise<Quot
   const db = adminClient()
   const { data, error } = await db.rpc('take_quota', { who: callerId, what: kind, free_cap: PLAN_LIMITS.free[kind], pro_cap: PLAN_LIMITS.pro[kind] })
   if (error) throw new HttpError(500, 'usage_failed', error.message)
+  if ((data === 'free_full' || data === 'pro_full') && kind === 'image') {
+    const { data: spent, error: spendError } = await db.rpc('spend_image_credit', { who: callerId })
+    if (spendError) throw new HttpError(500, 'usage_failed', spendError.message)
+    if (spent === true) {
+      return {
+        plan: data === 'pro_full' ? 'pro' : 'free',
+        giveBack: async () => {
+          await db.rpc('add_credit', { who: callerId, what: 'images', n: 1 })
+        },
+      }
+    }
+  }
   if (data === 'free_full') throw new HttpError(429, 'free_limit', `You have used this month's ${PLAN_LIMITS.free[kind]} ${LIMIT_NAMES[kind]}. Pro has ${PLAN_LIMITS.pro[kind]} a month.`)
   if (data === 'pro_full') throw new HttpError(429, 'monthly_limit', `You have used this month's ${PLAN_LIMITS.pro[kind]} ${LIMIT_NAMES[kind]}. More next month.`)
   if (data !== 'free' && data !== 'pro') throw new HttpError(500, 'usage_failed', 'The usage count gave no answer.')

@@ -86,21 +86,26 @@ export interface PlanState {
   proUntil: string | null
   /** This calendar month's (UTC) use, by kind. */
   used: Record<UsageKind, number>
+  /** What one-time purchases left: extra websites, and images to spend after the allowance. */
+  credits: { sites: number; images: number }
 }
 
 /** The caller's plan and this month's use. Row level security shows each person only their own rows. */
 export async function getPlan(userId: string): Promise<PlanState> {
   const month = `${new Date().toISOString().slice(0, 7)}-01`
-  const [membership, usage] = await Promise.all([
+  const [membership, usage, credits] = await Promise.all([
     supabase().from('memberships').select('pro_until').eq('user_id', userId).maybeSingle(),
     supabase().from('usage_monthly').select('kind, used').eq('user_id', userId).eq('month', month),
+    // No credits row (or no table yet) is simply nothing bought.
+    supabase().from('credits').select('sites, images').eq('user_id', userId).maybeSingle(),
   ])
   const proUntil = (check(membership) as { pro_until: string | null } | null)?.pro_until ?? null
   const used: Record<UsageKind, number> = { kit: 0, copy: 0, image: 0 }
   for (const row of (check(usage) as { kind: string; used: number }[] | null) ?? []) {
     if ((USAGE_KINDS as string[]).includes(row.kind)) used[row.kind as UsageKind] = row.used
   }
-  return { plan: proUntil && Date.parse(proUntil) > Date.now() ? 'pro' : 'free', proUntil, used }
+  const bought = (credits.data as { sites: number; images: number } | null) ?? { sites: 0, images: 0 }
+  return { plan: proUntil && Date.parse(proUntil) > Date.now() ? 'pro' : 'free', proUntil, used, credits: bought }
 }
 
 /**
@@ -114,6 +119,15 @@ export async function proCheckoutUrl(): Promise<string | null> {
 }
 
 /** Deletes the caller's account and everything in it. See api/account/delete.ts for what refuses it. */
+/** The signed checkout for a one-time $3 product, or null until its link is configured. */
+export async function oneTimeCheckoutUrl(kind: 'site' | 'images'): Promise<string | null> {
+  if (!(kind === 'site' ? import.meta.env.VITE_LEMONSQUEEZY_SITE_URL : import.meta.env.VITE_LEMONSQUEEZY_IMAGES_URL)) return null
+  return (await call<{ url: string | null }>(`/api/billing/lemon?kind=${kind}`)).url
+}
+
+export const fillSite = (input: { brandKitId: string; language: 'en' | 'ru' | 'kk' }) =>
+  call<{ tagline: string; about: string; items: { name: string; price: string; note: string }[] }>('/api/studio/site', { method: 'POST', body: JSON.stringify(input) })
+
 export const deleteAccount = () => call<{ ok: true }>('/api/account/delete', { method: 'POST' })
 
 export async function updateMe(patch: { name?: string; bio?: string | null; role?: Role }) {
