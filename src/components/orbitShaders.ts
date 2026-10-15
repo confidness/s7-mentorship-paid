@@ -190,18 +190,18 @@ void main() {
   float diff = max(dot(n, L), 0.0);
   float spec = pow(max(dot(n, normalize(L + v)), 0.0), 48.0);
 
-  // Two bands of energy running the length of the S, half a lap apart. They glow in the
-  // tube's own colour, so they read as light moving through it rather than white joints.
+  // Two bands of energy running the length of the S, half a lap apart.
   float k1 = fract(along - uTime * 0.12);
   float k2 = fract(along - uTime * 0.12 + 0.5);
-  float pulse = exp(-pow((k1 - 0.5) * 12.0, 2.0)) + 0.6 * exp(-pow((k2 - 0.5) * 16.0, 2.0));
-  vec3 glowCol = mix(base, uPulse, 0.35);
+  float pulse = exp(-pow((k1 - 0.5) * 18.0, 2.0)) + 0.6 * exp(-pow((k2 - 0.5) * 26.0, 2.0));
+  // Machined grooves round the tube, so it reads as a made object rather than a neon sign.
+  float grooves = smoothstep(0.92, 1.0, sin(along * 420.0) * 0.5 + 0.5) * 0.15;
 
   vec3 col;
   if (uDark > 0.5) {
-    col = base * (0.25 + 0.55 * diff) + base * fres * 1.6 + spec * 0.6 + glowCol * pulse * 0.9;
+    col = base * (0.25 + 0.55 * diff) + base * fres * 1.6 + spec * 0.6 + uPulse * pulse * 1.4 + grooves * base;
   } else {
-    col = base * (0.55 + 0.45 * diff) + vec3(spec * 0.7) + vec3(fres * 0.35) + glowCol * pulse * 0.45;
+    col = base * (0.55 + 0.45 * diff) + vec3(spec * 0.7) + vec3(fres * 0.35) + uPulse * pulse * 0.8 - grooves * 0.15;
   }
   gl_FragColor = vec4(col * mix(0.55, 1.0, uIntensity), 1.0);
   #include <colorspace_fragment>
