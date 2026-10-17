@@ -17,8 +17,8 @@ declare const process: { env: Record<string, string | undefined> }
 
 import { HttpError } from './server.js'
 
-/** From openrouter.ai/api/v1/models on 2026-10-11: the free models that take a JSON schema. Strongest first. */
-export const TEXT_MODELS = ['nvidia/nemotron-3-super-120b-a12b:free', 'dots-studio/dots-3-note-preview:free', 'apodex/apodex-1.1-mini:free']
+/** From openrouter.ai/api/v1/models on 2026-10-17 (Apodex's free endpoint is gone): the free models that take a JSON schema. Strongest first. */
+export const TEXT_MODELS = ['nvidia/nemotron-3-super-120b-a12b:free', 'dots-studio/dots-3-note-preview:free', 'nvidia/nemotron-3.5-super-vl:free']
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 
@@ -80,6 +80,22 @@ async function errorDetail(res: Response): Promise<string> {
 
 interface ChatReply {
   choices?: { message?: { content?: string | null; refusal?: string | null }; finish_reason?: string }[]
+}
+
+/**
+ * The JSON object in a reply. Free models honour the schema but not always the bare format:
+ * some wrap the object in a ```json fence or say a sentence first. Everything from the
+ * first { to the last } is the object they meant.
+ */
+export function extractJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start < 0 || end <= start) throw new Error('no JSON object in the reply')
+    return JSON.parse(text.slice(start, end + 1))
+  }
 }
 
 export interface JsonResult<T> {
@@ -149,11 +165,13 @@ export async function generateJson<T = unknown>(input: { system: string; prompt:
       throw new HttpError(422, 'blocked', 'The request was refused by the model’s safety filter. Try wording it differently.')
     }
 
+    const content = choice?.message?.content ?? ''
     let data: T
     try {
-      data = JSON.parse(choice?.message?.content ?? '') as T
+      data = extractJson(content) as T
     } catch {
-      fail(model, 502, choice?.finish_reason === 'length' ? 'truncated' : 'unparseable')
+      console.warn(`[text] ${model} sent no usable JSON (${choice?.finish_reason}): ${JSON.stringify(content.slice(0, 160))}`)
+      fail(model, 502, choice?.finish_reason === 'length' ? 'truncated' : content.trim() ? 'unparseable' : 'empty')
       continue
     }
     // An answer that came only after others failed came slowly, and the logs should say why.

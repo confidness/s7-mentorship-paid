@@ -226,6 +226,11 @@ console.log('model fallthrough')
 
   reset([{ json: { choices: [{ message: { content: null }, finish_reason: 'content_filter' }] } }])
   eq('a safety refusal is a 422 the owner can act on', (await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))).status, 422)
+
+  const fenced = 'Here is the copy:' + String.fromCharCode(10) + '```json' + String.fromCharCode(10) + (CLEAN as { choices: { message: { content: string } }[] }).choices[0].message.content + String.fromCharCode(10) + '```'
+  reset([{ json: { choices: [{ message: { content: fenced }, finish_reason: 'stop' }] } }])
+  eq('JSON in a code fence, after a sentence, is still read', (await copyRoute(post({ brandKitId: KIT_ID, format: 'email', brief: 'Opening hours' }))).status, 200)
+  eq('on the first model', textCalls.length, 1)
 }
 
 console.log('nothing is spent for a request that should not be served')
