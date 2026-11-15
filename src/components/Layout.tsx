@@ -4,7 +4,6 @@ import { MoreHorizontal, X } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { t } from '../i18n'
 import { Mark } from './Mark'
-import LiquidMetalBackground from './LiquidMetalBackground'
 import { PageTransition } from './motion'
 import { SectionTabs, tabsForPath } from './sections'
 import { isNavActive, navFor, type NavItem } from './nav'
@@ -152,9 +151,6 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      {/* Each self-gates by skin: the metal under `brutal`; the orbit scene is mounted once in
-          App.tsx so it survives navigation. */}
-      <LiquidMetalBackground depth="app" />
 
       <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
         {/* The glass is a sibling of the content, not its parent: a backdrop-filter would

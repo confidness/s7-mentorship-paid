@@ -20,9 +20,8 @@
         var c = localStorage.getItem('brandyzer-theme') || 'system'
         var dark = c === 'dark' || (c === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-        // orbit is Pro's: it waits for the plan (allowOrbit in App) rather than flashing for everyone.
         var s = localStorage.getItem('brandyzer-skin')
-        document.documentElement.dataset.skin = s && s !== 'orbit' ? s : 'plain'
+        document.documentElement.dataset.skin = ['plain', 'ascii', 'terminal'].indexOf(s) >= 0 ? s : 'plain'
       } catch (e) {
         document.documentElement.dataset.theme = 'light'
         document.documentElement.dataset.skin = 'plain'

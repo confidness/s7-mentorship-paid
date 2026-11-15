@@ -1,12 +1,9 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { useEffect, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import Layout from './components/Layout'
-import OrbitSceneGate from './components/OrbitSceneGate'
 import { Spinner } from './components/ui'
 import { useApp } from './lib/store'
 import { backendConfigured } from './lib/supabase'
-import { getPlan } from './lib/api'
-import { allowOrbit } from './lib/theme'
 
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
@@ -48,12 +45,6 @@ function NotConfigured() {
 
 export default function App() {
   const { ready, user } = useApp()
-  const userId = user?.id
-  // The 3D Orbit skin is Pro's. Signed out, or the plan unknown, it falls back to the default.
-  useEffect(() => {
-    if (!userId) return allowOrbit(false)
-    getPlan(userId).then((p) => allowOrbit(p.plan === 'pro'), () => allowOrbit(false))
-  }, [userId])
   if (!backendConfigured) return <NotConfigured />
   // Until the stored session is checked, nobody is signed in or out — showing the sign-in
   // page for half a second to somebody who is signed in reads as being logged out.
@@ -67,8 +58,6 @@ export default function App() {
 
   return (
     <>
-      {/* Behind every route, and outside them, so the world survives navigation. */}
-      <OrbitSceneGate />
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Login register />} />

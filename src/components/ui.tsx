@@ -248,7 +248,12 @@ export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIc
   )
 }
 
-export const Skeleton = ({ className = '' }: { className?: string }) => <div className={`skeleton ${className}`} />
+const ASCII_RAMP = ' .:-=+*#'.repeat(320)
+export const Skeleton = ({ className = '' }: { className?: string }) => (
+  <div aria-hidden="true" className={`skeleton ${className}`}>
+    <span>{ASCII_RAMP}</span>
+  </div>
+)
 
 export function SkeletonCard() {
   return (

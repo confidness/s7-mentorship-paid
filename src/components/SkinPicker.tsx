@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { HOUSE_SKINS, INDUSTRY_SKINS, isOrbitAllowed, useSkin, type SkinChoice } from '../lib/theme'
+import { HOUSE_SKINS, useSkin, type SkinChoice } from '../lib/theme'
 import { t } from '../i18n'
 
 /**
@@ -23,17 +23,9 @@ interface Swatch {
 }
 
 const SWATCHES: Record<SkinChoice, Swatch> = {
-  orbit: { canvas: 'radial-gradient(circle at 70% 25%, #3d7bff 0%, #1d1a6b 45%, #04060f 80%)', surface: 'rgba(140, 170, 255, 0.28)', accent: '#7fe7ff', border: 'rgba(160, 185, 255, 0.45)', radius: 14 },
   plain: { canvas: '#f4f6fa', surface: '#ffffff', accent: '#4f46e5', border: '#e2e8f0', radius: 8 },
-  editorial: { canvas: '#f7f6f3', surface: '#ffffff', accent: '#111111', border: '#eaeaea', radius: 5 },
-  atelier: { canvas: '#eceef1', surface: '#ffffff', accent: '#14161a', border: 'transparent', radius: 14 },
-  brutal: { canvas: '#dcdcde', surface: '#ffffff', accent: '#ffe000', border: '#000000', radius: 0 },
+  ascii: { canvas: '#f6f5f0', surface: '#fbfaf6', accent: '#121210', border: '#121210', radius: 0 },
   terminal: { canvas: '#0a0a0a', surface: '#0e0e0e', accent: '#e61919', border: '#2a2a2a', radius: 0 },
-  marketplace: { canvas: '#ffffff', surface: '#ffffff', accent: '#a435f0', border: '#d1d7dc', radius: 3 },
-  academy: { canvas: '#f5f7fa', surface: '#ffffff', accent: '#0056d2', border: '#dde3ec', radius: 6 },
-  streak: { canvas: '#ffffff', surface: '#ffffff', accent: '#58cc02', border: '#e5e5e5', radius: 12 },
-  cinema: { canvas: '#14100f', surface: '#1b1716', accent: '#e32652', border: '#332d2b', radius: 5 },
-  poster: { canvas: '#ffffff', surface: '#ffffff', accent: '#00ff84', border: '#000000', radius: 0 },
 }
 
 export default function SkinPicker() {
@@ -42,7 +34,6 @@ export default function SkinPicker() {
   return (
     <div role="radiogroup" aria-label={t('appearance')} className="space-y-5">
       <Group heading={t('skins_house')} options={HOUSE_SKINS} skin={skin} onPick={setSkin} />
-      <Group heading={t('skins_industry')} subtitle={t('skins_industry_note')} options={INDUSTRY_SKINS} skin={skin} onPick={setSkin} />
     </div>
   )
 }
@@ -62,7 +53,6 @@ function Group({ heading, subtitle, options, skin, onPick }: { heading: string; 
             role="radio"
             aria-checked={active}
             onClick={() => onPick(id)}
-            disabled={id === 'orbit' && !isOrbitAllowed()}
             className={`flex items-start gap-3.5 rounded-[var(--ui-radius-sm)] border p-3.5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
               active ? 'border-[var(--color-accent-400)] fill-strong ring-2 ring-[var(--color-accent-400)]' : 'edge fill-soft hover:fill'
             }`}

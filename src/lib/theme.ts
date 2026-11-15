@@ -100,44 +100,23 @@ export function useTheme() {
  * the editorial skin at night, not a different one — so a skin defines both themes and the
  * two choices never collapse into a single list of five hybrid options.
  *
- * `plain` is the default. `orbit`, the platform's own world — a live 3D scene under frosted
- * glass — is Pro's; the rest are a choice taken in settings.
+ * `plain` (shown as Classic) is the default; `ascii` and `terminal` are the other two.
  */
-export type SkinChoice = 'orbit' | 'plain' | 'editorial' | 'atelier' | 'brutal' | 'terminal' | 'marketplace' | 'academy' | 'streak' | 'cinema' | 'poster'
+export type SkinChoice = 'plain' | 'ascii' | 'terminal'
 
 export const DEFAULT_SKIN: SkinChoice = 'plain'
 
-/**
- * Orbit is Pro's. Until App has asked for the plan it is not allowed; a saved `orbit` stays
- * saved, so it comes back the moment the plan says Pro — and after a sign-out and back in.
- */
-let orbitAllowed = false
-export const isOrbitAllowed = () => orbitAllowed
-export function allowOrbit(on: boolean) {
-  orbitAllowed = on
-  document.documentElement.dataset.skin = readSkin()
-}
 
-/**
- * Two families, and the split is where they came from.
- *
- * The first six are made here — the house scene, then design disciplines: minimalism, agency
- * work, brutalism, terminal UI.
- * The second five were read off the platforms this product competes with, whose visual
- * languages are each a bet about what sells a course. Keeping the groups apart in the picker
- * is the difference between a choice and a list of ten.
- */
-export const HOUSE_SKINS: SkinChoice[] = ['orbit', 'plain', 'editorial', 'atelier', 'brutal', 'terminal']
-export const INDUSTRY_SKINS: SkinChoice[] = ['marketplace', 'academy', 'streak', 'cinema', 'poster']
+export const HOUSE_SKINS: SkinChoice[] = ['plain', 'ascii', 'terminal']
 
-export const SKINS: SkinChoice[] = [...HOUSE_SKINS, ...INDUSTRY_SKINS]
+export const SKINS: SkinChoice[] = HOUSE_SKINS
 
 const SKIN_KEY = 'brandyzer-skin'
 
 export function readSkin(): SkinChoice {
   try {
     const saved = localStorage.getItem(SKIN_KEY)
-    if (saved && (SKINS as string[]).includes(saved) && (saved !== 'orbit' || orbitAllowed)) return saved as SkinChoice
+    if (saved && (SKINS as string[]).includes(saved)) return saved as SkinChoice
   } catch {
     /* storage blocked — fall through to the default */
   }

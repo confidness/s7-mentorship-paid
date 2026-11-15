@@ -32,7 +32,7 @@ for (const file of walk(join(root, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) &
 /** Keys assembled at runtime from a prefix and a value. Each list mirrors the type it comes from. */
 const families = {
   role_: ['client', 'freelancer', 'both', 'client_note', 'freelancer_note', 'both_note'],
-  skin_: ['orbit', 'plain', 'editorial', 'atelier', 'brutal', 'terminal', 'marketplace', 'academy', 'streak', 'cinema', 'poster'].flatMap((s) => [s, `${s}_note`]),
+  skin_: ['plain', 'ascii', 'terminal'].flatMap((s) => [s, `${s}_note`]),
   color_role_: ['primary', 'secondary', 'accent', 'neutral', 'background'],
   status_: ['pending', 'funded', 'in_review', 'completed', 'canceled', 'refunded'].flatMap((s) => [s, `${s}_note`]),
   format_: ['instagram_caption', 'product_description', 'email', 'website_hero', 'google_ad'],

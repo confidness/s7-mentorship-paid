@@ -8,8 +8,6 @@ import { Logo } from '../components/Layout'
 import ThemeToggle from '../components/ThemeToggle'
 import { t } from '../i18n'
 import { Mark } from '../components/Mark'
-import LiquidMetalBackground from '../components/LiquidMetalBackground'
-import AtelierSceneGate from '../components/AtelierSceneGate'
 import { LegalLinks } from './Legal'
 
 export default function Login({ register: startOnRegister }: { register?: boolean }) {
@@ -70,9 +68,7 @@ export default function Login({ register: startOnRegister }: { register?: boolea
 
   return (
     <div className="relative min-h-screen lg:grid lg:grid-cols-[1fr_minmax(26rem,32rem)]">
-      <LiquidMetalBackground depth="hero" />
       <section className="relative hidden flex-col justify-center px-12 py-16 lg:flex xl:px-20">
-        <AtelierSceneGate />
         <Logo />
         <h1 className="mt-14 max-w-xl text-[46px] leading-[1.05] font-bold tracking-[-0.035em] text-ink-900 xl:text-[58px]">
           {t('hero_line_one')} <span className="bg-gradient-to-r from-brand-500 to-accent-500 bg-clip-text text-transparent">{t('hero_line_two')}</span>

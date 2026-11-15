@@ -283,107 +283,6 @@
    beside it. Body copy is off-black on bone, never pure black on pure white — that pairing
    is what makes a long page feel like a screen rather than a document.
    ------------------------------------------------------------------------------------- */
-[data-skin='editorial'] {
-  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-
-  --color-canvas: #f7f6f3;
-  --color-ink-900: #111111;
-  --color-ink-800: #2f3437;
-  --color-ink-700: #454b4f;
-  --color-ink-600: #5c6266;
-  /* The reference palette's muted grey is #787774, which lands at 4.14:1 on warm bone. It is
-     the right hue and the wrong value; this keeps the hue and clears AA. */
-  --color-ink-500: #67665f;
-  --color-ink-400: #9b9a97;
-  --color-ink-300: #d4d3d0;
-  --color-ink-200: #eaeaea;
-  --color-ink-100: #f4f3f0;
-  --color-ink-50: #fbfbfa;
-
-  --color-brand-600: #1f6c9f;
-  --color-brand-700: #185880;
-  --color-brand-100: #e1f3fe;
-  --color-brand-50: #f0f9ff;
-
-  /* The one strong mark on the page, and it is ink rather than a hue. */
-  --color-accent-400: #111111;
-  --color-accent-300: #2f3437;
-  --color-accent-100: #eaeaea;
-  --color-accent-50: #f4f3f0;
-  --color-on-accent: #ffffff;
-  --fill-raised: #f4f3f0;
-
-  --color-amber-100: #fbf3db;
-  --color-amber-600: #956400;
-  --color-rose-100: #fdebec;
-  --color-rose-600: #9f2f2d;
-  --color-emerald-100: #edf3ec;
-  --color-emerald-600: #346538;
-  --color-danger-solid: #9f2f2d;
-  --color-success-solid: #346538;
-
-  --ui-radius: 8px;
-  --ui-radius-sm: 4px;
-  --ui-border: 1px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #fbfbfa;
-  --glass-dim: #f9f9f8;
-  --glass-border: #eaeaea;
-  --fill-strong: #ffffff;
-  --fill: #f7f6f3;
-  --fill-soft: #fbfbfa;
-  --edge: #eaeaea;
-  --divider: #eaeaea;
-  --tint-blue: #f4f3f0;
-  --tint-accent: #fbf3db;
-  --tint-mint: #edf3ec;
-
-  /* Practically nothing. A shadow in this language is a mistake you can see. */
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.03);
-  --shadow-lift: 0 2px 8px rgb(0 0 0 / 0.04);
-  --shadow-float: 0 4px 16px rgb(0 0 0 / 0.05);
-
-  --selection-bg: #eaeaea;
-  --selection-fg: #111111;
-  --focus-ring: #111111;
-}
-
-[data-skin='editorial'][data-theme='dark'] {
-  --color-canvas: #141311;
-  --color-ink-900: #f4f3f0;
-  --color-ink-800: #e6e4e0;
-  --color-ink-700: #cfcdc8;
-  --color-ink-600: #b2afa8;
-  --color-ink-500: #8d8a83;
-  --color-ink-400: #6b6862;
-  --color-ink-300: #4a4842;
-  --color-ink-200: #302e2a;
-  --color-ink-100: #24221f;
-  --color-ink-50: #1b1a17;
-
-  --color-accent-400: #f4f3f0;
-  --color-accent-300: #e6e4e0;
-  --color-on-accent: #141311;
-
-  --glass-card: #1b1a17;
-  --glass-chrome: #1b1a17;
-  --glass-dim: #171614;
-  --glass-border: #302e2a;
-  --fill-strong: #24221f;
-  --fill-raised: #302e2a;
-  --fill: #1b1a17;
-  --fill-soft: #171614;
-  --edge: #302e2a;
-  --divider: #302e2a;
-  --tint-blue: #24221f;
-  --tint-accent: #332b14;
-  --tint-mint: #1d2620;
-
-  --selection-bg: #302e2a;
-  --selection-fg: #f4f3f0;
-  --focus-ring: #f4f3f0;
-}
 
 /* ============================================================================== atelier
    Soft structuralism: no visible borders at all, depth carried entirely by very large radii
@@ -391,98 +290,6 @@
    as expensive rather than blurry is that shadows are wide and almost transparent — a tight
    dark shadow under a big radius looks like a sticker.
    ------------------------------------------------------------------------------------- */
-[data-skin='atelier'] {
-  --font-display: 'Space Grotesk', 'Inter', sans-serif;
-
-  --color-canvas: #eceef1;
-  --color-ink-900: #14161a;
-  --color-ink-800: #23262c;
-  --color-ink-700: #3a3e46;
-  --color-ink-600: #565b66;
-  /* 3.61:1 before. Soft structuralism is about the absence of borders, not about text you
-     have to lean towards. */
-  --color-ink-500: #5c6270;
-  --color-ink-400: #9aa0ab;
-  --color-ink-300: #c3c7ce;
-  --color-ink-200: #dde0e5;
-  --color-ink-100: #eceef1;
-  --color-ink-50: #f6f7f9;
-
-  --color-brand-600: #1f6feb;
-  --color-brand-700: #1a5ac4;
-  --color-accent-400: #14161a;
-  --color-accent-300: #23262c;
-  --color-on-accent: #ffffff;
-
-  --ui-radius: 26px;
-  --ui-radius-sm: 14px;
-  --ui-border: 0px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #ffffff;
-  --glass-dim: #f6f7f9;
-  --glass-border: transparent;
-  --fill-strong: #ffffff;
-  --fill-raised: #f6f7f9;
-  --fill: #f2f4f7;
-  --fill-soft: #eceef1;
-  --edge: #e3e6eb;
-  --divider: #e3e6eb;
-  --tint-blue: #e9edf6;
-  --tint-accent: #f4f0e6;
-  --tint-mint: #e8f2ee;
-
-  /* Wide, low, and almost not there. This is the whole material. */
-  --shadow-soft: 0 2px 6px rgb(20 22 26 / 0.04), 0 18px 40px -24px rgb(20 22 26 / 0.18);
-  --shadow-lift: 0 4px 10px rgb(20 22 26 / 0.05), 0 32px 64px -32px rgb(20 22 26 / 0.26);
-  --shadow-float: 0 6px 16px rgb(20 22 26 / 0.06), 0 40px 80px -36px rgb(20 22 26 / 0.3);
-
-  --selection-bg: #dde0e5;
-  --selection-fg: #14161a;
-  --focus-ring: #14161a;
-}
-
-[data-skin='atelier'][data-theme='dark'] {
-  --color-canvas: #050505;
-  --color-ink-900: #fafafa;
-  --color-ink-800: #ececec;
-  --color-ink-700: #d4d4d4;
-  --color-ink-600: #b4b4b4;
-  --color-ink-500: #8c8c8c;
-  --color-ink-400: #6a6a6a;
-  --color-ink-300: #4a4a4a;
-  --color-ink-200: #2c2c2c;
-  --color-ink-100: #1c1c1c;
-  --color-ink-50: #131313;
-
-  --color-accent-400: #fafafa;
-  --color-accent-300: #ececec;
-  --color-on-accent: #050505;
-
-  --glass-card: #111111;
-  --glass-chrome: #0d0d0d;
-  --glass-dim: #0a0a0a;
-  /* The one place a hairline is allowed here: on black, a shadow cannot describe an edge. */
-  --glass-border: #232323;
-  --ui-border: 1px;
-  --fill-strong: #191919;
-  --fill-raised: #232323;
-  --fill: #131313;
-  --fill-soft: #0d0d0d;
-  --edge: #232323;
-  --divider: #232323;
-  --tint-blue: #131a26;
-  --tint-accent: #201c10;
-  --tint-mint: #0f1d18;
-
-  --shadow-soft: 0 2px 8px rgb(0 0 0 / 0.5);
-  --shadow-lift: 0 8px 32px rgb(0 0 0 / 0.65);
-  --shadow-float: 0 12px 48px rgb(0 0 0 / 0.75);
-
-  --selection-bg: #2c2c2c;
-  --selection-fg: #fafafa;
-  --focus-ring: #fafafa;
-}
 
 /* =============================================================================== brutal
    The shader palette this product was built on, kept as a choice rather than a default.
@@ -491,210 +298,6 @@
    yellow for the one thing that matters, red for what is wrong, and no green anywhere,
    because there is none in the image the palette was read from.
    ------------------------------------------------------------------------------------- */
-[data-skin='brutal'] {
-  --color-canvas: #dcdcde;
-
-  --color-ink-50: #f7f7f8;
-  --color-ink-100: #ececed;
-  --color-ink-200: #d6d6d9;
-  --color-ink-300: #b4b4b9;
-  --color-ink-400: #8a8a92;
-  --color-ink-500: #4d4d55;
-  --color-ink-600: #3d3d45;
-  --color-ink-700: #2a2a31;
-  --color-ink-800: #1b1b21;
-  --color-ink-900: #000000;
-  --color-ink-950: #000000;
-
-  --color-brand-50: #ffeceb;
-  --color-brand-100: #ffd6d3;
-  --color-brand-200: #ffb0aa;
-  --color-brand-300: #ff7a70;
-  --color-brand-400: #f8483c;
-  --color-brand-500: #e6332a;
-  --color-brand-600: #c81e14;
-  --color-brand-700: #9d150d;
-  --color-brand-800: #6d0f09;
-
-  --color-accent-50: #fffbe0;
-  --color-accent-100: #fff4b0;
-  --color-accent-200: #ffec70;
-  --color-accent-300: #ffe63c;
-  --color-accent-400: #ffe000;
-  --color-accent-500: #e8cc00;
-  --color-accent-600: #a89300;
-  --color-accent-700: #6b5d00;
-  --color-accent-800: #473d00;
-  --color-on-accent: #000000;
-
-  --color-amber-50: #fffbe0;
-  --color-amber-100: #fff4b0;
-  --color-amber-200: #ffec70;
-  --color-amber-300: #ffe63c;
-  --color-amber-400: #ffe000;
-  --color-amber-500: #e8cc00;
-  --color-amber-600: #6b5d00;
-  --color-amber-700: #5a4e00;
-  --color-amber-800: #473d00;
-  --color-amber-900: #2e2800;
-
-  --color-rose-50: #ffeceb;
-  --color-rose-100: #ffd6d3;
-  --color-rose-200: #ffb0aa;
-  --color-rose-300: #ff7a70;
-  --color-rose-400: #f8483c;
-  --color-rose-500: #d62419;
-  --color-rose-600: #c81e14;
-  --color-rose-700: #9d150d;
-  --color-rose-800: #6d0f09;
-  --color-rose-900: #4a0a06;
-
-  --color-emerald-50: #e7e9f0;
-  --color-emerald-100: #d3d7e4;
-  --color-emerald-200: #b6bcd0;
-  --color-emerald-300: #9098b4;
-  --color-emerald-400: #6f7790;
-  --color-emerald-500: #565d75;
-  --color-emerald-600: #3f4558;
-  --color-emerald-700: #333849;
-  --color-emerald-800: #262a37;
-  --color-emerald-900: #1a1d28;
-
-  --color-orange-50: #fffbe0;
-  --color-orange-100: #fff4b0;
-  --color-orange-400: #ffe000;
-  --color-orange-500: #e8cc00;
-  --color-orange-600: #a89300;
-  --color-teal-500: #565d75;
-  --color-teal-600: #3f4558;
-  --color-cyan-100: #d3d7e4;
-  --color-cyan-800: #262a37;
-  --color-sky-500: #6f7790;
-  --color-violet-500: #3f4558;
-
-  --color-slate-50: #e7e9f0;
-  --color-slate-cool: #6f7790;
-  --color-slate-deep: #3f4558;
-  --color-danger-solid: #c81e14;
-  --color-success-solid: #3f4558;
-
-  --ui-radius: 0px;
-  --ui-radius-sm: 0px;
-  --ui-border: 2px;
-  --ui-border-strong: 3px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #ffffff;
-  --glass-dim: #f2f2f3;
-  --glass-border: #000000;
-  --fill-strong: #ffffff;
-  --fill-raised: #ffe000;
-  --fill: #f2f2f3;
-  --fill-soft: #ececed;
-  --edge: #000000;
-  --divider: #000000;
-  --tint-blue: #e7e9f0;
-  --tint-accent: #fff4b0;
-  --tint-mint: #ececed;
-
-  --code-bg: #0c0c0f;
-  --code-fg: #f2f2f3;
-  --code-muted: #8a8a92;
-  --code-line: #5b5b64;
-  --code-edge: #2a2a31;
-
-  --shadow-soft: 4px 4px 0 0 var(--color-ink-900);
-  --shadow-lift: 8px 8px 0 0 var(--color-ink-900);
-  --shadow-float: 6px 6px 0 0 var(--color-ink-900);
-
-  --selection-bg: #ffe000;
-  --selection-fg: #000000;
-  --focus-ring: #000000;
-}
-
-[data-skin='brutal'][data-theme='dark'] {
-  --color-canvas: #141418;
-
-  --color-ink-50: #16161a;
-  --color-ink-100: #1e1e24;
-  --color-ink-200: #2c2c34;
-  --color-ink-300: #43434e;
-  --color-ink-400: #7d7d88;
-  --color-ink-500: #b3b3bd;
-  --color-ink-600: #cfcfd7;
-  --color-ink-700: #e2e2e8;
-  --color-ink-800: #f2f2f5;
-  --color-ink-900: #ffffff;
-  --color-ink-950: #ffffff;
-
-  --color-brand-50: #3a0b07;
-  --color-brand-100: #5c110b;
-  --color-brand-200: #8a1a11;
-  --color-brand-600: #ff6a5e;
-  --color-brand-700: #ff938a;
-  --color-brand-800: #ffc0ba;
-
-  --color-accent-50: #2e2800;
-  --color-accent-100: #4a3f00;
-  --color-accent-200: #6b5c00;
-  --color-accent-600: #ffe63c;
-  --color-accent-700: #fff08a;
-  --color-accent-800: #fff7c4;
-
-  --color-amber-50: #2e2800;
-  --color-amber-100: #4a3f00;
-  --color-amber-200: #6b5c00;
-  --color-amber-300: #8f7c00;
-  --color-amber-600: #ffe63c;
-  --color-amber-700: #fff08a;
-  --color-amber-800: #fff7c4;
-  --color-amber-900: #fffce6;
-
-  --color-rose-50: #3a0b07;
-  --color-rose-100: #5c110b;
-  --color-rose-200: #8a1a11;
-  --color-rose-300: #b8241a;
-  --color-rose-600: #ff6a5e;
-  --color-rose-700: #ff938a;
-  --color-rose-800: #ffc0ba;
-  --color-rose-900: #ffe0dc;
-
-  --color-emerald-50: #1a1d28;
-  --color-emerald-100: #242938;
-  --color-emerald-200: #333a4d;
-  --color-emerald-300: #4a5268;
-  --color-emerald-600: #aab2cc;
-  --color-emerald-700: #c3c9dc;
-  --color-emerald-800: #dde1ec;
-  --color-emerald-900: #eef0f6;
-
-  --color-orange-50: #2e2800;
-  --color-orange-100: #4a3f00;
-  --color-cyan-100: #242938;
-  --color-cyan-800: #dde1ec;
-
-  --color-slate-50: #1a1d28;
-  --color-slate-cool: #aab2cc;
-  --color-slate-deep: #8d95b0;
-
-  --glass-card: #000000;
-  --glass-chrome: #000000;
-  --glass-dim: #0c0c0f;
-  --glass-border: #ffffff;
-  --fill-strong: #1e1e24;
-  --fill-raised: #ffe000;
-  --fill: #16161a;
-  --fill-soft: #0c0c0f;
-  --edge: #ffffff;
-  --divider: #ffffff;
-  --tint-blue: #1a1d28;
-  --tint-accent: #4a3f00;
-  --tint-mint: #1e1e24;
-
-  --selection-bg: #ffe000;
-  --selection-fg: #000000;
-  --focus-ring: #ffffff;
-}
 
 /* ============================================================================= terminal
    Tactical telemetry: a deactivated CRT rather than a page. Monospace throughout, white
@@ -847,125 +450,6 @@
    purple reserved for what can be clicked. Ink is near-black rather than black — at this
    density pure black on white vibrates.
    ------------------------------------------------------------------------------------- */
-[data-skin='marketplace'] {
-  --color-canvas: #ffffff;
-
-  --color-ink-900: #1c1d1f;
-  --color-ink-800: #2d2f31;
-  --color-ink-700: #3e4143;
-  --color-ink-600: #545759;
-  --color-ink-500: #6a6f73;
-  --color-ink-400: #9194a0;
-  --color-ink-300: #cbced1;
-  --color-ink-200: #d1d7dc;
-  --color-ink-100: #f0f2f5;
-  --color-ink-50: #f7f9fa;
-
-  --color-brand-50: #f5ecff;
-  --color-brand-100: #ead6ff;
-  --color-brand-200: #d4aeff;
-  --color-brand-300: #bb7dff;
-  --color-brand-400: #a435f0;
-  --color-brand-500: #8710d8;
-  --color-brand-600: #6d28b8;
-  --color-brand-700: #55208f;
-  --color-brand-800: #3d1768;
-
-  --color-accent-50: #f5ecff;
-  --color-accent-100: #ead6ff;
-  --color-accent-200: #d4aeff;
-  --color-accent-300: #b558f4;
-  --color-accent-400: #a435f0;
-  --color-accent-500: #8710d8;
-  --color-accent-600: #6d28b8;
-  --color-accent-700: #55208f;
-  --color-accent-800: #3d1768;
-  --color-on-accent: #ffffff;
-
-  --color-rose-600: #c4161c;
-  --color-danger-solid: #ea5252;
-  --color-success-solid: #1e6055;
-
-  --ui-radius: 4px;
-  --ui-radius-sm: 4px;
-  --ui-border: 1px;
-  --ui-border-strong: 1px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #ffffff;
-  --glass-dim: #f7f9fa;
-  --glass-border: #d1d7dc;
-  --fill-strong: #ffffff;
-  --fill-raised: #f5ecff;
-  --fill: #f7f9fa;
-  --fill-soft: #f0f2f5;
-  --edge: #d1d7dc;
-  --divider: #d1d7dc;
-  --tint-blue: #f5ecff;
-  --tint-accent: #fff5e6;
-  --tint-mint: #e8f4f1;
-
-  --shadow-soft: 0 1px 2px rgb(28 29 31 / 0.08);
-  --shadow-lift: 0 2px 4px rgb(28 29 31 / 0.08), 0 8px 16px -10px rgb(28 29 31 / 0.2);
-  --shadow-float: 0 2px 8px rgb(28 29 31 / 0.12);
-
-  --selection-bg: #ead6ff;
-  --selection-fg: #1c1d1f;
-  --focus-ring: #a435f0;
-}
-
-[data-skin='marketplace'][data-theme='dark'] {
-  --color-canvas: #1c1d1f;
-
-  --color-ink-900: #ffffff;
-  --color-ink-800: #f0f2f5;
-  --color-ink-700: #d1d7dc;
-  --color-ink-600: #b4b9be;
-  --color-ink-500: #9194a0;
-  --color-ink-400: #6a6f73;
-  --color-ink-300: #4a4d50;
-  --color-ink-200: #3e4143;
-  --color-ink-100: #2d2f31;
-  --color-ink-50: #232426;
-
-  --color-brand-50: #2d1747;
-  --color-brand-100: #3d1768;
-  --color-brand-200: #55208f;
-  --color-brand-600: #c99dfb;
-  --color-brand-700: #ddc0fd;
-  --color-brand-800: #efe0fe;
-
-  --color-accent-50: #2d1747;
-  --color-accent-100: #3d1768;
-  --color-accent-200: #55208f;
-  --color-accent-300: #b558f4;
-  --color-accent-400: #a435f0;
-  --color-accent-600: #c99dfb;
-  --color-accent-700: #ddc0fd;
-  --color-accent-800: #efe0fe;
-
-  --glass-card: #232426;
-  --glass-chrome: #232426;
-  --glass-dim: #1c1d1f;
-  --glass-border: #3e4143;
-  --fill-strong: #2d2f31;
-  --fill-raised: #3d1768;
-  --fill: #232426;
-  --fill-soft: #1c1d1f;
-  --edge: #3e4143;
-  --divider: #3e4143;
-  --tint-blue: #2d1747;
-  --tint-accent: #3a2a12;
-  --tint-mint: #16302b;
-
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.5);
-  --shadow-lift: 0 8px 20px -10px rgb(0 0 0 / 0.7);
-  --shadow-float: 0 4px 14px rgb(0 0 0 / 0.6);
-
-  --selection-bg: #55208f;
-  --selection-fg: #ffffff;
-  --focus-ring: #c99dfb;
-}
 
 /* ============================================================================= academy
    After Coursera. One saturated blue doing every job and no second accent at all — the
@@ -973,124 +457,6 @@
    The navy is not a second colour, it is the same blue pressed; it appears on emphasis
    bands and nowhere else.
    ------------------------------------------------------------------------------------- */
-[data-skin='academy'] {
-  --color-canvas: #f5f7fa;
-
-  --color-ink-900: #1f1f1f;
-  --color-ink-800: #2e2e2e;
-  --color-ink-700: #3c3c3c;
-  --color-ink-600: #52565e;
-  --color-ink-500: #5b6270;
-  --color-ink-400: #8a94a6;
-  --color-ink-300: #c2c9d6;
-  --color-ink-200: #dde3ec;
-  --color-ink-100: #eef2f7;
-  --color-ink-50: #f8fafc;
-
-  --color-brand-50: #e8f0fd;
-  --color-brand-100: #cfe0fb;
-  --color-brand-200: #9dc0f7;
-  --color-brand-300: #5a93ef;
-  --color-brand-400: #0056d2;
-  --color-brand-500: #004bb8;
-  --color-brand-600: #00419e;
-  --color-brand-700: #00369e;
-  --color-brand-800: #002a7a;
-
-  --color-accent-50: #e8f0fd;
-  --color-accent-100: #cfe0fb;
-  --color-accent-200: #9dc0f7;
-  --color-accent-300: #1a6ae0;
-  --color-accent-400: #0056d2;
-  --color-accent-500: #00419e;
-  --color-accent-600: #00369e;
-  --color-accent-700: #002a7a;
-  --color-accent-800: #001f5c;
-  --color-on-accent: #ffffff;
-
-  --color-danger-solid: #b3261e;
-  --color-success-solid: #1d6b4a;
-
-  --ui-radius: 8px;
-  --ui-radius-sm: 4px;
-  --ui-border: 1px;
-  --ui-border-strong: 1px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #ffffff;
-  --glass-dim: #f8fafc;
-  --glass-border: #dde3ec;
-  --fill-strong: #ffffff;
-  --fill-raised: #e8f0fd;
-  --fill: #eef2f7;
-  --fill-soft: #f5f7fa;
-  --edge: #dde3ec;
-  --divider: #dde3ec;
-  --tint-blue: #e8f0fd;
-  --tint-accent: #fdf3e2;
-  --tint-mint: #e6f2ec;
-
-  --shadow-soft: 0 1px 3px rgb(31 31 31 / 0.08);
-  --shadow-lift: 0 4px 12px -4px rgb(31 31 31 / 0.16);
-  --shadow-float: 0 6px 20px -8px rgb(31 31 31 / 0.2);
-
-  --selection-bg: #cfe0fb;
-  --selection-fg: #1f1f1f;
-  --focus-ring: #0056d2;
-}
-
-[data-skin='academy'][data-theme='dark'] {
-  --color-canvas: #0a1633;
-
-  --color-ink-900: #f7f9fc;
-  --color-ink-800: #e6ebf3;
-  --color-ink-700: #d0d8e6;
-  --color-ink-600: #b3bed2;
-  --color-ink-500: #94a1ba;
-  --color-ink-400: #6f7d99;
-  --color-ink-300: #4a5771;
-  --color-ink-200: #2c3752;
-  --color-ink-100: #1b2642;
-  --color-ink-50: #132038;
-
-  --color-brand-50: #001f5c;
-  --color-brand-100: #002a7a;
-  --color-brand-200: #00369e;
-  --color-brand-600: #8fb8f5;
-  --color-brand-700: #bcd5fa;
-  --color-brand-800: #dfeafd;
-
-  --color-accent-50: #001f5c;
-  --color-accent-100: #002a7a;
-  --color-accent-200: #00369e;
-  --color-accent-300: #1a6ae0;
-  --color-accent-400: #1a6ae0;
-  --color-accent-600: #8fb8f5;
-  --color-accent-700: #bcd5fa;
-  --color-accent-800: #dfeafd;
-
-  --glass-card: #132038;
-  --glass-chrome: #132038;
-  --glass-dim: #0f1b30;
-  --glass-border: #2c3752;
-  --fill-strong: #1b2642;
-  --fill-raised: #002a7a;
-  --fill: #132038;
-  --fill-soft: #0f1b30;
-  --edge: #2c3752;
-  --divider: #2c3752;
-  --tint-blue: #1b2642;
-  --tint-accent: #3a2f14;
-  --tint-mint: #13302a;
-
-  --shadow-soft: 0 1px 3px rgb(0 0 0 / 0.5);
-  --shadow-lift: 0 6px 20px -8px rgb(0 0 0 / 0.7);
-  --shadow-float: 0 8px 26px -10px rgb(0 0 0 / 0.75);
-
-  --selection-bg: #00369e;
-  --selection-fg: #f7f9fc;
-  --focus-ring: #8fb8f5;
-}
 
 /* ============================================================================== streak
    After Duolingo. The only one of the ten where pressing a button is a physical event: each
@@ -1100,127 +466,6 @@
    This skin has something to attach to here — the product already keeps XP, streaks,
    achievements and a leaderboard, and none of that has ever looked like what it is.
    ------------------------------------------------------------------------------------- */
-[data-skin='streak'] {
-  --color-canvas: #ffffff;
-
-  --color-ink-900: #3c3c3c;
-  --color-ink-800: #4b4b4b;
-  --color-ink-700: #5a5a5a;
-  --color-ink-600: #6b6b6b;
-  --color-ink-500: #6f6f6f;
-  --color-ink-400: #afafaf;
-  --color-ink-300: #d4d4d4;
-  --color-ink-200: #e5e5e5;
-  --color-ink-100: #f0f0f0;
-  --color-ink-50: #f7f7f7;
-
-  --color-brand-50: #e5f8ff;
-  --color-brand-100: #c7efff;
-  --color-brand-200: #8adcff;
-  --color-brand-300: #49c7fb;
-  --color-brand-400: #1cb0f6;
-  --color-brand-500: #1899d6;
-  --color-brand-600: #117aac;
-  --color-brand-700: #0d5f86;
-  --color-brand-800: #084563;
-
-  --color-accent-50: #e8f9dd;
-  --color-accent-100: #d7f4c2;
-  --color-accent-200: #aae888;
-  --color-accent-300: #7ad84a;
-  --color-accent-400: #58cc02;
-  --color-accent-500: #46a302;
-  --color-accent-600: #3a8501;
-  --color-accent-700: #2d6701;
-  --color-accent-800: #1f4800;
-  /* Black on the owl green, because white on it is 2.3:1. The green is untouched. */
-  --color-on-accent: #1a2e00;
-
-  --color-rose-600: #d33131;
-  --color-danger-solid: #ff4b4b;
-  --color-success-solid: #3a8501;
-
-  --ui-radius: 16px;
-  --ui-radius-sm: 12px;
-  --ui-border: 2px;
-  --ui-border-strong: 2px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #ffffff;
-  --glass-dim: #f7f7f7;
-  --glass-border: #e5e5e5;
-  --fill-strong: #ffffff;
-  --fill-raised: #e8f9dd;
-  --fill: #f7f7f7;
-  --fill-soft: #f0f0f0;
-  --edge: #e5e5e5;
-  --divider: #e5e5e5;
-  --tint-blue: #e5f8ff;
-  --tint-accent: #fff4d4;
-  --tint-mint: #e8f9dd;
-
-  /* Flat. Depth in this language lives in the lip on the controls, not under the cards. */
-  --shadow-soft: 0 2px 0 0 #e5e5e5;
-  --shadow-lift: 0 4px 0 0 #d4d4d4;
-  --shadow-float: 0 3px 0 0 #e5e5e5;
-
-  --selection-bg: #d7f4c2;
-  --selection-fg: #3c3c3c;
-  --focus-ring: #1cb0f6;
-}
-
-[data-skin='streak'][data-theme='dark'] {
-  --color-canvas: #131f24;
-
-  --color-ink-900: #f1f7fb;
-  --color-ink-800: #dce6ec;
-  --color-ink-700: #c3d0d9;
-  --color-ink-600: #a7b7c2;
-  --color-ink-500: #8fa3b0;
-  --color-ink-400: #6b7f8c;
-  --color-ink-300: #4a5c67;
-  --color-ink-200: #37464f;
-  --color-ink-100: #202f36;
-  --color-ink-50: #1a272d;
-
-  --color-brand-50: #08303f;
-  --color-brand-100: #0d4257;
-  --color-brand-200: #115a76;
-  --color-brand-600: #6fd3ff;
-  --color-brand-700: #a6e6ff;
-  --color-brand-800: #d2f3ff;
-
-  --color-accent-50: #16330a;
-  --color-accent-100: #1f4800;
-  --color-accent-200: #2d6701;
-  --color-accent-300: #7ad84a;
-  --color-accent-400: #58cc02;
-  --color-accent-600: #93e05e;
-  --color-accent-700: #b8ec93;
-  --color-accent-800: #d9f5c4;
-
-  --glass-card: #1a272d;
-  --glass-chrome: #1a272d;
-  --glass-dim: #162228;
-  --glass-border: #37464f;
-  --fill-strong: #202f36;
-  --fill-raised: #1f4800;
-  --fill: #1a272d;
-  --fill-soft: #162228;
-  --edge: #37464f;
-  --divider: #37464f;
-  --tint-blue: #08303f;
-  --tint-accent: #33290a;
-  --tint-mint: #16330a;
-
-  --shadow-soft: 0 2px 0 0 #37464f;
-  --shadow-lift: 0 4px 0 0 #4a5c67;
-  --shadow-float: 0 3px 0 0 #37464f;
-
-  --selection-bg: #2d6701;
-  --selection-fg: #f1f7fb;
-  --focus-ring: #6fd3ff;
-}
 
 /* ============================================================================== cinema
    After MasterClass. Dark first and dark by intent: the screen is a theatre, everything is
@@ -1228,223 +473,14 @@
    to click. The light theme is a dimmed house rather than a bright page, because a cinematic
    language does not have a daylight version and pretending otherwise produces neither.
    ------------------------------------------------------------------------------------- */
-[data-skin='cinema'] {
-  --color-canvas: #14100f;
-
-  --color-ink-900: #faf7f5;
-  --color-ink-800: #ebe6e3;
-  --color-ink-700: #d6cfcb;
-  --color-ink-600: #b8afaa;
-  --color-ink-500: #9a908b;
-  --color-ink-400: #6f6663;
-  --color-ink-300: #4c4542;
-  --color-ink-200: #332d2b;
-  --color-ink-100: #241f1e;
-  --color-ink-50: #1b1716;
-
-  --color-brand-50: #3a0a16;
-  --color-brand-100: #56101f;
-  --color-brand-200: #7d1730;
-  --color-brand-300: #b01f43;
-  --color-brand-400: #e32652;
-  --color-brand-500: #ee3e66;
-  --color-brand-600: #f4738f;
-  --color-brand-700: #f8a2b5;
-  --color-brand-800: #fccdd8;
-
-  --color-accent-50: #3a0a16;
-  --color-accent-100: #56101f;
-  --color-accent-200: #7d1730;
-  --color-accent-300: #ee3e66;
-  --color-accent-400: #e32652;
-  --color-accent-500: #b01f43;
-  --color-accent-600: #f4738f;
-  --color-accent-700: #f8a2b5;
-  --color-accent-800: #fccdd8;
-  --color-on-accent: #ffffff;
-
-  --color-amber-600: #f0c063;
-  --color-amber-100: #3b2f14;
-  --color-rose-600: #f4738f;
-  --color-rose-100: #56101f;
-  --color-emerald-600: #8fd6a8;
-  --color-emerald-100: #133224;
-  --color-danger-solid: #c4183f;
-  --color-success-solid: #1f6b42;
-
-  --color-slate-50: #241f1e;
-  --color-slate-cool: #9a908b;
-  --color-slate-deep: #b8afaa;
-
-  --ui-radius: 6px;
-  --ui-radius-sm: 4px;
-  --ui-border: 1px;
-  --ui-border-strong: 1px;
-
-  --glass-card: #1b1716;
-  --glass-chrome: #191514;
-  --glass-dim: #14100f;
-  --glass-border: #332d2b;
-  --fill-strong: #241f1e;
-  --fill-raised: #332d2b;
-  --fill: #1b1716;
-  --fill-soft: #191514;
-  --edge: #332d2b;
-  --divider: #332d2b;
-  --tint-blue: #241f1e;
-  --tint-accent: #3b2f14;
-  --tint-mint: #133224;
-
-  --code-bg: #0b0908;
-  --code-fg: #ebe6e3;
-  --code-muted: #6f6663;
-  --code-line: #4c4542;
-  --code-edge: #241f1e;
-
-  --shadow-soft: 0 2px 10px rgb(0 0 0 / 0.55);
-  --shadow-lift: 0 10px 34px -12px rgb(0 0 0 / 0.8);
-  --shadow-float: 0 14px 44px -16px rgb(0 0 0 / 0.85);
-
-  --selection-bg: #e32652;
-  --selection-fg: #ffffff;
-  --focus-ring: #e32652;
-}
 
 /* Darker still, and nothing else moves. There is no second palette to write. */
-[data-skin='cinema'][data-theme='dark'] {
-  --color-canvas: #000000;
-  --glass-card: #0d0b0b;
-  --glass-chrome: #0a0909;
-  --glass-dim: #000000;
-  --fill-strong: #151211;
-  --fill: #0d0b0b;
-  --fill-soft: #080707;
-  --glass-border: #2a2523;
-  --edge: #2a2523;
-  --divider: #2a2523;
-}
 
 /* ============================================================================== poster
    After Skillshare's 2020 identity. Flat, loud and graphic: acid green and Persian blue laid
    straight onto black or white with no shadow between them, the way a printed poster has no
    depth. The two colours never share a surface — blue is the page's, green is the action's.
    ------------------------------------------------------------------------------------- */
-[data-skin='poster'] {
-  --color-canvas: #ffffff;
-
-  --color-ink-900: #000000;
-  --color-ink-800: #171717;
-  --color-ink-700: #2b2b2b;
-  --color-ink-600: #444444;
-  --color-ink-500: #595959;
-  --color-ink-400: #8c8c8c;
-  --color-ink-300: #c4c4c4;
-  --color-ink-200: #e0e0e0;
-  --color-ink-100: #f0f0f0;
-  --color-ink-50: #f7f7f7;
-
-  --color-brand-50: #eceaff;
-  --color-brand-100: #d7d2ff;
-  --color-brand-200: #b0a6ff;
-  --color-brand-300: #7c6cf5;
-  --color-brand-400: #3722d3;
-  --color-brand-500: #2d1cae;
-  --color-brand-600: #2d1cae;
-  --color-brand-700: #241688;
-  --color-brand-800: #1a1063;
-
-  --color-accent-50: #dbffee;
-  --color-accent-100: #b3ffdb;
-  --color-accent-200: #66ffb8;
-  --color-accent-300: #1fff96;
-  --color-accent-400: #00ff84;
-  --color-accent-500: #00c866;
-  --color-accent-600: #00804a;
-  --color-accent-700: #00603a;
-  --color-accent-800: #004128;
-  /* Black on the acid green. White on it is 1.3:1 — barely a colour at all. */
-  --color-on-accent: #000000;
-
-  --color-danger-solid: #d61f3c;
-  --color-success-solid: #00804a;
-
-  --ui-radius: 0px;
-  --ui-radius-sm: 0px;
-  --ui-border: 1px;
-  --ui-border-strong: 2px;
-
-  --glass-card: #ffffff;
-  --glass-chrome: #ffffff;
-  --glass-dim: #f7f7f7;
-  --glass-border: #000000;
-  --fill-strong: #ffffff;
-  --fill-raised: #dbffee;
-  --fill: #f7f7f7;
-  --fill-soft: #f0f0f0;
-  --edge: #000000;
-  --divider: #000000;
-  --tint-blue: #eceaff;
-  --tint-accent: #dbffee;
-  --tint-mint: #dbffee;
-
-  /* None. A poster is ink on paper. */
-  --shadow-soft: none;
-  --shadow-lift: none;
-  --shadow-float: none;
-
-  --selection-bg: #00ff84;
-  --selection-fg: #000000;
-  --focus-ring: #3722d3;
-}
-
-[data-skin='poster'][data-theme='dark'] {
-  --color-canvas: #000000;
-
-  --color-ink-900: #ffffff;
-  --color-ink-800: #f0f0f0;
-  --color-ink-700: #d9d9d9;
-  --color-ink-600: #bdbdbd;
-  --color-ink-500: #a1a1a1;
-  --color-ink-400: #757575;
-  --color-ink-300: #4d4d4d;
-  --color-ink-200: #333333;
-  --color-ink-100: #1f1f1f;
-  --color-ink-50: #141414;
-
-  --color-brand-50: #1a1063;
-  --color-brand-100: #241688;
-  --color-brand-200: #2d1cae;
-  --color-brand-300: #7c6cf5;
-  --color-brand-400: #7c6cf5;
-  --color-brand-600: #b0a6ff;
-  --color-brand-700: #d7d2ff;
-  --color-brand-800: #eceaff;
-
-  --color-accent-50: #004128;
-  --color-accent-100: #00603a;
-  --color-accent-200: #00804a;
-  --color-accent-600: #66ffb8;
-  --color-accent-700: #b3ffdb;
-  --color-accent-800: #dbffee;
-
-  --glass-card: #0d0d0d;
-  --glass-chrome: #0d0d0d;
-  --glass-dim: #000000;
-  --glass-border: #ffffff;
-  --fill-strong: #1f1f1f;
-  --fill-raised: #004128;
-  --fill: #141414;
-  --fill-soft: #0d0d0d;
-  --edge: #ffffff;
-  --divider: #ffffff;
-  --tint-blue: #1a1063;
-  --tint-accent: #004128;
-  --tint-mint: #004128;
-
-  --selection-bg: #00ff84;
-  --selection-fg: #000000;
-  --focus-ring: #00ff84;
-}
 
 /* ================================================================================ orbit
    The house world, and the default. A live 3D scene runs behind every page — the S7 mark
@@ -1456,147 +492,9 @@
    The rule that keeps text honest on them is that every sheet is opaque enough to carry its
    measured contrast on its own; the blur is a finish, not a crutch.
    ------------------------------------------------------------------------------------- */
-[data-skin='orbit'] {
-  --font-display: 'Space Grotesk', 'Inter', sans-serif;
-
-  --color-canvas: #eef1fb;
-
-  --color-ink-50: #f6f8fe;
-  --color-ink-100: #eceff9;
-  --color-ink-200: #dde2f1;
-  --color-ink-300: #c3cae2;
-  --color-ink-400: #8d95b8;
-  /* 6:1 on a sheet, 5.4:1 on the veiled scene where page subtitles sit. */
-  --color-ink-500: #545e86;
-  --color-ink-600: #414b73;
-  --color-ink-700: #2e375c;
-  --color-ink-800: #1b2346;
-  --color-ink-900: #0b1233;
-  --color-ink-950: #050a24;
-
-  --color-brand-50: #eef3ff;
-  --color-brand-100: #dfe8ff;
-  --color-brand-200: #c3d4ff;
-  --color-brand-300: #93b2ff;
-  --color-brand-400: #5b8cff;
-  --color-brand-500: #1560ec;
-  --color-brand-600: #1450d0;
-  --color-brand-700: #1240a8;
-  --color-brand-800: #0f3080;
-
-  /* 400 is the fill the primary action is printed on; 500 is the violet it runs into. */
-  --color-accent-50: #f1edff;
-  --color-accent-100: #e4dcff;
-  --color-accent-200: #cbbcff;
-  --color-accent-300: #2a6ff5;
-  --color-accent-400: #1560ec;
-  --color-accent-500: #6a3dff;
-  --color-accent-600: #4a22c9;
-  --color-accent-700: #3a1aa0;
-  --color-accent-800: #2a1275;
-  --color-on-accent: #ffffff;
-
-  --ui-radius: 22px;
-  --ui-radius-sm: 12px;
-  --ui-border: 1px;
-  --ui-border-strong: 1px;
-
-  --glass-card: rgb(255 255 255 / 0.74);
-  --glass-chrome: rgb(255 255 255 / 0.66);
-  --glass-dim: rgb(255 255 255 / 0.5);
-  --glass-border: rgb(255 255 255 / 0.85);
-  --glass-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0) 42%);
-  --fill-strong: rgb(255 255 255 / 0.92);
-  --fill-raised: rgb(21 96 236 / 0.1);
-  --fill: rgb(20 40 120 / 0.055);
-  --fill-soft: rgb(255 255 255 / 0.5);
-  --edge: rgb(20 40 120 / 0.11);
-  --divider: rgb(20 40 120 / 0.08);
-  --tint-blue: rgb(21 96 236 / 0.08);
-  --tint-accent: rgb(106 61 255 / 0.08);
-  --tint-mint: rgb(16 185 129 / 0.09);
-
-  --shadow-soft: 0 1px 2px rgb(20 40 120 / 0.06), 0 12px 32px -14px rgb(20 40 120 / 0.28);
-  --shadow-lift: 0 2px 6px rgb(20 40 120 / 0.08), 0 22px 48px -18px rgb(21 96 236 / 0.4);
-  --shadow-float: 0 2px 8px rgb(20 40 120 / 0.08), 0 28px 64px -24px rgb(20 40 120 / 0.4);
-
-  --selection-bg: #c3d4ff;
-  --selection-fg: #0b1233;
-  --focus-ring: #1560ec;
-}
-
-[data-skin='orbit'][data-theme='dark'] {
-  --color-canvas: #04060f;
-
-  --color-ink-50: #0b0f22;
-  --color-ink-100: #121733;
-  --color-ink-200: #1d2345;
-  --color-ink-300: #2f375f;
-  --color-ink-400: #5d6690;
-  --color-ink-500: #8f98bd;
-  --color-ink-600: #b3bad8;
-  --color-ink-700: #d0d5ea;
-  --color-ink-800: #e6e9f6;
-  --color-ink-900: #f5f7ff;
-  --color-ink-950: #ffffff;
-
-  --color-brand-50: #0a1433;
-  --color-brand-100: #10204f;
-  --color-brand-200: #183073;
-  --color-brand-300: #2a55c4;
-  --color-brand-400: #3f78ff;
-  --color-brand-500: #5a8dff;
-  --color-brand-600: #8fb1ff;
-  --color-brand-700: #b7cdff;
-  --color-brand-800: #dce7ff;
-
-  --color-accent-50: #130c33;
-  --color-accent-100: #1d1350;
-  --color-accent-200: #2c1d78;
-  --color-accent-300: #2a6ff5;
-  --color-accent-400: #1560ec;
-  --color-accent-500: #8a63ff;
-  --color-accent-600: #b49bff;
-  --color-accent-700: #cfc1ff;
-  --color-accent-800: #e6deff;
-  --color-on-accent: #ffffff;
-
-  --glass-card: rgb(13 18 42 / 0.66);
-  --glass-chrome: rgb(10 14 34 / 0.62);
-  --glass-dim: rgb(10 14 34 / 0.5);
-  --glass-border: rgb(150 175 255 / 0.14);
-  --glass-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0) 38%);
-  --fill-strong: rgb(255 255 255 / 0.1);
-  --fill-raised: rgb(90 141 255 / 0.18);
-  --fill: rgb(255 255 255 / 0.055);
-  --fill-soft: rgb(255 255 255 / 0.03);
-  --edge: rgb(160 180 255 / 0.13);
-  --divider: rgb(160 180 255 / 0.1);
-  --tint-blue: rgb(63 120 255 / 0.12);
-  --tint-accent: rgb(138 99 255 / 0.12);
-  --tint-mint: rgb(16 185 129 / 0.12);
-
-  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 16px 40px -20px rgb(0 0 0 / 0.9);
-  --shadow-lift: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(90 141 255 / 0.28), 0 24px 60px -22px rgb(21 96 236 / 0.55);
-  --shadow-float: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 30px 80px -30px rgb(0 0 0 / 0.95);
-
-  --selection-bg: #2a55c4;
-  --selection-fg: #ffffff;
-  --focus-ring: #8fb1ff;
-}
 
 /* Someone who has asked the system for less transparency gets the same sheets, solid. */
 @media (prefers-reduced-transparency: reduce) {
-  [data-skin='orbit'] {
-    --glass-card: #fbfcff;
-    --glass-chrome: #fbfcff;
-    --glass-dim: #f3f5fc;
-  }
-  [data-skin='orbit'][data-theme='dark'] {
-    --glass-card: #0d1230;
-    --glass-chrome: #0b1029;
-    --glass-dim: #0a0e24;
-  }
 }
 
 @layer base {
@@ -1642,17 +540,6 @@
    * The orbit sky before the scene has loaded, and instead of it where WebGL is unavailable.
    * A fixed layer rather than a fixed background, which repaints on every scroll.
    */
-  html[data-skin='orbit'] body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -20;
-    pointer-events: none;
-    background:
-      radial-gradient(60rem 40rem at 72% 18%, rgb(21 96 236 / 0.16), transparent 60%),
-      radial-gradient(50rem 36rem at 12% 88%, rgb(106 61 255 / 0.12), transparent 62%),
-      var(--color-canvas);
-  }
 
   h1,
   h2,
@@ -1670,10 +557,6 @@
   }
 
   /* A serif display face needs looser tracking than a sans at the same size. */
-  [data-skin='editorial'] h1,
-  [data-skin='editorial'] h2 {
-    letter-spacing: -0.02em;
-  }
 
   * {
     scrollbar-width: auto;
@@ -1760,9 +643,6 @@
     transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
   }
-  [data-skin='brutal'] .card-hover:hover {
-    transform: translate(-2px, -2px);
-  }
   [data-skin='terminal'] .card-hover:hover {
     transform: none;
     border-color: var(--color-brand-400);
@@ -1823,14 +703,6 @@
   }
 
   /* A stamped plate that goes down into its own shadow when pressed. */
-  [data-skin='brutal'] .btn-shell {
-    --btn-border: var(--color-ink-900);
-    --btn-shadow: var(--shadow-soft);
-  }
-  [data-skin='brutal'] .btn-shell:active:not(:disabled) {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 0 var(--color-ink-900);
-  }
 
   [data-skin='terminal'] .btn-shell {
     --btn-border: var(--edge);
@@ -1839,10 +711,6 @@
   }
   [data-skin='terminal'] .btn-shell:hover:not(:disabled) {
     --btn-border: var(--color-brand-400);
-  }
-
-  [data-skin='editorial'] .btn-shell {
-    --btn-border: transparent;
   }
 
   /*
@@ -1856,25 +724,8 @@
    * `--btn-lip` is set per variant in `components/ui.tsx`, because six variants need six
    * shades and one token cannot be all of them. Every other skin ignores it.
    */
-  [data-skin='streak'] .btn-shell {
-    --btn-border: transparent;
-    --btn-shadow: 0 4px 0 0 var(--btn-lip, var(--color-ink-200));
-    margin-bottom: 4px;
-  }
-  [data-skin='streak'] .btn-shell:active:not(:disabled) {
-    transform: translateY(4px);
-    box-shadow: 0 0 0 0 var(--btn-lip, var(--color-ink-200));
-  }
 
   /* No border, no shadow — the fill and the radius carry it. */
-  [data-skin='atelier'] .btn-shell {
-    --btn-border: transparent;
-    --btn-shadow: 0 1px 2px rgb(20 22 26 / 0.06), 0 8px 20px -12px rgb(20 22 26 / 0.3);
-    border-radius: 999px;
-  }
-  [data-skin='atelier'] .btn-shell:active:not(:disabled) {
-    transform: scale(0.98);
-  }
 
   /* ---------------------------------------------------------------- the menu bar
      Skin-neutral first: a marker is a raised fill in the skin's own radius and shadow, so
@@ -1904,125 +755,14 @@
   }
 
   /* ---------------------------------------------------------------- orbit: glass */
-  [data-skin='orbit'] .card,
-  [data-skin='orbit'] .glass {
-    background: var(--glass-sheen), var(--glass-card);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    backdrop-filter: blur(16px) saturate(1.4);
-  }
-  [data-skin='orbit'] .glass-dim {
-    background: var(--glass-sheen), var(--glass-dim);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    backdrop-filter: blur(16px) saturate(1.4);
-  }
-  [data-skin='orbit'] .chrome {
-    background: var(--glass-sheen), var(--glass-chrome);
-    -webkit-backdrop-filter: blur(26px) saturate(1.7);
-    backdrop-filter: blur(26px) saturate(1.7);
-  }
 
   /* Capsules: every control, and the bar itself. */
-  [data-skin='orbit'] .btn-shell {
-    --btn-border: var(--edge);
-    border-radius: 999px;
-  }
-  [data-skin='orbit'] .btn-shell.bg-accent-400 {
-    --btn-border: transparent;
-    /* Every stop keeps white type at 5:1 or better. */
-    background-image: linear-gradient(135deg, #2a62f0 0%, #1560ec 45%, #5b35e8 100%);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.25),
-      0 10px 28px -10px rgb(21 96 236 / 0.85);
-  }
-  [data-skin='orbit'] .btn-shell.bg-accent-400:hover:not(:disabled) {
-    filter: brightness(1.12) saturate(1.1);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.3),
-      0 14px 36px -10px rgb(106 61 255 / 0.9);
-  }
-  [data-skin='orbit'] .menubar-slab,
-  [data-skin='orbit'] .nav-pill,
-  [data-skin='orbit'] .nav-hover {
-    border-radius: 999px;
-  }
-  [data-skin='orbit'] .dock .menubar-slab {
-    border-radius: 28px;
-  }
-  [data-skin='orbit'] .dock .nav-pill {
-    border-radius: 22px;
-  }
 
   /* The bar's rim: a hairline of light, with a highlight that sweeps along it now and then. */
-  [data-skin='orbit'] .menubar-slab {
-    border-color: transparent;
-  }
-  [data-skin='orbit'] .menubar-slab::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    pointer-events: none;
-    background:
-      linear-gradient(100deg, transparent 20%, rgb(127 178 255 / 0.95) 45%, rgb(177 140 255 / 0.95) 55%, transparent 80%) 150% 0 / 250% 100% no-repeat,
-      linear-gradient(rgb(120 150 255 / 0.28), rgb(120 150 255 / 0.12));
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: rim-sweep 9s cubic-bezier(0.45, 0, 0.2, 1) infinite;
-  }
-  [data-skin='orbit'][data-theme='light'] .menubar-slab::before {
-    background:
-      linear-gradient(100deg, transparent 20%, rgb(21 96 236 / 0.75) 45%, rgb(106 61 255 / 0.7) 55%, transparent 80%) 150% 0 / 250% 100% no-repeat,
-      linear-gradient(rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.6));
-  }
 
   /* The track the sections sit in, recessed a step into the bar. */
-  [data-skin='orbit'] .nav-track {
-    border-radius: 999px;
-    background: var(--fill);
-    box-shadow: inset 0 0 0 1px var(--edge);
-  }
 
   /* The selection: a lit capsule, with a beam where it meets the bar's edge. */
-  [data-skin='orbit'] .nav-pill {
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.03)),
-      linear-gradient(90deg, rgb(21 96 236 / 0.5), rgb(106 61 255 / 0.42));
-    box-shadow:
-      inset 0 0 0 1px rgb(160 190 255 / 0.35),
-      inset 0 1px 0 rgb(255 255 255 / 0.3),
-      0 8px 24px -8px rgb(21 96 236 / 0.8);
-  }
-  [data-skin='orbit'][data-theme='light'] .nav-pill {
-    background: linear-gradient(180deg, #ffffff, rgb(255 255 255 / 0.78));
-    box-shadow:
-      inset 0 0 0 1px rgb(21 96 236 / 0.22),
-      0 6px 18px -6px rgb(21 96 236 / 0.45);
-  }
-  [data-skin='orbit'] .menubar .nav-pill::after,
-  [data-skin='orbit'] .dock .nav-pill::after {
-    content: '';
-    position: absolute;
-    left: 20%;
-    right: 20%;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #7fb2ff, #b18cff, transparent);
-    box-shadow: 0 0 12px 2px rgb(80 140 255 / 0.7);
-  }
-  [data-skin='orbit'] .menubar .nav-pill::after {
-    bottom: -13px;
-  }
-  [data-skin='orbit'] .dock .nav-pill::after {
-    top: -7px;
-  }
-  [data-skin='orbit'] .nav-hover {
-    background: var(--fill-strong);
-    opacity: 0.55;
-  }
 
   /*
    * Inner sheets — list rows, wells, notes, empty states, icon buttons.
@@ -2034,29 +774,10 @@
    * ruled on one side only is left flush with the sheet it divides, and a placeholder that
    * fills its frame (`h-full`) takes the frame's shape rather than adding its own.
    */
-  :where([data-skin='orbit']) :where(.fill, .fill-soft, .fill-strong, .border, .border-2, .border-dashed):where(:not(.border-b, .border-t, .h-full, table, thead, tbody, tr, td, th)) {
-    border-radius: var(--ui-radius-sm);
-  }
 
   /* Shared chips drawn square for the ruled skins; here they take the glass's curve. */
-  [data-skin='orbit'] .icon-tile {
-    border-radius: var(--ui-radius-sm);
-  }
-  [data-skin='orbit'] .count-chip {
-    border-radius: 999px;
-  }
 
   /* A slow ring of light behind the mark. */
-  [data-skin='orbit'] .brand-mark::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 999px;
-    background: conic-gradient(from 0deg, #1560ec, #7fe7ff, #6a3dff, #1560ec);
-    filter: blur(5px);
-    opacity: 0.8;
-    animation: halo-turn 6s linear infinite;
-  }
 
   /* Code surfaces stay dark under every skin. */
   .code-surface {
@@ -2077,7 +798,6 @@
   .surface-grid {
     background-image: none;
   }
-  [data-skin='brutal'] .surface-grid,
   [data-skin='terminal'] .surface-grid {
     background-image:
       linear-gradient(to right, color-mix(in srgb, var(--color-ink-900) 16%, transparent) 1px, transparent 1px),
@@ -2085,11 +805,31 @@
     background-size: 28px 28px;
   }
 
+  /* An ASCII ramp scrolling one character at a time: the loading state reads as type, not as a grey slab. */
   .skeleton {
-    @apply animate-pulse;
-    background: var(--fill);
+    overflow: hidden;
+    color: var(--color-ink-300);
+    background: var(--fill-soft);
     border: var(--ui-border) solid var(--edge);
     border-radius: var(--ui-radius-sm);
+    font: 10px/1.15 ui-monospace, 'JetBrains Mono', 'Courier New', monospace;
+    word-break: break-all;
+    user-select: none;
+  }
+  .skeleton > span {
+    display: block;
+    width: calc(100% + 8ch);
+    animation: ascii-scan 1.2s steps(8) infinite;
+  }
+  @keyframes ascii-scan {
+    to {
+      transform: translateX(-8ch);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton > span {
+      animation: none;
+    }
   }
 }
 
@@ -2097,17 +837,7 @@
  * Outside every layer on purpose: these answer utilities written on the element itself
  * (`rounded-[…]`, `ring-white`), and a layered rule loses to a utility whatever its selector.
  */
-[data-skin='orbit'] .menubar .tool {
-  border-radius: 999px;
-}
-[data-skin='orbit'] .avatar {
-  border-radius: 999px;
-  --tw-ring-color: var(--glass-border);
-}
 /* The ruled skins' black frame is a white 2px wire on dark glass; here it is an edge like any other. */
-[data-skin='orbit'] .border-ink-900 {
-  border-color: var(--edge);
-}
 
 /* Entrance for a whole screen, once. Individual cards do not animate in. */
 @keyframes rise {
@@ -2176,4 +906,73 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/*
+ * ASCII: black ink on paper, monospace, square corners and dashed rules — a page typed, not
+ * drawn. Light by construction, the way terminal is dark: the second selector outranks the
+ * dark-theme tokens so a dark system setting cannot half-repaint it.
+ */
+:root[data-skin='ascii'],
+:root[data-skin='ascii'][data-theme='dark'] {
+  color-scheme: light;
+  --font-sans: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+  --font-display: 'JetBrains Mono', ui-monospace, monospace;
+  --color-canvas: #f6f5f0;
+  --color-ink-50: #f0efe9;
+  --color-ink-100: #e6e4dc;
+  --color-ink-200: #d2d0c6;
+  --color-ink-300: #b5b3a8;
+  --color-ink-400: #85837a;
+  --color-ink-500: #5f5d56;
+  --color-ink-600: #45433e;
+  --color-ink-700: #2f2e2a;
+  --color-ink-800: #1f1e1b;
+  --color-ink-900: #121210;
+  --color-ink-950: #000000;
+  --color-brand-50: #f0efe9;
+  --color-brand-100: #e6e4dc;
+  --color-brand-200: #d2d0c6;
+  --color-brand-300: #85837a;
+  --color-brand-400: #2f2e2a;
+  --color-brand-500: #121210;
+  --color-brand-600: #000000;
+  --color-brand-700: #000000;
+  --color-brand-800: #000000;
+  --color-accent-50: #f0efe9;
+  --color-accent-100: #e6e4dc;
+  --color-accent-200: #d2d0c6;
+  --color-accent-300: #45433e;
+  --color-accent-400: #121210;
+  --color-accent-500: #000000;
+  --color-accent-600: #2f2e2a;
+  --color-accent-700: #000000;
+  --color-accent-800: #000000;
+  --color-on-accent: #ffffff;
+  --ui-radius: 0px;
+  --ui-radius-sm: 0px;
+  --ui-border: 1px;
+  --ui-border-strong: 1px;
+  --glass-card: #fbfaf6;
+  --glass-chrome: #f6f5f0;
+  --glass-dim: #f0efe9;
+  --glass-border: #121210;
+  --fill-strong: #e6e4dc;
+  --fill-raised: #ffffff;
+  --fill: #efeee8;
+  --fill-soft: #f6f5f0;
+  --edge: #121210;
+  --divider: #b5b3a8;
+  --tint-blue: #efeee8;
+  --tint-accent: #e6e4dc;
+  --tint-mint: #efeee8;
+  --shadow-soft: none;
+  --shadow-lift: none;
+  --shadow-float: none;
+}
+[data-skin='ascii'] .card,
+[data-skin='ascii'] .chrome,
+[data-skin='ascii'] .btn-shell,
+[data-skin='ascii'] .skeleton {
+  border-style: dashed;
 }
