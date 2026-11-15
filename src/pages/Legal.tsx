@@ -194,6 +194,7 @@ const PRIVACY = (
           <strong>Pollinations</strong>: draws images from a written description of the picture, made from your brand kit.
         </li>
         <li><strong>Recraft and Hugging Face</strong>: may draw images instead of Pollinations, from the same description.</li>
+        <li><strong>Tavily</strong>: for Pro searches for similar businesses, receives what you sell, your city and your brand name. Nothing else about you.</li>
         <li><strong>Lemon Squeezy</strong>: sells Pro as merchant of record and handles payment, tax and receipts.</li>
         <li><strong>Google (Gmail)</strong>: sends account emails.</li>
       </List>

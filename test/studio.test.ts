@@ -12,6 +12,7 @@
 
 import { POST as copyRoute } from '../api/studio/copy.ts'
 import { POST as kitRoute } from '../api/studio/brand-kit.ts'
+import { POST as similarRoute } from '../api/studio/similar.ts'
 import { COPY_DIRECTIVE, LOGO_DIRECTIVE } from '../api/_lib/studio.ts'
 import { TEXT_MODELS } from '../api/_lib/text.ts'
 import { generateImage, imageProviders } from '../api/_lib/images.ts'
@@ -76,6 +77,8 @@ let inserted: Record<string, unknown> | null = null
 /** What take_quota answers: the plan a unit came from, or that plan's month being used up. */
 let usageAnswer: 'free' | 'pro' | 'free_full' | 'pro_full' = 'free'
 let givenBack = 0
+let proRow: { pro_until: string } | null = null
+let searchCalls = 0
 
 const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 const chatText = (payload: unknown) => ({ choices: [{ message: { content: JSON.stringify(payload) }, finish_reason: 'stop' }] })
@@ -107,6 +110,11 @@ globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => 
     return jsonResponse(asObject ? KIT_ROW : [KIT_ROW])
   }
 
+  if (url.includes('/rest/v1/memberships')) return jsonResponse(proRow, proRow ? 200 : 406)
+  if (url.includes('api.tavily.com')) {
+    searchCalls++
+    return jsonResponse({ results: [{ title: 'Flowers Almaty', url: 'https://flowers.example.kz', content: 'Bouquets' }] })
+  }
   if (url.includes('/v1/chat/completions')) {
     textCalls.push({ url, headers, body: JSON.parse(String(init.body)) })
     const reply = textReplies[Math.min(textCalls.length - 1, textReplies.length - 1)]
@@ -324,6 +332,23 @@ console.log('a kit the model wrote is repaired, then saved as the caller')
 }
 
 /* ------------------------------------------------------------------ images */
+
+console.log('pro web search')
+{
+  process.env.TAVILY_API_KEY = 'tvly-not-real'
+  const ask = () => similarRoute(new Request('https://brandyzer.test/api/studio/similar', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer valid-token' }, body: JSON.stringify({ brandKitId: KIT_ID }) }))
+  proRow = null
+  searchCalls = 0
+  const free = await ask()
+  eq('a free account is told it is a Pro feature', free.status, 403)
+  eq('and nothing is searched', searchCalls, 0)
+  proRow = { pro_until: new Date(Date.now() + 86_400_000).toISOString() }
+  const pro = await ask()
+  const found = (await pro.json()) as { similar?: unknown[]; sameName?: unknown[] }
+  eq('a Pro account gets results', pro.status, 200)
+  eq('from two searches: like-for-like and the name', searchCalls, 2)
+  eq('with the hits passed on', found.similar?.length, 1)
+}
 
 console.log('image providers')
 {

@@ -26,6 +26,7 @@ async function handler(req: Request): Promise<Response> {
     text: { configured: Boolean(textKey()), models: textModels() },
     images: { providers: imageProviders().map((p) => p.name) },
     payments: { configured: Boolean(process.env.LEMONSQUEEZY_WEBHOOK_SECRET) },
+    search: { configured: Boolean(process.env.TAVILY_API_KEY) },
   }
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
 }

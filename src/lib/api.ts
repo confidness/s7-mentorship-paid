@@ -128,6 +128,15 @@ export async function oneTimeCheckoutUrl(kind: 'site' | 'images'): Promise<strin
 export const fillSite = (input: { brandKitId: string; language: 'en' | 'ru' | 'kk' }) =>
   call<{ tagline: string; about: string; items: { name: string; price: string; note: string }[] }>('/api/studio/site', { method: 'POST', body: JSON.stringify(input) })
 
+export interface WebHit {
+  title: string
+  url: string
+  snippet: string
+}
+
+/** Pro: businesses like this one nearby, and pages already using its name. */
+export const findSimilar = (input: { brandKitId: string }) => call<{ similar: WebHit[]; sameName: WebHit[] }>('/api/studio/similar', { method: 'POST', body: JSON.stringify(input) })
+
 export const deleteAccount = () => call<{ ok: true }>('/api/account/delete', { method: 'POST' })
 
 export async function updateMe(patch: { name?: string; bio?: string | null; role?: Role }) {
@@ -188,6 +197,7 @@ export interface Health {
   text: { configured: boolean; models: string[] }
   images: { providers: string[] }
   payments: { configured: boolean }
+  search: { configured: boolean }
 }
 
 export const getHealth = () => call<Health>('/api/health')

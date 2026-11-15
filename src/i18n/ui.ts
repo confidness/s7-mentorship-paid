@@ -444,4 +444,12 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   logo_shape_shield: { en: 'Shield or badge', ru: 'Щит или значок', kk: 'Қалқан немесе белгі' },
   logo_shape_free: { en: 'No frame', ru: 'Без рамки', kk: 'Жиексіз' },
   logo_questions_title: { en: 'A few questions before we draw', ru: 'Пара вопросов перед рисованием', kk: 'Салмас бұрын бірнеше сұрақ' },
+  similar_tab: { en: 'Competitors', ru: 'Конкуренты', kk: 'Бәсекелестер' },
+  similar_title: { en: 'Similar businesses', ru: 'Похожие бизнесы', kk: 'Ұқсас бизнестер' },
+  similar_note: { en: 'We search the web for businesses like yours in your area, and for your brand name.', ru: 'Ищем в интернете похожие бизнесы в вашем городе и ваше название бренда.', kk: 'Интернеттен қалаңыздағы ұқсас бизнестерді және бренд атыңызды іздейміз.' },
+  search_web: { en: 'Search the web', ru: 'Искать в интернете', kk: 'Интернеттен іздеу' },
+  similar_like_you: { en: 'Businesses like yours', ru: 'Похожие на ваш бизнес', kk: 'Сіздікіне ұқсас' },
+  similar_same_name: { en: 'Using your name', ru: 'С вашим названием', kk: 'Сіздің атауыңызбен' },
+  similar_none: { en: 'Nothing found.', ru: 'Ничего не найдено.', kk: 'Ештеңе табылмады.' },
+  pro_only_feature: { en: 'A Pro feature.', ru: 'Функция Pro.', kk: 'Pro мүмкіндігі.' },
 }

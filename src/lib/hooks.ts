@@ -45,6 +45,7 @@ export function errorMessage(err: unknown): string {
     if (err.code === 'monthly_limit') return t('pro_limit_reached')
     if (err.code === 'pro_still_billing') return t('delete_cancel_pro_first')
     if (err.code === 'has_contracts') return t('delete_has_contracts')
+    if (err.code === 'pro_only') return t('pro_only_feature')
     return err.message
   }
   return err instanceof Error && err.message ? err.message : t('something_went_wrong_try_again')

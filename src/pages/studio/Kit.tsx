@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Globe, ImagePlus, PenLine, RefreshCw, Trash2, Type } from 'lucide-react'
+import { ArrowLeft, Globe, ImagePlus, PenLine, RefreshCw, Search, Trash2, Type } from 'lucide-react'
 import { useApp, useToast } from '../../lib/store'
 import { deleteKit, drawImage, getKit } from '../../lib/api'
 import { errorMessage, useAsync } from '../../lib/hooks'
@@ -8,6 +8,7 @@ import { Button, Card, Modal, SectionHeading, SkeletonCard, Tabs } from '../../c
 import { ErrorNote, LogoTile, PageHeader, Swatches, TypeSpecimen, VoicePanel, useKitFonts } from '../../components/kit'
 import { CopyPanel, ImagePanel } from './panels'
 import { WebsitePanel } from './website'
+import { MarketPanel } from './market'
 import { LogoQuestions, type LogoAnswers } from './LogoQuestions'
 import { t } from '../../i18n'
 
@@ -26,7 +27,7 @@ export default function KitPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { data: kit, error, loading, setData } = useAsync(() => getKit(kitId), [kitId])
-  const [tab, setTab] = useState<'copy' | 'images' | 'website'>('copy')
+  const [tab, setTab] = useState<'copy' | 'images' | 'website' | 'market'>('copy')
   const [drawing, setDrawing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [askLogo, setAskLogo] = useState<LogoAnswers | null>(null)
@@ -123,10 +124,10 @@ export default function KitPage() {
           tabs={[
             { id: 'copy', label: t('write_copy'), icon: PenLine },
             { id: 'images', label: t('make_images'), icon: ImagePlus },
-            ...(owner ? [{ id: 'website' as const, label: t('website'), icon: Globe }] : []),
+            ...(owner ? [{ id: 'website' as const, label: t('website'), icon: Globe }, { id: 'market' as const, label: t('similar_tab'), icon: Search }] : []),
           ]}
         />
-        {tab === 'copy' ? <CopyPanel kitId={kit.id} /> : tab === 'images' ? <ImagePanel kitId={kit.id} /> : <WebsitePanel kit={kit} />}
+        {tab === 'copy' ? <CopyPanel kitId={kit.id} /> : tab === 'images' ? <ImagePanel kitId={kit.id} /> : tab === 'website' ? <WebsitePanel kit={kit} /> : <MarketPanel kitId={kit.id} />}
       </section>
 
       {owner && (

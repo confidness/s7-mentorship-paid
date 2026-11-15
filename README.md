@@ -43,6 +43,7 @@ into the JavaScript every visitor downloads.
 | `SUPABASE_SERVICE_ROLE_KEY` | server | Bypasses RLS. Writes contracts, Stripe ids and Storage files. Treat it like a root password. |
 | `RECRAFT_API_KEY` | server, optional | Paid. First choice for images: logos on Recraft V4.1, photos on V4.1 Flash. |
 | `OPENROUTER_API_KEY` | server | Brand kits and copy, on OpenRouter's free models (openrouter.ai/keys). 50 requests a day for the account until $10 of credits has been bought. |
+| `TAVILY_API_KEY` | server, optional | Pro's web search for similar businesses (tavily.com, free tier 1,000 searches a month). |
 | `POLLINATIONS_API_KEY` | server, optional | `sk_…` from enter.pollinations.ai; works on free Quest Pollen. Logos on GPT Image, photos on Z-Image. |
 | `HF_TOKEN` | server, optional | Hugging Face token; FLUX.1-schnell on the serverless router. |
 | `POLLINATIONS_LEGACY=off` | server, optional | Turn off the anonymous, watermarked fallback. |
