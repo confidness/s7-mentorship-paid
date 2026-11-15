@@ -15,7 +15,8 @@ export const LOCALES: { value: Locale; label: string; short: string }[] = [
   { value: 'en', label: 'English', short: 'ENG' },
 ]
 
-const KEY = 'brandyzer-locale'
+// v2: English for everyone by default; v1 had saved the browser language, often Russian.
+const KEY = 'brandyzer-locale-v2'
 const TAGS: Record<Locale, string> = { kk: 'kk-KZ', ru: 'ru-RU', en: 'en-US' }
 
 const available = (value: string | null | undefined): value is Locale => LOCALES.some((l) => l.value === value)
@@ -25,11 +26,8 @@ export function detectLocale(): Locale {
     const saved = localStorage.getItem(KEY)
     if (available(saved)) return saved
   } catch {
-    /* storage blocked — fall through to the browser language */
+    /* storage blocked — English */
   }
-  const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : 'en'
-  if (nav.startsWith('kk') && available('kk')) return 'kk'
-  if ((nav.startsWith('ru') || nav.startsWith('uk') || nav.startsWith('be')) && available('ru')) return 'ru'
   return 'en'
 }
 
