@@ -10,6 +10,7 @@ import NotFound from './pages/NotFound'
 import ResetPassword from './pages/ResetPassword'
 import Legal from './pages/Legal'
 import SitePage from './pages/Site'
+import Landing from './pages/Landing'
 import Settings from './pages/Settings'
 import StudioHome from './pages/studio/Home'
 import NewKit from './pages/studio/NewKit'
@@ -59,6 +60,8 @@ export default function App() {
   return (
     <>
       <Routes>
+        {/* Signed out, "/" is the landing page; signed in, the same path is the Studio below. */}
+        {!user && <Route path="/" element={<Landing />} />}
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Login register />} />
         {/* Outside Protected: the reset link signs the person in, and a dead link must still say so. */}
