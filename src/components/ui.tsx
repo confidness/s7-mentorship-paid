@@ -1,4 +1,6 @@
 import { cloneElement, isValidElement, useEffect, useRef, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from 'react'
+import { AsciiSkeleton } from 'ascii-reveal'
+import { useAppliedSkin } from '../lib/theme'
 import type { LucideIcon } from 'lucide-react'
 import { t } from '../i18n'
 import { useSlidingIndicator } from './motion'
@@ -248,12 +250,16 @@ export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIc
   )
 }
 
-const ASCII_RAMP = ' .:-=+*#'.repeat(320)
-export const Skeleton = ({ className = '' }: { className?: string }) => (
-  <div aria-hidden="true" className={`skeleton ${className}`}>
-    <span>{ASCII_RAMP}</span>
-  </div>
-)
+/** Loading placeholders are ascii-reveal skeletons, in the look of the current skin. */
+const SKELETON_VARIANT = { plain: 'scan', ascii: 'dither', terminal: 'terminal' } as const
+export function Skeleton({ className = '' }: { className?: string }) {
+  const skin = useAppliedSkin()
+  return (
+    <div aria-hidden="true" className={`skeleton ${className}`}>
+      <AsciiSkeleton variant={SKELETON_VARIANT[skin]} width="100%" height="100%" />
+    </div>
+  )
+}
 
 export function SkeletonCard() {
   return (

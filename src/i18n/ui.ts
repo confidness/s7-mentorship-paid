@@ -376,7 +376,7 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   skin_brutal_note: { en: 'Square corners, black rules, hard offset shadows and signal yellow.', ru: 'Прямые углы, чёрные линии, жёсткие смещённые тени и сигнальный жёлтый.', kk: 'Тік бұрыштар, қара сызықтар, қатты ығыстырылған көлеңкелер және сигнал сарысы.' },
   skin_terminal: { en: 'Terminal', ru: 'Терминал', kk: 'Терминал' },
   skin_ascii: { en: 'ASCII', ru: 'ASCII', kk: 'ASCII' },
-  skin_ascii_note: { en: 'Black type on paper, square corners, dashed rules. Light by construction.', ru: 'Чёрный шрифт на бумаге, прямые углы, пунктирные линии. Всегда светлая.', kk: 'Қағаздағы қара жазу, тік бұрыштар, үзік сызықтар. Әрқашан ашық.' },
+  skin_ascii_note: { en: 'Type on paper or on black, square corners, and pages that decode in through a character grid.', ru: 'Шрифт на бумаге или на чёрном, прямые углы, страницы проявляются через сетку символов.', kk: 'Қағаздағы не қарадағы жазу, тік бұрыштар, беттер таңбалар торы арқылы пайда болады.' },
   skin_terminal_note: { en: 'Monospace throughout, white phosphor on near-black, hazard red. Dark by construction.', ru: 'Моноширинный шрифт везде, белый люминофор на почти чёрном, тревожный красный. Тёмный по замыслу.', kk: 'Барлық жерде моноенді қаріп, қараға жуық фонда ақ жарық, дабыл қызылы. Әу бастан қараңғы.' },
   skin_marketplace: { en: 'Marketplace', ru: 'Маркетплейс', kk: 'Маркетплейс' },
   skin_marketplace_note: { en: 'Purple accents, four-pixel corners, one-pixel grey rules. Dense, made for scanning.', ru: 'Фиолетовые акценты, углы в четыре пикселя, серые линии в один пиксель. Плотный, для быстрого просмотра.', kk: 'Күлгін акценттер, төрт пиксельді бұрыштар, бір пиксельді сұр сызықтар. Тығыз, тез шолуға арналған.' },

@@ -5,6 +5,8 @@ import ThemeToggle from './ThemeToggle'
 import { t } from '../i18n'
 import { Mark } from './Mark'
 import { PageTransition } from './motion'
+import { AsciiReveal } from 'ascii-reveal'
+import { useAppliedSkin } from '../lib/theme'
 import { SectionTabs, tabsForPath } from './sections'
 import { isNavActive, navFor, type NavItem } from './nav'
 import { NavRail, UserMenu, useEscape } from './menubar'
@@ -141,6 +143,8 @@ export default function Layout() {
   const closeSheet = useCallback(() => setSheet(false), [])
   const scrolled = useScrolled()
   const sectionTabs = tabsForPath(location.pathname)
+  // The ASCII skin decodes each page in through a character grid.
+  const skin = useAppliedSkin()
   const nav = navFor()
   useEscape(sheet, closeSheet)
 
@@ -186,7 +190,13 @@ export default function Layout() {
         </p>
         {sectionTabs && <SectionTabs tabs={sectionTabs} />}
         <PageTransition routeKey={location.pathname}>
-          <Outlet />
+          {skin === 'ascii' ? (
+            <AsciiReveal key={location.pathname} preset="decode">
+              <Outlet />
+            </AsciiReveal>
+          ) : (
+            <Outlet />
+          )}
         </PageTransition>
       </main>
 

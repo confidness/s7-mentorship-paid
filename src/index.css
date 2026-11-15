@@ -805,31 +805,9 @@
     background-size: 28px 28px;
   }
 
-  /* An ASCII ramp scrolling one character at a time: the loading state reads as type, not as a grey slab. */
   .skeleton {
     overflow: hidden;
-    color: var(--color-ink-300);
-    background: var(--fill-soft);
-    border: var(--ui-border) solid var(--edge);
     border-radius: var(--ui-radius-sm);
-    font: 10px/1.15 ui-monospace, 'JetBrains Mono', 'Courier New', monospace;
-    word-break: break-all;
-    user-select: none;
-  }
-  .skeleton > span {
-    display: block;
-    width: calc(100% + 8ch);
-    animation: ascii-scan 1.2s steps(8) infinite;
-  }
-  @keyframes ascii-scan {
-    to {
-      transform: translateX(-8ch);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton > span {
-      animation: none;
-    }
   }
 }
 
@@ -909,12 +887,11 @@
 }
 
 /*
- * ASCII: black ink on paper, monospace, square corners and dashed rules — a page typed, not
- * drawn. Light by construction, the way terminal is dark: the second selector outranks the
- * dark-theme tokens so a dark system setting cannot half-repaint it.
+ * ASCII: type on paper, square corners, dashed rules, and content that decodes in through a
+ * character grid (ascii-reveal). Light is black on paper; dark is light type on near-black.
+ * The dark block's extra attribute outranks the Classic dark tokens.
  */
-:root[data-skin='ascii'],
-:root[data-skin='ascii'][data-theme='dark'] {
+:root[data-skin='ascii'] {
   color-scheme: light;
   --font-sans: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
   --font-display: 'JetBrains Mono', ui-monospace, monospace;
@@ -972,7 +949,57 @@
 }
 [data-skin='ascii'] .card,
 [data-skin='ascii'] .chrome,
-[data-skin='ascii'] .btn-shell,
-[data-skin='ascii'] .skeleton {
+[data-skin='ascii'] .btn-shell {
   border-style: dashed;
+}
+
+:root[data-skin='ascii'][data-theme='dark'] {
+  color-scheme: dark;
+  --color-canvas: #0b0b0a;
+  --color-ink-50: #121211;
+  --color-ink-100: #1a1a18;
+  --color-ink-200: #26261f;
+  --color-ink-300: #3a3a33;
+  --color-ink-400: #6b6a62;
+  --color-ink-500: #95948a;
+  --color-ink-600: #b9b8ae;
+  --color-ink-700: #d3d2c8;
+  --color-ink-800: #e4e3da;
+  --color-ink-900: #efeee6;
+  --color-ink-950: #ffffff;
+  --color-brand-50: #121211;
+  --color-brand-100: #1a1a18;
+  --color-brand-200: #26261f;
+  --color-brand-300: #6b6a62;
+  --color-brand-400: #d3d2c8;
+  --color-brand-500: #efeee6;
+  --color-brand-600: #ffffff;
+  --color-brand-700: #ffffff;
+  --color-brand-800: #ffffff;
+  --color-accent-50: #121211;
+  --color-accent-100: #1a1a18;
+  --color-accent-200: #26261f;
+  --color-accent-300: #b9b8ae;
+  --color-accent-400: #efeee6;
+  --color-accent-500: #ffffff;
+  --color-accent-600: #d3d2c8;
+  --color-accent-700: #ffffff;
+  --color-accent-800: #ffffff;
+  --color-on-accent: #0b0b0a;
+  --glass-card: #111110;
+  --glass-chrome: #0b0b0a;
+  --glass-dim: #121211;
+  --glass-border: #efeee6;
+  --fill-strong: #1a1a18;
+  --fill-raised: #121211;
+  --fill: #141413;
+  --fill-soft: #0e0e0d;
+  --edge: #efeee6;
+  --divider: #3a3a33;
+  --tint-blue: #141413;
+  --tint-accent: #1a1a18;
+  --tint-mint: #141413;
+}
+:root {
+  --ascii-accent: var(--color-brand-500);
 }
