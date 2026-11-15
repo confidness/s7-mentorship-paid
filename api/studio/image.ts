@@ -11,7 +11,7 @@
  * Row level security would refuse the write anyway — this says so before an image is spent.
  */
 
-import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
+import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, normalizeLogo, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateImage } from '../_lib/images.js'
 import { loadKit, storeImage, takeQuota } from '../_lib/studio.js'
@@ -21,6 +21,8 @@ interface Body {
   purpose?: unknown
   subject?: unknown
   shape?: unknown
+  /** Logo only: the answers to the questions asked before drawing, saved with the kit. */
+  logo?: unknown
 }
 
 async function handler(req: Request): Promise<Response> {
@@ -43,12 +45,15 @@ async function handler(req: Request): Promise<Response> {
     const quota = await takeQuota(caller.id, 'image')
     giveBack = quota.giveBack
 
-    const logo = kit.business_json.logo
+    const asked = purpose === 'logo' && body.logo && typeof body.logo === 'object' ? (body.logo as Record<string, unknown>) : null
+    const logo = asked ? normalizeLogo({ ...kit.business_json.logo, kind: asked.kind, style: asked.style, shape: asked.shape, idea: asked.idea, avoid: asked.avoid }) : kit.business_json.logo
+    // A kind the owner chose is the kind drawn; "you decide" keeps the strategist's pick.
+    if (asked && logo.kind !== 'auto') logo.type = logo.kind
     const prompt = buildImagePrompt({
       purpose,
       // A logo with no direction of its own is drawn from the brief saved with the kit, and a
       // kit from before there were briefs leans on its description of itself.
-      subject: subject || (purpose === 'logo' ? logo.concept : '') || kit.vibe_summary,
+      subject: subject || (purpose === 'logo' ? (asked && logo.idea) || logo.concept : '') || kit.vibe_summary,
       brandName: kit.brand_name,
       palette: kit.palette_json ?? [],
       imageStyle: kit.voice_rules_json?.image_style ?? [],
@@ -64,7 +69,7 @@ async function handler(req: Request): Promise<Response> {
     const url = await storeImage(caller.id, image)
 
     if (purpose === 'logo') {
-      const { error } = await caller.db.from('brand_kits').update({ logo_url: url }).eq('id', kit.id)
+      const { error } = await caller.db.from('brand_kits').update({ logo_url: url, ...(asked ? { business_json: { ...kit.business_json, logo } } : {}) }).eq('id', kit.id)
       if (error) throw new HttpError(500, 'write_failed', error.message)
     }
 

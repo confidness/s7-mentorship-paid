@@ -42,6 +42,7 @@ const families = {
   legal_: ['terms', 'privacy', 'refunds'],
   template_: ['cafe', 'bakery', 'flowers', 'salon', 'restaurant', 'boutique', 'fitness', 'services'],
   logo_style_: ['auto', 'modern', 'handmade', 'classic', 'bold', 'playful'],
+  logo_shape_: ['auto', 'round', 'square', 'shield', 'free'],
   done_: ['deliver', 'request_changes', 'accept'],
   '': ['light', 'dark', 'system', 'how_it_works_kit', 'how_it_works_create', 'how_it_works_hire'],
 }

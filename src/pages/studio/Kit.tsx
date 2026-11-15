@@ -8,6 +8,7 @@ import { Button, Card, Modal, SectionHeading, SkeletonCard, Tabs } from '../../c
 import { ErrorNote, LogoTile, PageHeader, Swatches, TypeSpecimen, VoicePanel, useKitFonts } from '../../components/kit'
 import { CopyPanel, ImagePanel } from './panels'
 import { WebsitePanel } from './website'
+import { LogoQuestions, type LogoAnswers } from './LogoQuestions'
 import { t } from '../../i18n'
 
 /**
@@ -28,16 +29,17 @@ export default function KitPage() {
   const [tab, setTab] = useState<'copy' | 'images' | 'website'>('copy')
   const [drawing, setDrawing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [askLogo, setAskLogo] = useState<LogoAnswers | null>(null)
   const [deleting, setDeleting] = useState(false)
   useKitFonts(kit?.typography_json)
 
   const owner = Boolean(kit && user && kit.user_id === user.id)
 
-  async function redrawLogo(concept?: string) {
+  async function redrawLogo(concept?: string, logo?: LogoAnswers) {
     if (!kit) return
     setDrawing(true)
     try {
-      const { url } = await drawImage({ brandKitId: kit.id, purpose: 'logo', subject: concept })
+      const { url } = await drawImage({ brandKitId: kit.id, purpose: 'logo', subject: concept, logo })
       setData({ ...kit, logo_url: url })
     } catch (err) {
       toast({ title: t('logo_failed'), body: errorMessage(err), tone: 'error' })
@@ -91,7 +93,7 @@ export default function KitPage() {
         </div>
         {owner && (
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" icon={RefreshCw} loading={drawing} onClick={() => void redrawLogo()}>
+            <Button variant="secondary" size="sm" icon={RefreshCw} loading={drawing} onClick={() => { const l = kit.business_json.logo; setAskLogo({ kind: l?.kind ?? 'auto', style: l?.style ?? 'auto', shape: l?.shape ?? 'auto', idea: l?.idea ?? '', avoid: l?.avoid ?? '' }) }}>
               {kit.logo_url ? t('redraw_logo') : t('draw_logo')}
             </Button>
           </div>
@@ -134,6 +136,28 @@ export default function KitPage() {
           </Button>
         </div>
       )}
+
+      <Modal
+        open={askLogo !== null}
+        onClose={() => setAskLogo(null)}
+        title={t('logo_questions_title')}
+        subtitle={t('your_logo_hint')}
+        wide
+        footer={
+          <Button
+            icon={RefreshCw}
+            onClick={() => {
+              const answers = askLogo ?? undefined
+              setAskLogo(null)
+              void redrawLogo(undefined, answers)
+            }}
+          >
+            {t('draw_logo')}
+          </Button>
+        }
+      >
+        {askLogo && <LogoQuestions value={askLogo} onChange={(patch) => setAskLogo((prev) => (prev ? { ...prev, ...patch } : prev))} />}
+      </Modal>
 
       <Modal
         open={confirmDelete}

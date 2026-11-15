@@ -437,4 +437,11 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   credits_left: { en: 'Bought and still yours: {sites} extra websites, {images} images.', ru: 'Куплено и ещё доступно: сайтов — {sites}, изображений — {images}.', kk: 'Сатып алынған және әлі бар: қосымша сайт — {sites}, сурет — {images}.' },
   buy_site: { en: '+1 website, ${price}', ru: '+1 сайт, ${price}', kk: '+1 сайт, ${price}' },
   buy_images: { en: '+{n} images, ${price}', ru: '+{n} изображений, ${price}', kk: '+{n} сурет, ${price}' },
+  logo_shape_question: { en: 'What shape?', ru: 'Какая форма?', kk: 'Қандай пішін?' },
+  logo_shape_auto: { en: 'Let us decide', ru: 'Решите за нас', kk: 'Өзіңіз шешіңіз' },
+  logo_shape_round: { en: 'Round', ru: 'Круг', kk: 'Дөңгелек' },
+  logo_shape_square: { en: 'Square', ru: 'Квадрат', kk: 'Шаршы' },
+  logo_shape_shield: { en: 'Shield or badge', ru: 'Щит или значок', kk: 'Қалқан немесе белгі' },
+  logo_shape_free: { en: 'No frame', ru: 'Без рамки', kk: 'Жиексіз' },
+  logo_questions_title: { en: 'A few questions before we draw', ru: 'Пара вопросов перед рисованием', kk: 'Салмас бұрын бірнеше сұрақ' },
 }

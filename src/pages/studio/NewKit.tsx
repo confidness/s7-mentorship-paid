@@ -2,14 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Sparkles } from 'lucide-react'
 import { createKit } from '../../lib/api'
-import { LOGO_KINDS, LOGO_STYLES, type LogoKind, type LogoStyle } from '../../lib/brand'
 import { errorMessage } from '../../lib/hooks'
 import { Button, Card, Field, inputClass } from '../../components/ui'
 import { ErrorNote, PageHeader } from '../../components/kit'
 import { t } from '../../i18n'
+import { LogoQuestions, NO_LOGO_ANSWERS, type LogoAnswers } from './LogoQuestions'
 
 /** The kinds that ask the image model to letter the name, and so can come out misspelled. */
-const LETTERED: readonly string[] = ['wordmark', 'combination', 'emblem']
 
 /**
  * Describe the business, get a kit.
@@ -26,10 +25,7 @@ export default function NewKit() {
   const [audience, setAudience] = useState('')
   const [location, setLocation] = useState('')
   const [vibe, setVibe] = useState('')
-  const [logoKind, setLogoKind] = useState<LogoKind | 'auto'>('auto')
-  const [logoStyle, setLogoStyle] = useState<LogoStyle | 'auto'>('auto')
-  const [logoIdea, setLogoIdea] = useState('')
-  const [logoAvoid, setLogoAvoid] = useState('')
+  const [logo, setLogo] = useState<LogoAnswers>(NO_LOGO_ANSWERS)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [invalid, setInvalid] = useState(false)
@@ -52,7 +48,7 @@ export default function NewKit() {
           .split(',')
           .map((w) => w.trim())
           .filter(Boolean),
-        logo: { kind: logoKind, style: logoStyle, idea: logoIdea.trim(), avoid: logoAvoid.trim() },
+        logo: { ...logo, idea: logo.idea.trim(), avoid: logo.avoid.trim() },
       })
       // The kit page draws the logo next, from the concept the strategist wrote.
       navigate(`/studio/${kit.id}`, { state: { drawLogo: logoConcept || true } })
@@ -95,33 +91,8 @@ export default function NewKit() {
             <p id="logo-questions-hint" className="clear-both pt-0.5 text-sm text-ink-500">
               {t('your_logo_hint')}
             </p>
-            <div className="mt-5 space-y-5">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field label={t('logo_kind_question')} hint={LETTERED.includes(logoKind) ? t('lettering_may_be_misspelled') : undefined}>
-                  <select className={inputClass} value={logoKind} onChange={(e) => setLogoKind(e.target.value as LogoKind | 'auto')}>
-                    {(['auto', ...LOGO_KINDS] as const).map((k) => (
-                      <option key={k} value={k}>
-                        {t(`logo_kind_${k}`)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label={t('logo_style_question')}>
-                  <select className={inputClass} value={logoStyle} onChange={(e) => setLogoStyle(e.target.value as LogoStyle | 'auto')}>
-                    {(['auto', ...LOGO_STYLES] as const).map((s) => (
-                      <option key={s} value={s}>
-                        {t(`logo_style_${s}`)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <Field label={t('logo_idea_question')}>
-                <input className={inputClass} value={logoIdea} maxLength={200} onChange={(e) => setLogoIdea(e.target.value)} placeholder={t('logo_idea_placeholder')} />
-              </Field>
-              <Field label={t('logo_avoid_question')}>
-                <input className={inputClass} value={logoAvoid} maxLength={200} onChange={(e) => setLogoAvoid(e.target.value)} placeholder={t('logo_avoid_placeholder')} />
-              </Field>
+            <div className="mt-5">
+              <LogoQuestions value={logo} onChange={(patch) => setLogo((prev) => ({ ...prev, ...patch }))} />
             </div>
           </fieldset>
 

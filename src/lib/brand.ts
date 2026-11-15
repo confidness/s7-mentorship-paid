@@ -60,11 +60,16 @@ export type LogoKind = (typeof LOGO_KINDS)[number]
 export const LOGO_STYLES = ['modern', 'handmade', 'classic', 'bold', 'playful'] as const
 export type LogoStyle = (typeof LOGO_STYLES)[number]
 
+export const LOGO_SHAPES = ['round', 'square', 'shield', 'free'] as const
+export type LogoShape = (typeof LOGO_SHAPES)[number]
+
 /** What the owner said about their logo, and the brief the strategist wrote from it. */
 export interface LogoBrief {
   /** The owner's own pick, or 'auto' for "you decide". */
   kind: LogoKind | 'auto'
   style: LogoStyle | 'auto'
+  /** The outline it sits in, or 'free' for none. */
+  shape: LogoShape | 'auto'
   /** What the owner would like it to show, in their words. */
   idea: string
   avoid: string
@@ -243,6 +248,7 @@ export function normalizeLogo(raw: unknown): LogoBrief {
   return {
     kind,
     style: oneOf(LOGO_STYLES, obj.style) ?? 'auto',
+    shape: oneOf(LOGO_SHAPES, obj.shape) ?? 'auto',
     idea: text(obj.idea, 200),
     avoid: text(obj.avoid, 200),
     // A kit from before the questions has neither: it gets a symbol, the kind that never has to spell.
@@ -397,6 +403,14 @@ export const LOGO_RULES = [
 ]
 export const LOGO_NEVER = 'not a photo, no photographic texture, no 3D render, no shadows, no gradients, no mockup, no watermark'
 
+/** The outline a logo sits in, as the image model should hear it. */
+const LOGO_SHAPE_WORDS: Record<LogoShape, string> = {
+  round: 'set inside a circle',
+  square: 'set inside a square with sharp corners',
+  shield: 'set inside a shield-shaped badge',
+  free: 'free-standing, with no surrounding shape or container',
+}
+
 const LOGO_STYLE_WORDS: Record<LogoStyle, string> = {
   modern: 'minimal modern geometric style',
   handmade: 'warm hand-drawn style, slightly imperfect lines',
@@ -462,13 +476,13 @@ export function buildImagePrompt(input: {
   brandName: string
   palette: PaletteColor[]
   imageStyle: string[]
-  logo?: Pick<LogoBrief, 'type' | 'style' | 'avoid'>
+  logo?: Pick<LogoBrief, 'type' | 'style' | 'avoid'> & { shape?: LogoBrief['shape'] }
 }): string {
   const subject = text(input.subject, 400)
 
   let parts: string[]
   if (input.purpose === 'logo') {
-    const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> = input.logo ?? { type: 'symbol', style: 'auto', avoid: '' }
+    const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> & { shape?: LogoBrief['shape'] } = input.logo ?? { type: 'symbol', style: 'auto', shape: 'auto', avoid: '' }
     const { background, inks: inkColours } = logoColours(input.palette)
     const inks = inkColours.map((c) => c.hex).join(', ')
     parts = [
@@ -476,6 +490,7 @@ export function buildImagePrompt(input: {
       // Shorter than a photo's subject: the rules at either end must survive the length cap.
       logoSubject(logo.type, text(input.brandName, 80), text(subject, 250)),
       logo.style !== 'auto' ? LOGO_STYLE_WORDS[logo.style] : '',
+      logo.shape && logo.shape !== 'auto' ? LOGO_SHAPE_WORDS[logo.shape] : '',
       inks && `colours: ${inks}`,
       background ? `background: ${background.hex}` : '',
       LOGO_NEVER,

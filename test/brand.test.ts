@@ -192,6 +192,8 @@ const palette = [
   check('a wordmark spells the name out exactly', prompt.includes('spelled exactly "Crumb"'), prompt)
   check('the owner’s style is carried', prompt.includes('hand-drawn'), prompt)
   check('and what they want avoided', prompt.includes('avoid: gold'), prompt)
+  const shielded = buildImagePrompt({ purpose: 'logo', subject: 'a wheat stalk', brandName: 'Crumb', palette, imageStyle: [], logo: { type: 'symbol', style: 'auto', shape: 'shield', avoid: '' } })
+  check('the owner’s shape is carried', shielded.includes('shield-shaped badge'), shielded)
 }
 
 {
