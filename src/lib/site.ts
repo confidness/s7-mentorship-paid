@@ -88,7 +88,7 @@ export function renderSite(kit: BrandKitRow, c: SiteContent): string {
   const L = LABELS[c.lang] ?? LABELS.en
   const color = (role: string, fallback: string) => kit.palette_json.find((p) => p.role === role)?.hex ?? fallback
   const primary = color('primary', '#333333')
-  const accent = color('accent', primary)
+  const accent = color('signature', color('accent', primary))
   const bg = t.dark ? color('neutral', '#151515') : color('background', '#ffffff')
   const text = t.dark ? color('background', '#f5f5f5') : color('neutral', '#1a1a1a')
   const head = kit.typography_json.heading

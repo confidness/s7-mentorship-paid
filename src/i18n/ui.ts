@@ -177,6 +177,8 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   color_role_accent: { en: 'Accent', ru: 'Акцент', kk: 'Акцент' },
   color_role_neutral: { en: 'Text', ru: 'Текст', kk: 'Мәтін' },
   color_role_background: { en: 'Background', ru: 'Фон', kk: 'Фон' },
+  color_role_support: { en: 'Support', ru: 'Поддержка', kk: 'Қолдау' },
+  color_role_signature: { en: 'Signature', ru: 'Фирменный акцент', kk: 'Ерекше түс' },
   typography: { en: 'Typography', ru: 'Типографика', kk: 'Типографика' },
   heading_font: { en: 'Headings', ru: 'Заголовки', kk: 'Тақырыптар' },
   body_font: { en: 'Body text', ru: 'Основной текст', kk: 'Негізгі мәтін' },

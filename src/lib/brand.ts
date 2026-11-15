@@ -14,7 +14,8 @@
 
 /* ------------------------------------------------------------------ shapes */
 
-export const COLOR_ROLES = ['primary', 'secondary', 'accent', 'neutral', 'background'] as const
+/** The four roles a new kit gets; accent, neutral and background are kept for kits made before. */
+export const COLOR_ROLES = ['primary', 'secondary', 'support', 'signature', 'accent', 'neutral', 'background'] as const
 export type ColorRole = (typeof COLOR_ROLES)[number]
 
 export interface PaletteColor {

@@ -38,7 +38,7 @@ export const STRATEGIST_DIRECTIVE = [
   '',
   'RULES:',
   '- Ground every choice in what the business actually sells and who buys it. A bakery in a market town is not a fintech startup and should not look like one.',
-  '- Palette: exactly five colours with roles background, neutral, primary, secondary, accent. Hex codes. Body text in the neutral colour must be readable on the background (WCAG AA, 4.5:1 or better). Give each colour a plain name a shop owner would use ("bread crust", not "Ethereal Amber").',
+  '- Palette: exactly four colours. primary and secondary are the two main brand colours. support strengthens them: a deeper or lighter companion that makes the two read as one set, used for outlines, backgrounds and emphasis. signature is the one unique colour: it suits the business, but no competitor in its category would have picked it. At least one of the four must be dark enough to read as text on white (WCAG AA, 4.5:1 or better). Hex codes. Give each colour a plain name a shop owner would use ("bread crust", not "Ethereal Amber").',
   '- Be specific to this business, not its category. Every potter gets terracotta and sage, every café gets brown and cream: start from that obvious palette, then change at least one colour to something a competitor would not have picked that still belongs to this business.',
   '- Build it the way lasting brands are built: one distinctive colour this business can own, one simple mark that reads at a glance, one consistent voice. Learn from how strong brands work, never from what they look like: do not echo any existing brand’s name, logo, colours or slogan.',
   '- Typography: two fonts that exist on Google Fonts, spelled exactly as Google Fonts spells them. A heading font with character and a body font that is easy to read small. Say in one sentence why they fit.',
@@ -60,14 +60,14 @@ export const BRAND_KIT_SCHEMA: TextSchema = {
     vibe_summary: { type: 'STRING' },
     palette: {
       type: 'ARRAY',
-      minItems: 5,
-      maxItems: 5,
+      minItems: 4,
+      maxItems: 4,
       items: {
         type: 'OBJECT',
         properties: {
           name: { type: 'STRING' },
           hex: { type: 'STRING', description: 'Six-digit hex, e.g. #C65D3B' },
-          role: { type: 'STRING', enum: ['background', 'neutral', 'primary', 'secondary', 'accent'] },
+          role: { type: 'STRING', enum: ['primary', 'secondary', 'support', 'signature'] },
         },
         required: ['name', 'hex', 'role'],
       },

@@ -33,7 +33,7 @@ for (const file of walk(join(root, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) &
 const families = {
   role_: ['client', 'freelancer', 'both', 'client_note', 'freelancer_note', 'both_note'],
   skin_: ['plain', 'ascii', 'terminal'].flatMap((s) => [s, `${s}_note`]),
-  color_role_: ['primary', 'secondary', 'accent', 'neutral', 'background'],
+  color_role_: ['primary', 'secondary', 'support', 'signature', 'accent', 'neutral', 'background'],
   status_: ['pending', 'funded', 'in_review', 'completed', 'canceled', 'refunded'].flatMap((s) => [s, `${s}_note`]),
   format_: ['instagram_caption', 'product_description', 'email', 'website_hero', 'google_ad'],
   shape_: ['square', 'portrait', 'landscape'],
