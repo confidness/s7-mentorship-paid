@@ -386,6 +386,38 @@ console.log('image providers')
   check('a logo is drawn by GPT Image, which free credits can pay for', seen[2]?.url.includes('model=gptimage'), seen[2])
 }
 
+console.log('FLUX gets the plain prompt')
+{
+  delete process.env.POLLINATIONS_API_KEY
+  process.env.HF_TOKEN = 'hf_not_real'
+  const sent: { url: string; body: string }[] = []
+  globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    sent.push({ url: String(input), body: String(init.body ?? '') })
+    return new Response(new Uint8Array(4096).fill(7), { status: 200, headers: { 'content-type': 'image/jpeg' } })
+  }) as typeof fetch
+  const options = { purpose: 'logo' as const, plainPrompt: 'PLAIN SYMBOL PROMPT', lettered: true }
+
+  const flux = await generateImage('RULES PROMPT with "Crumb"', 1024, 1024, options)
+  eq('FLUX is the provider here', flux.provider, 'huggingface')
+  check('and is given the plain prompt, not the rules', sent[0]?.body.includes('PLAIN SYMBOL PROMPT') && !sent[0]?.body.includes('RULES PROMPT'), sent[0])
+  eq('the result reports the prompt it was given', flux.prompt, 'PLAIN SYMBOL PROMPT')
+  eq('a lettered logo drawn by FLUX leaves the name to be typeset', flux.typeset, true)
+
+  const symbol = await generateImage('RULES PROMPT', 1024, 1024, { ...options, lettered: false })
+  eq('a symbol drawn by FLUX has nothing to typeset', symbol.typeset, false)
+  check('but still gets the plain prompt', sent[1]?.body.includes('PLAIN SYMBOL PROMPT'), sent[1])
+
+  const photo = await generateImage('a loaf of bread', 1024, 1024, { purpose: 'photo' })
+  check('a photo is untouched', sent[2]?.body.includes('a loaf of bread'), sent[2])
+  eq('and nothing is typeset', photo.typeset, false)
+
+  process.env.POLLINATIONS_API_KEY = 'sk_pollinations_not_real'
+  const gpt = await generateImage('RULES PROMPT with "Crumb"', 1024, 1024, options)
+  eq('a provider that can spell answers first when it has a key', gpt.provider, 'pollinations')
+  check('and is given the rules prompt', decodeURIComponent(sent[3]?.url ?? '').includes('RULES PROMPT with "Crumb"'), sent[3])
+  eq('so the name is lettered in the picture, not typeset', gpt.typeset, false)
+}
+
 console.log('recraft')
 {
   process.env.RECRAFT_API_KEY = 'recraft_not_real'

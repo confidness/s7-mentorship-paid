@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, useEffect, useRef, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useEffect, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactElement, type ReactNode } from 'react'
 import { AsciiSkeleton } from 'ascii-reveal'
 import { useAppliedSkin } from '../lib/theme'
 import type { LucideIcon } from 'lucide-react'
@@ -250,13 +250,24 @@ export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIc
   )
 }
 
-/** Loading placeholders are ascii-reveal skeletons, in the look of the current skin. */
-const SKELETON_VARIANT = { plain: 'scan', ascii: 'dither', terminal: 'terminal' } as const
+/**
+ * Seconds for the ASCII shimmer to sweep a placeholder once. ascii-reveal's own default is 1.8,
+ * which is over before anybody has read it as a loader; this is slow enough to be seen.
+ */
+export const SKELETON_SWEEP_SECONDS = 4.5
+const SKELETON_SPEED = { '--ars-speed': SKELETON_SWEEP_SECONDS } as CSSProperties
+
+/**
+ * Loading placeholders. Only the ASCII skin draws them as a character grid; Classic and
+ * Terminal get a plain block that pulses, so a loading card never looks like it is rendering
+ * noise in an interface that is not otherwise made of characters.
+ */
 export function Skeleton({ className = '' }: { className?: string }) {
   const skin = useAppliedSkin()
+  if (skin !== 'ascii') return <div aria-hidden="true" className={`skeleton skeleton-plain ${className}`} />
   return (
     <div aria-hidden="true" className={`skeleton ${className}`}>
-      <AsciiSkeleton variant={SKELETON_VARIANT[skin]} width="100%" height="100%" />
+      <AsciiSkeleton variant="dither" width="100%" height="100%" style={SKELETON_SPEED} />
     </div>
   )
 }

@@ -27,6 +27,10 @@ export interface GeneratedImage {
   bytes: ArrayBuffer
   contentType: 'image/jpeg' | 'image/png' | 'image/webp'
   provider: string
+  /** The prompt this provider was actually given: a provider that cannot spell gets `plainPrompt`. */
+  prompt: string
+  /** The drawing is the symbol alone; the interface sets the name in the kit's heading font. */
+  typeset: boolean
 }
 
 /** What the picture is for, and the kit's colours as hex. Recraft takes the colours as controls; the rest read them in the prompt. */
@@ -36,10 +40,19 @@ export interface ImageOptions {
   pro?: boolean
   colors?: string[]
   background?: string
+  /**
+   * The same logo, briefed for a model that cannot spell: symbol only, written in sentences.
+   * Providers that do not `spell` get this instead of the prompt, and the result says so.
+   */
+  plainPrompt?: string
+  /** The kind of logo carries letters, so a symbol-only drawing leaves the name to the interface. */
+  lettered?: boolean
 }
 
 interface Provider {
   name: string
+  /** Can be held to the letters of a name. FLUX cannot: it misspells and ignores "no text". */
+  spells: boolean
   request: (prompt: string, width: number, height: number, seed: number, options: ImageOptions) => { url: string; init: RequestInit }
   /** For a provider that answers JSON rather than the image itself. */
   read?: (res: Response) => Promise<{ type: string; bytes: ArrayBuffer }>
@@ -80,6 +93,7 @@ export function imageProviders(): Provider[] {
   if (recraftKey) {
     providers.push({
       name: 'recraft',
+      spells: true,
       request: (prompt, width, height, seed, { purpose, colors = [], background }) => ({
         url: 'https://external.api.recraft.ai/v1/images/generations',
         init: {
@@ -113,6 +127,8 @@ export function imageProviders(): Provider[] {
   if (pollinationsKey) {
     providers.push({
       name: 'pollinations',
+      // gptimage draws logos, and spells; zimage draws photos, which have no letters to get wrong.
+      spells: true,
       request: (prompt, width, height, seed, { purpose }) => ({
         url: `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?${new URLSearchParams({ model: pollinationsModel(purpose), width: String(width), height: String(height), seed: String(seed), safe: 'true' })}`,
         init: { headers: { authorization: `Bearer ${pollinationsKey}` } },
@@ -124,6 +140,7 @@ export function imageProviders(): Provider[] {
   if (hfToken) {
     providers.push({
       name: 'huggingface',
+      spells: false,
       request: (prompt, width, height, seed) => ({
         url: 'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
         init: {
@@ -140,6 +157,7 @@ export function imageProviders(): Provider[] {
   if (process.env.POLLINATIONS_LEGACY !== 'off') {
     providers.push({
       name: 'pollinations-legacy',
+      spells: false,
       request: (prompt, width, height, seed) => ({
         url: `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${new URLSearchParams({ nologo: 'true', model: 'flux', width: String(width), height: String(height), seed: String(seed), safe: 'true' })}`,
         init: {},
@@ -160,7 +178,10 @@ export async function generateImage(prompt: string, width: number, height: numbe
   const failures: string[] = []
 
   for (const provider of providers) {
-    const { url, init } = provider.request(prompt, width, height, seed, options)
+    // A provider that cannot spell is briefed for the symbol alone, in sentences it can read.
+    const plain = !provider.spells && options.plainPrompt
+    const given = plain ? options.plainPrompt! : prompt
+    const { url, init } = provider.request(given, width, height, seed, options)
     try {
       const res = await fetch(url, { ...init, signal: AbortSignal.timeout(ATTEMPT_MS) })
       if (!res.ok) {
@@ -183,7 +204,7 @@ export async function generateImage(prompt: string, width: number, height: numbe
         continue
       }
       if (failures.length) console.warn(`[images] ${provider.name} answered after: ${failures.join(' | ')}`)
-      return { bytes, contentType: type as GeneratedImage['contentType'], provider: provider.name }
+      return { bytes, contentType: type as GeneratedImage['contentType'], provider: provider.name, prompt: given, typeset: Boolean(plain && options.lettered) }
     } catch {
       failures.push(`${provider.name} timeout`)
     }

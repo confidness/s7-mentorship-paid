@@ -167,6 +167,12 @@ export const UI: Record<string, { en: string; ru?: string; kk?: string }> = {
   draw_logo: { en: 'Draw a logo', ru: 'Нарисовать логотип', kk: 'Логотип салу' },
   redraw_logo: { en: 'Redraw logo', ru: 'Перерисовать логотип', kk: 'Логотипті қайта салу' },
   logo_failed: { en: 'The logo could not be drawn', ru: 'Не удалось нарисовать логотип', kk: 'Логотипті салу мүмкін болмады' },
+  logo: { en: 'Logo', ru: 'Логотип', kk: 'Логотип' },
+  logo_typeset_note: {
+    en: 'The mark is drawn; the name is set in {font}, your heading font, so it is always spelled right.',
+    ru: 'Знак нарисован, а название набрано шрифтом {font}, вашим шрифтом заголовков, поэтому оно всегда написано без ошибок.',
+    kk: 'Белгі салынған, ал атау {font} қарпімен, яғни тақырып қарпіңізбен теріледі, сондықтан ол әрдайым қатесіз жазылады.',
+  },
   logo_of: { en: 'Logo of {name}', ru: 'Логотип {name}', kk: '{name} логотипі' },
   hire_with_this_kit: { en: 'Hire with this kit', ru: 'Нанять с этим брендбуком', kk: 'Осы бренд-китпен жалдау' },
   palette: { en: 'Palette', ru: 'Палитра', kk: 'Палитра' },

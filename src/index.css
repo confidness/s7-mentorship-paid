@@ -809,6 +809,17 @@
     overflow: hidden;
     border-radius: var(--ui-radius-sm);
   }
+  /* Classic and Terminal: a plain block, no characters. The ASCII skin draws its own. */
+  .skeleton-plain {
+    background: color-mix(in srgb, var(--color-ink-900) 13%, transparent);
+    animation: skeleton-pulse 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /*

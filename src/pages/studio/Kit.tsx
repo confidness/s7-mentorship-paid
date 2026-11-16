@@ -5,7 +5,7 @@ import { useApp, useToast } from '../../lib/store'
 import { deleteKit, drawImage, getKit } from '../../lib/api'
 import { errorMessage, useAsync } from '../../lib/hooks'
 import { Button, Card, Modal, SectionHeading, SkeletonCard, Tabs } from '../../components/ui'
-import { ErrorNote, LogoTile, PageHeader, Swatches, TypeSpecimen, VoicePanel, useKitFonts } from '../../components/kit'
+import { ErrorNote, LogoLockup, LogoTile, PageHeader, Swatches, TypeSpecimen, VoicePanel, useKitFonts } from '../../components/kit'
 import { CopyPanel, ImagePanel } from './panels'
 import { WebsitePanel } from './website'
 import { MarketPanel } from './market'
@@ -40,8 +40,8 @@ export default function KitPage() {
     if (!kit) return
     setDrawing(true)
     try {
-      const { url } = await drawImage({ brandKitId: kit.id, purpose: 'logo', subject: concept, logo })
-      setData({ ...kit, logo_url: url })
+      const { url, typeset } = await drawImage({ brandKitId: kit.id, purpose: 'logo', subject: concept, logo })
+      setData({ ...kit, logo_url: url, business_json: { ...kit.business_json, logo: { ...kit.business_json.logo, typeset } } })
     } catch (err) {
       toast({ title: t('logo_failed'), body: errorMessage(err), tone: 'error' })
     } finally {
@@ -100,6 +100,13 @@ export default function KitPage() {
           </div>
         )}
       </Card>
+
+      {kit.logo_url && (
+        <Card className="p-5 sm:p-6">
+          <SectionHeading title={t('logo')} subtitle={kit.business_json.logo.typeset ? t('logo_typeset_note', { font: kit.typography_json.heading.family }) : undefined} />
+          <LogoLockup kit={kit} />
+        </Card>
+      )}
 
       <Card className="p-5 sm:p-6">
         <SectionHeading title={t('palette')} subtitle={t('click_a_colour_to_copy')} />

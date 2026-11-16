@@ -188,7 +188,7 @@ export const writeCopy = (input: { brandKitId: string; format: CopyFormat; brief
   call<{ variants: CopyVariant[]; model: string }>('/api/studio/copy', { method: 'POST', body: JSON.stringify(input) })
 
 export const drawImage = (input: { brandKitId: string; purpose: ImagePurpose; subject?: string; shape?: ImageShape; logo?: Pick<LogoBrief, 'kind' | 'style' | 'shape' | 'idea' | 'avoid'> }) =>
-  call<{ url: string; prompt: string; provider: string }>('/api/studio/image', { method: 'POST', body: JSON.stringify(input) })
+  call<{ url: string; prompt: string; provider: string; typeset: boolean }>('/api/studio/image', { method: 'POST', body: JSON.stringify(input) })
 
 /* ---------------------------------------------------------------- health */
 

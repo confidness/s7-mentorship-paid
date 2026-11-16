@@ -14,7 +14,10 @@ import {
   LOGO_RULES,
   MAX_IMAGE_PROMPT,
   buildImagePrompt,
+  colourWord,
   googleFontsHrefs,
+  logoLetters,
+  needsLettering,
   normalizeBrandKit,
   normalizeHex,
   normalizeKitRow,
@@ -204,6 +207,44 @@ const palette = [
 {
   const prompt = buildImagePrompt({ purpose: 'logo', subject: 'y'.repeat(5000), brandName: 'B'.repeat(500), palette, imageStyle: [], logo: { type: 'emblem', style: 'bold', avoid: 'z'.repeat(500) } })
   check('a long logo prompt keeps under the ceiling', prompt.length <= MAX_IMAGE_PROMPT, prompt.length)
+}
+
+console.log('logos for models that read prose')
+{
+  const plain = (logo: { type: 'symbol' | 'wordmark' | 'combination' | 'monogram' | 'emblem'; style: 'auto' | 'bold'; avoid: string }) =>
+    buildImagePrompt({ purpose: 'logo', subject: 'a wheat stalk', brandName: 'Crumb', palette, imageStyle: ['35mm film grain'], logo, family: 'plain' })
+  const prompt = plain({ type: 'symbol', style: 'auto', avoid: '' })
+  check('the medium comes first, in the positive', prompt.startsWith('A flat vector logo mark of a wheat stalk'), prompt)
+  check('it asks for the picture alone', prompt.includes('purely pictorial'), prompt)
+  check('and uses no negations FLUX would draw', !/\b(no|not)\b/i.test(prompt), prompt)
+  check('colours come as a word and a hex', /\(#[0-9A-F]{6}\)/i.test(prompt) && /orange|red|brown|green|yellow/.test(prompt), prompt)
+  check('the background is described the same way', prompt.includes('plain solid') && prompt.includes('#F7F1E8'), prompt)
+  check('it gets none of the photo style', !prompt.includes('35mm'), prompt)
+  for (const type of ['wordmark', 'combination', 'monogram', 'emblem'] as const) {
+    const p = plain({ type, style: 'auto', avoid: '' })
+    check(`a ${type} is drawn as the symbol alone: the name is typeset, never lettered by FLUX`, !p.includes('Crumb') && !p.includes('spelled exactly'), p)
+  }
+  check('the owner’s style is carried', plain({ type: 'symbol', style: 'bold', avoid: '' }).includes('bold high-contrast'), '')
+  check('what they want left out is kept', plain({ type: 'symbol', style: 'auto', avoid: 'gold' }).includes('Leave out gold'), '')
+  const long = buildImagePrompt({ purpose: 'logo', subject: 'y'.repeat(5000), brandName: 'B'.repeat(500), palette, imageStyle: [], logo: { type: 'emblem', style: 'bold', avoid: 'z'.repeat(500) }, family: 'plain' })
+  check('a long one keeps under the ceiling', long.length <= MAX_IMAGE_PROMPT, long.length)
+  check('the default family is unchanged', buildImagePrompt({ purpose: 'logo', subject: 'a wheat stalk', brandName: 'Crumb', palette, imageStyle: [] }).startsWith(LOGO_RULES[0]))
+
+  eq('terracotta is orange', colourWord('#C65D3B'), 'orange')
+  eq('a cream background is off-white', colourWord('#F7F1E8'), 'off-white')
+  eq('near-black is near-black', colourWord('#111111'), 'near-black')
+  eq('a dark green is deep', colourWord('#1F4D2B'), 'deep green')
+  eq('a pale one is pale', colourWord('#FFF3B0'), 'pale yellow')
+  eq('a grey is grey', colourWord('#808080'), 'grey')
+  eq('a bad hex has no word', colourWord('red; background:url(x)'), '')
+
+  check('lettered kinds need lettering', (['wordmark', 'combination', 'monogram', 'emblem'] as const).every(needsLettering))
+  check('a symbol does not', !needsLettering('symbol'))
+  eq('a monogram is typeset as its initials', logoLetters('monogram', 'Crumb & Co'), 'CC')
+  eq('anything else as the whole name', logoLetters('wordmark', 'Crumb & Co'), 'Crumb & Co')
+  eq('a kit says nothing is typeset until a provider says so', normalizeLogo({}).typeset, false)
+  eq('and only a real true counts', normalizeLogo({ typeset: 'yes' }).typeset, false)
+  eq('a typeset logo stays typeset', normalizeLogo({ typeset: true }).typeset, true)
 }
 
 console.log('logo answers')

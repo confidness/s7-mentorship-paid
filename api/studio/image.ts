@@ -11,7 +11,7 @@
  * Row level security would refuse the write anyway — this says so before an image is spent.
  */
 
-import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, normalizeLogo, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
+import { IMAGE_PURPOSES, IMAGE_SHAPES, buildImagePrompt, logoColours, needsLettering, normalizeLogo, type ImagePurpose, type ImageShape } from '../../src/lib/brand.js'
 import { HttpError, fail, json, readJson, requireMethod, requireUser, str, uuidOrNull } from '../_lib/server.js'
 import { generateImage } from '../_lib/images.js'
 import { loadKit, storeImage, takeQuota } from '../_lib/studio.js'
@@ -49,7 +49,7 @@ async function handler(req: Request): Promise<Response> {
     const logo = asked ? normalizeLogo({ ...kit.business_json.logo, kind: asked.kind, style: asked.style, shape: asked.shape, idea: asked.idea, avoid: asked.avoid }) : kit.business_json.logo
     // A kind the owner chose is the kind drawn; "you decide" keeps the strategist's pick.
     if (asked && logo.kind !== 'auto') logo.type = logo.kind
-    const prompt = buildImagePrompt({
+    const brief = {
       purpose,
       // A logo with no direction of its own is drawn from the brief saved with the kit, and a
       // kit from before there were briefs leans on its description of itself.
@@ -58,22 +58,38 @@ async function handler(req: Request): Promise<Response> {
       palette: kit.palette_json ?? [],
       imageStyle: kit.voice_rules_json?.image_style ?? [],
       logo,
-    })
+    }
+    const prompt = buildImagePrompt(brief)
+    // The same logo for a model that cannot spell (FLUX): a symbol alone, in plain sentences.
+    // If one of those ends up drawing it, the name is set in type by the interface instead.
+    const plainPrompt = purpose === 'logo' ? buildImagePrompt({ ...brief, family: 'plain' }) : undefined
 
     const [width, height] = IMAGE_SHAPES[shape]
     const { background, inks } = logoColours(kit.palette_json ?? [])
-    const image = await generateImage(prompt, width, height, { purpose, pro: quota.plan === 'pro', colors: inks.map((c) => c.hex), background: background?.hex })
+    const image = await generateImage(prompt, width, height, {
+      purpose,
+      pro: quota.plan === 'pro',
+      colors: inks.map((c) => c.hex),
+      background: background?.hex,
+      plainPrompt,
+      lettered: purpose === 'logo' && needsLettering(logo.type),
+    })
     // The provider has been paid for this one. A failure after this point — storage, the logo
     // write — does not hand the unit back, or failing on purpose would be free generation.
     giveBack = undefined
     const url = await storeImage(caller.id, image)
 
     if (purpose === 'logo') {
-      const { error } = await caller.db.from('brand_kits').update({ logo_url: url, ...(asked ? { business_json: { ...kit.business_json, logo } } : {}) }).eq('id', kit.id)
+      // `typeset` is saved with the logo it describes: a Redraw by a provider that can spell
+      // must clear it, or the name would be set twice. So the brief is always written back.
+      const { error } = await caller.db
+        .from('brand_kits')
+        .update({ logo_url: url, business_json: { ...kit.business_json, logo: { ...logo, typeset: image.typeset } } })
+        .eq('id', kit.id)
       if (error) throw new HttpError(500, 'write_failed', error.message)
     }
 
-    return json({ url, prompt, provider: image.provider })
+    return json({ url, prompt: image.prompt, provider: image.provider, typeset: image.typeset })
   } catch (error) {
     await giveBack?.().catch(() => {})
     return fail(error)

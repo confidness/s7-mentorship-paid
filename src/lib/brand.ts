@@ -58,6 +58,10 @@ export interface VoiceRules {
 export const LOGO_KINDS = ['symbol', 'wordmark', 'combination', 'monogram', 'emblem'] as const
 export type LogoKind = (typeof LOGO_KINDS)[number]
 
+/** The kinds whose letters an image model has to get right, or the interface has to set instead. */
+export const LETTERED_KINDS: readonly LogoKind[] = ['wordmark', 'combination', 'monogram', 'emblem']
+export const needsLettering = (type: LogoKind) => LETTERED_KINDS.includes(type)
+
 export const LOGO_STYLES = ['modern', 'handmade', 'classic', 'bold', 'playful'] as const
 export type LogoStyle = (typeof LOGO_STYLES)[number]
 
@@ -78,6 +82,12 @@ export interface LogoBrief {
   type: LogoKind
   /** The strategist's drawable description. Kept so a Redraw draws the same idea again. */
   concept: string
+  /**
+   * The drawing is the symbol alone and the interface sets the name beside it, in the kit's own
+   * heading font. True when the provider that drew it cannot be trusted to spell: FLUX
+   * misspells short words often enough that a typeset name is the only reliable one.
+   */
+  typeset: boolean
 }
 
 export interface BusinessInfo {
@@ -255,6 +265,7 @@ export function normalizeLogo(raw: unknown): LogoBrief {
     // A kit from before the questions has neither: it gets a symbol, the kind that never has to spell.
     type: oneOf(LOGO_KINDS, obj.type) ?? (kind === 'auto' ? 'symbol' : kind),
     concept: text(obj.concept, 400),
+    typeset: obj.typeset === true,
   }
 }
 
@@ -438,6 +449,37 @@ function initialsOf(name: string): string {
   )
 }
 
+/** What the interface sets in type beside a symbol: the initials for a monogram, the whole name otherwise. */
+export const logoLetters = (type: LogoKind, name: string) => (type === 'monogram' ? initialsOf(name) : name)
+
+/**
+ * A plain English word for a colour, from its hex: "orange", "deep green", "pale yellow".
+ *
+ * Only for models that read prose. FLUX takes "#C65D3B" as a string of digits and drifts, but
+ * follows "orange (#C65D3B)". The word is coarse on purpose and never a brand's own name for
+ * the colour, which is in the owner's language and which a model may letter into the picture.
+ */
+export function colourWord(hex: string): string {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return ''
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+  if (l > 0.96) return 'white'
+  if (l > 0.9 && s < 0.5) return 'off-white'
+  if (l < 0.12) return 'near-black'
+  if (s < 0.12) return l > 0.6 ? 'light grey' : l > 0.3 ? 'grey' : 'charcoal'
+  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  h = (h * 60 + 360) % 360
+  const hue = h < 10 || h >= 345 ? 'red' : h < 40 ? (l < 0.45 ? 'brown' : 'orange') : h < 65 ? 'yellow' : h < 165 ? 'green' : h < 200 ? 'teal' : h < 255 ? 'blue' : h < 290 ? 'purple' : 'pink'
+  return `${l > 0.75 ? 'pale ' : l < 0.3 ? 'deep ' : ''}${hue}`
+}
+
+/** "orange (#C65D3B)": the word for a model that reads prose and the hex for one that reads codes. */
+const describeColour = (hex: string) => (colourWord(hex) ? `${colourWord(hex)} (${hex})` : hex)
+
 /**
  * What the logo is, by kind. Lettered kinds spell the name out twice in quotes — the most
  * an image model can be held to it. A symbol never sees the name at all: a name in the
@@ -478,11 +520,36 @@ export function buildImagePrompt(input: {
   palette: PaletteColor[]
   imageStyle: string[]
   logo?: Pick<LogoBrief, 'type' | 'style' | 'avoid'> & { shape?: LogoBrief['shape'] }
+  /**
+   * Who is reading it. `lettering` (the default) is for models that can spell and follow a
+   * brief written as rules: Recraft, GPT Image. `plain` is for FLUX, which does neither: it
+   * reads sentences, has no negative prompt — "no shadows" tends to draw shadows — and
+   * misspells, so it is asked for the symbol alone and the name is typeset afterwards.
+   */
+  family?: 'lettering' | 'plain'
 }): string {
   const subject = text(input.subject, 400)
 
   let parts: string[]
-  if (input.purpose === 'logo') {
+  if (input.purpose === 'logo' && input.family === 'plain') {
+    const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> & { shape?: LogoBrief['shape'] } = input.logo ?? { type: 'symbol', style: 'auto', shape: 'auto', avoid: '' }
+    const { background, inks: inkColours } = logoColours(input.palette)
+    const symbol = text(subject, 250).replace(/[\s.;,]+$/, '') || 'a simple memorable symbol'
+    const inks = inkColours.map((c) => describeColour(c.hex)).join(', ')
+    parts = [
+      // The medium first, in the positive: what the picture is, not what it is not. A symbol
+      // only, whatever the kind: the name is set in real type by the interface.
+      `A flat vector logo mark of ${symbol}, purely pictorial`,
+      'Built from a few bold, simple geometric shapes with smooth clean edges and one even line weight, the way a professional identity designer would draw it',
+      inks && `Solid flat colour fills in ${inks}, each area one uniform colour`,
+      background ? `Centred on a plain solid ${describeColour(background.hex)} background with a wide empty margin all around` : 'Centred on a plain solid background with a wide empty margin all around',
+      logo.style !== 'auto' ? `In a ${LOGO_STYLE_WORDS[logo.style]}` : '',
+      logo.shape && logo.shape !== 'auto' ? `The mark is ${LOGO_SHAPE_WORDS[logo.shape]}` : '',
+      'Clear and recognisable when shrunk to the size of a favicon',
+      // The owner's own words, kept. This is the one place a negative is the owner's to ask for.
+      logo.avoid && `Leave out ${text(logo.avoid, 120)}`,
+    ]
+  } else if (input.purpose === 'logo') {
     const logo: Pick<LogoBrief, 'type' | 'style' | 'avoid'> & { shape?: LogoBrief['shape'] } = input.logo ?? { type: 'symbol', style: 'auto', shape: 'auto', avoid: '' }
     const { background, inks: inkColours } = logoColours(input.palette)
     const inks = inkColours.map((c) => c.hex).join(', ')

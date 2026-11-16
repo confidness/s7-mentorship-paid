@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Ban, Camera, Check, Copy, MessageSquareQuote, Type } from 'lucide-react'
-import { googleFontsHrefs, type BrandKitRow, type PaletteColor, type Typography, type VoiceRules } from '../lib/brand'
+import { googleFontsHrefs, logoLetters, type BrandKitRow, type PaletteColor, type Typography, type VoiceRules } from '../lib/brand'
 import { Card, SectionHeading } from './ui'
 import { t } from '../i18n'
 
@@ -106,6 +106,33 @@ export function LogoTile({ kit, size = 64 }: { kit: Pick<BrandKitRow, 'brand_nam
     <span aria-hidden="true" className="grid shrink-0 place-items-center rounded-[var(--ui-radius-sm)] font-bold ring-1 rim" style={{ width: size, height: size, background: primary, color: background, fontSize: size * 0.36 }}>
       {initials}
     </span>
+  )
+}
+
+/**
+ * The logo as a lockup: the symbol and, when the drawing is the symbol alone, the name set in
+ * the kit's own heading font beside it.
+ *
+ * An image model that cannot spell is asked for the symbol only, and this is where the name
+ * comes back — in real type, so it cannot be misspelled and it is the brand's own typeface.
+ * Needs the kit's fonts loaded (`useKitFonts`). For a drawing that already carries its
+ * lettering it is just the image.
+ */
+export function LogoLockup({ kit }: { kit: Pick<BrandKitRow, 'brand_name' | 'logo_url' | 'palette_json' | 'typography_json' | 'business_json'> }) {
+  const { logo } = kit.business_json
+  const ink = kit.palette_json.find((c) => c.role === 'primary')?.hex ?? kit.palette_json[0]?.hex ?? '#222222'
+  const background = kit.palette_json.find((c) => c.role === 'background')?.hex ?? '#ffffff'
+  const heading = kit.typography_json.heading
+  if (!kit.logo_url) return null
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[var(--ui-radius-sm)] p-5 ring-1 rim" style={{ background }}>
+      <img src={kit.logo_url} alt={t('logo_of', { name: kit.brand_name })} className="h-28 w-28 shrink-0 object-contain" />
+      {logo.typeset && (
+        <span className="min-w-0 break-words leading-none" style={{ fontFamily: fontStack(heading), fontWeight: heading.weight, color: ink, fontSize: logoLetters(logo.type, kit.brand_name).length > 14 ? 34 : 44 }}>
+          {logoLetters(logo.type, kit.brand_name)}
+        </span>
+      )}
+    </div>
   )
 }
 
